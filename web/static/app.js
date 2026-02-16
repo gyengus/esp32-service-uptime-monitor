@@ -80,10 +80,10 @@ function renderEntities() {
     }
 
     displayList.forEach(entity => {
-        let statusClass = entity.lastChanged ? (entity.isOnline ? "text-bg-success" : "text-bg-danger") : "text-bg-light";
+        let cardBgClass = entity.disabled ? "text-bg-secondary" : entity.lastChanged ? (entity.isOnline ? "text-bg-success" : "text-bg-danger") : "text-bg-light";
         let icon = entity.icon || "mdi-server";
         let notifyIcon = entity.notification ? '<span class="mdi mdi-bell-outline ms-2" title="Notifications ON"></span>' : '';
-        let address = (entity.type === "HEAD") 
+        let address = (entity.type === "HEAD")
             ? `<a href="${entity.address}" target="_blank" class="link-light text-truncate" style="max-width:150px">${entity.address}</a>`
             : entity.address;
 
@@ -96,7 +96,7 @@ function renderEntities() {
 
         let cardHtml = `
             <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 shadow monitoredEntity ${statusClass}">
+                <div class="card h-100 shadow monitoredEntity ${cardBgClass}">
                     <div class="card-body position-relative">
                         <div class="position-absolute top-0 end-0 p-2 buttons">
                             <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-edit p-1" data-name="${entity.name}" title="Edit">
@@ -114,6 +114,7 @@ function renderEntities() {
                         </h5>
                         <p class="card-text small mb-0">
                             <span class="badge bg-light text-dark me-1">${entity.type}</span>
+                            ${entity.disabled ? '<span class="badge bg-secondary me-1">Disabled</span>' : ''}
                             <span class="text-white-50">${address}</span>
                         </p>
                         <p class="card-text mt-2 mb-0" style="font-size: 0.75rem; opacity: 0.8;">
@@ -134,6 +135,7 @@ $('#entityModal').on('hidden.bs.modal', function () {
     $('#entityForm')[0].reset();
     $('#entityForm').removeClass('was-validated');
     $('#typePing').prop('checked', true);
+    $('#disabledEnabled').prop('checked', false);
     $("#saveButton").prop('disabled', false);
     $('#id').val("");
 });
@@ -154,6 +156,7 @@ $(document).on('click', '.btn-edit', function() {
         $(`input[name='type'][value='${entity.type}']`).prop('checked', true);
         $('#icon').val(entity.icon);
         $('#notificationsEnabled').prop('checked', entity.notification);
+        $('#disabledEnabled').prop('checked', entity.disabled);
         $('#id').val(entity.name);
         $('#entityModal').modal('show');
     });
@@ -173,7 +176,8 @@ $('#saveButton').click(function(event) {
         address: $('#address').val(),
         type: $("input[name='type']:checked").val(),
         icon: $('#icon').val() || "mdi-server",
-        notification: $('#notificationsEnabled').is(':checked')
+        notification: $('#notificationsEnabled').is(':checked'),
+        disabled: $('#disabledEnabled').is(':checked')
     };
 
 

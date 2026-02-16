@@ -1,10 +1,10 @@
 #include "MonitoredEntity.h"
 
-MonitoredEntity::MonitoredEntity(const String& name, const String& address, CheckType type, const String& icon, bool notify) 
-    : _name(name), _address(address), _type(type), _icon(icon), _notification(notify), 
-      _isOnline(false), _lastChanged(0), _failCount(0) {}
+MonitoredEntity::MonitoredEntity(const String& name, const String& address, CheckType type, const String& icon, bool notify)
+    : _name(name), _address(address), _type(type), _icon(icon), _notification(notify),
+      _isOnline(false), _lastChanged(0), _disabled(false), _failCount(0) {}
 
-MonitoredEntity::MonitoredEntity() : _type(PING), _isOnline(false), _lastChanged(0), _notification(true), _failCount(0) { }
+MonitoredEntity::MonitoredEntity() : _type(PING), _isOnline(false), _lastChanged(0), _notification(true), _disabled(false), _failCount(0) { }
 
 // --- Getters ---
 String MonitoredEntity::getName() const { return _name; }
@@ -13,6 +13,7 @@ String MonitoredEntity::getIcon() const { return _icon; }
 CheckType MonitoredEntity::getType() const { return _type; }
 bool MonitoredEntity::isOnline() const { return _isOnline; }
 bool MonitoredEntity::getNotification() const { return _notification; }
+bool MonitoredEntity::isDisabled() const { return _disabled; }
 time_t MonitoredEntity::getLastChanged() const { return _lastChanged; }
 
 // --- Setters ---
@@ -21,6 +22,7 @@ void MonitoredEntity::setAddress(String &addr) { _address = addr; }
 void MonitoredEntity::setIcon(String &icon) { _icon = icon; }
 void MonitoredEntity::setType(CheckType type) { _type = type; }
 void MonitoredEntity::setNotification(bool notify) { _notification = notify; }
+void MonitoredEntity::setDisabled(bool disabled) { _disabled = disabled; }
 void MonitoredEntity::setLastChanged(time_t lastChanged) { _lastChanged = lastChanged; }
 
 void MonitoredEntity::setOnlineStatus(bool online) {
@@ -47,6 +49,7 @@ void MonitoredEntity::fillJson(JsonObject& doc) const {
     doc["type"] = (_type == HEAD) ? "HEAD" : "PING";
     doc["isOnline"] = _isOnline;
     doc["notification"] = _notification;
+    doc["disabled"] = _disabled;
     doc["lastChanged"] = (uint32_t)_lastChanged;
 }
 
@@ -67,6 +70,7 @@ bool MonitoredEntity::fromJsonObject(const JsonObject& doc) {
     }
 
     if (doc["notification"].is<bool>()) _notification = doc["notification"].as<bool>();
+    if (doc["disabled"].is<bool>()) _disabled = doc["disabled"].as<bool>();
     if (doc["isOnline"].is<bool>()) _isOnline = doc["isOnline"].as<bool>();
 
     if (doc["lastChanged"].is<uint32_t>()) {
@@ -93,6 +97,7 @@ MonitoredEntity& MonitoredEntity::operator=(const MonitoredEntity& other) {
         _type = other._type;
         _isOnline = other._isOnline;
         _notification = other._notification;
+        _disabled = other._disabled;
         _lastChanged = other._lastChanged;
         _failCount = other._failCount;
     }

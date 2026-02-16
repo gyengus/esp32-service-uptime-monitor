@@ -21,6 +21,7 @@ public:
     CheckType getType() const;
     bool isOnline() const;
     bool getNotification() const;
+    bool isDisabled() const;
     time_t getLastChanged() const;
 
     // Setters
@@ -29,6 +30,7 @@ public:
     void setIcon(String &icon);
     void setType(CheckType type);
     void setNotification(bool notify);
+    void setDisabled(bool disabled);
     void setOnlineStatus(bool online);
     void setLastChanged(time_t lastChanged);
 
@@ -50,6 +52,7 @@ private:
     CheckType _type;
     bool _isOnline;
     bool _notification;
+    bool _disabled;
     uint8_t _failCount;
 };
 

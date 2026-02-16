@@ -164,6 +164,7 @@ void Api::registerServicesEndpoints() {
             itemDoc["type"] = (entities[i].getType() == HEAD ? "HEAD" : "PING");
             itemDoc["isOnline"] = entities[i].isOnline();
             itemDoc["notification"] = entities[i].getNotification();
+            itemDoc["disabled"] = entities[i].isDisabled();
             itemDoc["lastChanged"] = entities[i].getLastChanged();
 
             serializeJson(itemDoc, *response);

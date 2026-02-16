@@ -49,6 +49,7 @@ bool MonitoringService::checkAll() {
     for (const String& name : names) {
         MonitoredEntity* entity = monitoredEntityRepository.getEntityInternal(name);
         if (!entity) continue;
+        if (entity->isDisabled()) continue;
         bool oldStatus = entity->isOnline();
         bool currentMeasurement = check(*entity);
 
