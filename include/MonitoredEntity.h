@@ -1,0 +1,56 @@
+#ifndef _MONITORED_ENTITY_H_
+#define _MONITORED_ENTITY_H_
+
+#include <Arduino.h>
+#include <ArduinoJson.h>
+
+enum CheckType : uint8_t {
+    HEAD,
+    PING
+};
+
+class MonitoredEntity {
+public:
+    MonitoredEntity(const String& name, const String& address, CheckType type, const String& icon, bool notify);
+    MonitoredEntity();
+
+    // Getters
+    String getName() const;
+    String getAddress() const;
+    String getIcon() const;
+    CheckType getType() const;
+    bool isOnline() const;
+    bool getNotification() const;
+    time_t getLastChanged() const;
+
+    // Setters
+    void setName(String &name);
+    void setAddress(String &addr);
+    void setIcon(String &icon);
+    void setType(CheckType type);
+    void setNotification(bool notify);
+    void setOnlineStatus(bool online);
+    void setLastChanged(time_t lastChanged);
+
+    String toJson() const;
+    bool fromJson(const String& json);
+    
+    void fillJson(JsonObject& doc) const;
+    bool fromJsonObject(const JsonObject& doc);
+    MonitoredEntity& operator=(const MonitoredEntity& other);
+
+    uint8_t getFailCount() const { return _failCount; }
+    void resetFailCount() { _failCount = 0; }
+    void incrementFailCount() { _failCount++; }
+private:
+    String _name;
+    String _address;
+    String _icon;
+    time_t _lastChanged;
+    CheckType _type;
+    bool _isOnline;
+    bool _notification;
+    uint8_t _failCount;
+};
+
+#endif // _MONITORED_ENTITY_H_

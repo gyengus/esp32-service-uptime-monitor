@@ -1,0 +1,8 @@
+{
+    "wifi_ssid": "YourSSID",
+    "wifi_password": "YourPassword",
+    "sntp_server": "pool.ntp.org",
+    "timezone_offset_hours": 2,
+    "monitor_interval_seconds": 60,
+    "slack_webhook_url": "https://hooks.slack.com/services/your/webhook/url"
+}

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 File Manager</title>
+    <link href="static/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .folder-link { cursor: pointer; color: #0d6efd; font-weight: 600; text-decoration: none; display: flex; align-items: center; }
+        .folder-link:hover { text-decoration: underline; }
+        .file-icon { color: #6c757d; font-size: 1.2rem; margin-right: 8px; }
+        .folder-icon { color: #ffca28; font-size: 1.2rem; margin-right: 8px; }
+        .table-hover tbody tr:hover { background-color: rgba(0,0,0,.03); }
+        .mdi { vertical-align: middle; }
+        #commonActionsContainer { margin-top: 0; }
+        .toast-container { z-index: 2000; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><span class="mdi mdi-micro-sd me-2"></span>ESP32-S3 SD_MMC Manager</h5>
+            <span id="path-badge" class="badge bg-light text-primary fs-6">/</span>
+        </div>
+        
+        <div class="card-body">
+            <div id="commonActionsContainer" class="row g-3 mb-4 p-3 bg-light rounded border">
+                <div class="col-md-7">
+                    <label class="form-label fw-bold small text-uppercase">Upload File</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="fileInput">
+                        <button class="btn btn-success d-flex align-items-center" type="button" id="btnUpload">
+                            <span class="mdi mdi-upload me-1"></span> Upload
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-bold small text-uppercase">New Directory</label>
+                    <div class="input-group">
+                        <input type="text" id="dirName" class="form-control" placeholder="Folder name...">
+                        <button class="btn btn-outline-primary d-flex align-items-center" type="button" id="btnMkdir">
+                            <span class="mdi mdi-folder-plus me-1"></span> Create
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Size</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileList">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><span class="mdi mdi-alert me-2"></span>Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete: <strong id="deleteItemName"></strong>?
+                <p class="text-muted small mt-2 mb-0">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="liveToast" class="toast align-items-center text-white border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastIcon" class="mdi me-2 fs-5"></span>
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<script src="static/jquery-3.7.1.min.js"></script>
+<script src="static/bootstrap.min.js"></script>
+
+<script>
+    let currentPath = "";
+    let itemToDelete = "";
+
+    $(document).ready(function() {
+        loadFiles();
+        $('#btnUpload').on('click', uploadFile);
+        $('#btnMkdir').on('click', createDir);
+        $('#dirName').on('keypress', function(e) {
+            if(e.which === 13) createDir();
+        });
+
+        // Törlés megerősítése
+        $('#btnConfirmDelete').on('click', function() {
+            executeDelete(itemToDelete);
+        });
+    });
+
+    function showToast(message, type = 'success') {
+        const toastEl = $('#liveToast');
+        const toastIcon = $('#toastIcon');
+        
+        toastEl.removeClass('bg-success bg-danger');
+        toastEl.addClass(type === 'success' ? 'bg-success' : 'bg-danger');
+        
+        toastIcon.removeClass('mdi-check-circle mdi-alert-circle');
+        toastIcon.addClass(type === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle');
+        
+        $('#toastMessage').text(message);
+        
+        const toast = new bootstrap.Toast(toastEl[0], { delay: 3000 });
+        toast.show();
+    }
+
+    function loadFiles() {
+        const url = `/list?path=${encodeURIComponent(currentPath)}`;
+        
+        $.getJSON(url, function(data) {
+            $('#path-badge').text(currentPath === "" ? "/" : currentPath);
+            const $tbody = $('#fileList').empty();
+
+            if (currentPath !== "") {
+                $tbody.append(`
+                    <tr>
+                        <td colspan="3">
+                            <button class="btn btn-sm btn-link text-decoration-none d-flex align-items-center" onclick="goBack()">
+                                <span class="mdi mdi-arrow-up-bold-level me-2"></span>.. [Parent Directory]
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            }
+
+            $.each(data, function(i, file) {
+                const iconClass = file.isDir ? 'mdi-folder folder-icon' : 'mdi-file-document-outline file-icon';
+                const icon = `<span class="mdi ${iconClass}"></span>`;
+                const sizeDisplay = file.isDir ? '<span class="text-muted small">DIR</span>' : (file.size / 1024).toFixed(1) + ' KB';
+                
+                let nameHtml = file.isDir 
+                    ? `<span class="folder-link" onclick="changeDirectory('${file.name}')">${icon}${file.name}</span>`
+                    : `<span class="d-flex align-items-center">${icon}${file.name}</span>`;
+
+                let actionButtons = '';
+                if (!file.isDir) {
+                    actionButtons = `
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadItem('${file.name}')" title="Download">
+                            <span class="mdi mdi-download"></span>
+                        </button>
+                    `;
+                }
+                actionButtons += `
+                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('${file.name}')" title="Delete">
+                        <span class="mdi mdi-delete"></span>
+                    </button>
+                `;
+
+                const row = `
+                    <tr>
+                        <td>${nameHtml}</td>
+                        <td>${sizeDisplay}</td>
+                        <td class="text-end">${actionButtons}</td>
+                    </tr>
+                `;
+                $tbody.append(row);
+            });
+        }).fail(function() {
+            showToast("Failed to load file list.", "danger");
+        });
+    }
+
+    function uploadFile() {
+        const fileInput = $('#fileInput')[0];
+        if (fileInput.files.length === 0) return;
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        const $btn = $('#btnUpload').prop('disabled', true).text('Uploading...');
+        
+        $.ajax({
+            url: `/upload?path=${encodeURIComponent(currentPath)}`,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function() {
+                showToast('File uploaded successfully!');
+                $('#fileInput').val('');
+                loadFiles();
+            },
+            error: function() {
+                showToast('Upload failed!', 'danger');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<span class="mdi mdi-upload me-1"></span> Upload');
+            }
+        });
+    }
+
+    function createDir() {
+        const name = $('#dirName').val().trim();
+        if (!name) return;
+        $.post(`/mkdir?dir=${encodeURIComponent(name)}&path=${encodeURIComponent(currentPath)}`, function() {
+            $('#dirName').val('');
+            loadFiles();
+            showToast('Directory created!');
+        }).fail(function() { 
+            showToast('Failed to create directory.', 'danger'); 
+        });
+    }
+
+    function confirmDelete(name) {
+        itemToDelete = name;
+        $('#deleteItemName').text(name);
+        $('#deleteModal').modal('show');
+    }
+
+    function executeDelete(name) {
+        $.ajax({
+            url: `/delete?file=${encodeURIComponent(name)}&path=${encodeURIComponent(currentPath)}`,
+            type: 'DELETE',
+            success: function() { 
+                showToast('Item deleted.');
+                loadFiles(); 
+            },
+            error: function() { 
+                showToast('Deletion failed.', 'danger'); 
+            },
+            complete: function() {
+                $('#deleteModal').modal('hide');
+            }
+        });
+    }
+
+    function changeDirectory(folderName) {
+        currentPath += (currentPath.endsWith('/') ? '' : '/') + folderName;
+        loadFiles();
+    }
+
+    function goBack() {
+        const parts = currentPath.split('/').filter(p => p.length > 0);
+        parts.pop();
+        currentPath = parts.length > 0 ? "/" + parts.join('/') : "";
+        loadFiles();
+    }
+
+    function downloadItem(name) {
+        const url = `/download?file=${encodeURIComponent(name)}&path=${encodeURIComponent(currentPath)}`;
+        window.location.href = url;
+    }
+</script>
+
+</body>
+</html>

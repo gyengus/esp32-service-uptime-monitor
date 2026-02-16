@@ -1,0 +1,100 @@
+#include "MonitoredEntity.h"
+
+MonitoredEntity::MonitoredEntity(const String& name, const String& address, CheckType type, const String& icon, bool notify) 
+    : _name(name), _address(address), _type(type), _icon(icon), _notification(notify), 
+      _isOnline(false), _lastChanged(0), _failCount(0) {}
+
+MonitoredEntity::MonitoredEntity() : _type(PING), _isOnline(false), _lastChanged(0), _notification(true), _failCount(0) { }
+
+// --- Getters ---
+String MonitoredEntity::getName() const { return _name; }
+String MonitoredEntity::getAddress() const { return _address; }
+String MonitoredEntity::getIcon() const { return _icon; }
+CheckType MonitoredEntity::getType() const { return _type; }
+bool MonitoredEntity::isOnline() const { return _isOnline; }
+bool MonitoredEntity::getNotification() const { return _notification; }
+time_t MonitoredEntity::getLastChanged() const { return _lastChanged; }
+
+// --- Setters ---
+void MonitoredEntity::setName(String &name) { _name = name; }
+void MonitoredEntity::setAddress(String &addr) { _address = addr; }
+void MonitoredEntity::setIcon(String &icon) { _icon = icon; }
+void MonitoredEntity::setType(CheckType type) { _type = type; }
+void MonitoredEntity::setNotification(bool notify) { _notification = notify; }
+void MonitoredEntity::setLastChanged(time_t lastChanged) { _lastChanged = lastChanged; }
+
+void MonitoredEntity::setOnlineStatus(bool online) {
+    if (_isOnline != online) {
+        _isOnline = online;
+        _lastChanged = time(NULL);
+        if (online) _failCount = 0;
+    }
+}
+
+String MonitoredEntity::toJson() const {
+    JsonDocument doc;
+    JsonObject obj = doc.to<JsonObject>();
+    fillJson(obj);
+    String output;
+    serializeJson(doc, output);
+    return output;
+}
+
+void MonitoredEntity::fillJson(JsonObject& doc) const {
+    doc["name"] = _name;
+    doc["address"] = _address;
+    doc["icon"] = _icon;
+    doc["type"] = (_type == HEAD) ? "HEAD" : "PING";
+    doc["isOnline"] = _isOnline;
+    doc["notification"] = _notification;
+    doc["lastChanged"] = (uint32_t)_lastChanged;
+}
+
+bool MonitoredEntity::fromJsonObject(const JsonObject& doc) {
+    if (!doc["name"].is<const char*>() || !doc["address"].is<const char*>()) {
+        return false; 
+    }
+
+    _name = doc["name"].as<String>();
+    _address = doc["address"].as<String>();
+    if (doc["icon"].is<const char*>()) {
+        _icon = doc["icon"].as<String>();
+    }
+    if (doc["type"].is<const char*>()) {
+        String t = doc["type"].as<String>();
+        t.toUpperCase();
+        _type = (t == "PING") ? PING : HEAD;
+    }
+
+    if (doc["notification"].is<bool>()) _notification = doc["notification"].as<bool>();
+    if (doc["isOnline"].is<bool>()) _isOnline = doc["isOnline"].as<bool>();
+
+    if (doc["lastChanged"].is<uint32_t>()) {
+        _lastChanged = (time_t)doc["lastChanged"].as<uint32_t>();
+    }
+
+    return true;
+}
+
+bool MonitoredEntity::fromJson(const String& json) {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, json);
+    if (error) return false;
+    
+    JsonObject obj = doc.as<JsonObject>();
+    return fromJsonObject(obj);
+}
+
+MonitoredEntity& MonitoredEntity::operator=(const MonitoredEntity& other) {
+    if (this != &other) {
+        _name = other._name;
+        _address = other._address;
+        _icon = other._icon;
+        _type = other._type;
+        _isOnline = other._isOnline;
+        _notification = other._notification;
+        _lastChanged = other._lastChanged;
+        _failCount = other._failCount;
+    }
+    return *this;
+}
