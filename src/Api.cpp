@@ -27,6 +27,64 @@ void Api::registerEndpoints() {
 }
 
 void Api::registerConfigEndpoints() {
+    server.on("/api/config/backup", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!isConfigFunctionsEnabled && !isAPMode) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
+
+        String configJson = storage.readFile(CONFIG_FILE_PATH);
+        String entitiesJson = storage.readFile(ENTITIES_FILE_PATH);
+
+        if (configJson.isEmpty() || entitiesJson.isEmpty()) {
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to read config files\"}");
+            return;
+        }
+
+        JsonDocument doc;
+        JsonObject root = doc.to<JsonObject>();
+        DeserializationError configErr = deserializeJson(root["config"], configJson);
+        DeserializationError entitiesErr = deserializeJson(root["entities"], entitiesJson);
+
+        if (configErr || entitiesErr) {
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to parse config files\"}");
+            return;
+        }
+
+        String backupJson;
+        serializeJson(doc, backupJson);
+
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        response->print(backupJson);
+        request->send(response);
+    });
+
+    server.on("/api/config/factoryReset", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
+        [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
+        if (!isConfigFunctionsEnabled) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
+
+        bool configDeleted = storage.deleteFile(CONFIG_FILE_PATH);
+        bool entitiesDeleted = storage.deleteFile(ENTITIES_FILE_PATH);
+
+        bool success = configDeleted && entitiesDeleted;
+
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        if (success) {
+            Logger.info(MAINLOG, "Factory reset: config files deleted successfully, restarting...");
+            response->print("{\"status\":\"success\",\"message\":\"Factory reset performed, restarting...\"}");
+            shouldRestart = true;
+        } else {
+            Logger.error(MAINLOG, "Factory reset: some files could not be deleted (config=%d, entities=%d)",
+                configDeleted, entitiesDeleted);
+            response->print("{\"status\":\"error\",\"message\":\"Failed to delete config files, restart aborted\"}");
+            shouldRestart = false;
+        }
+        request->send(response);
+    });
+
     server.on("/api/wifiscan", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
@@ -130,32 +188,6 @@ void Api::registerConfigEndpoints() {
         } else {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No body provided\"}");
         }
-    });
-
-    server.on("/api/config/factoryReset", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
-        [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
-        if (!isConfigFunctionsEnabled) {
-            request->send(403, "text/plain", "Forbidden");
-            return;
-        }
-
-        bool configDeleted = storage.deleteFile(CONFIG_FILE_PATH);
-        bool entitiesDeleted = storage.deleteFile(ENTITIES_FILE_PATH);
-
-        bool success = configDeleted && entitiesDeleted;
-
-        AsyncResponseStream *response = request->beginResponseStream("application/json");
-        if (success) {
-            Logger.info(MAINLOG, "Factory reset: config files deleted successfully, restarting...");
-            response->print("{\"status\":\"success\",\"message\":\"Factory reset performed, restarting...\"}");
-            shouldRestart = true;
-        } else {
-            Logger.error(MAINLOG, "Factory reset: some files could not be deleted (config=%d, entities=%d)",
-                configDeleted, entitiesDeleted);
-            response->print("{\"status\":\"error\",\"message\":\"Failed to delete config files, restart aborted\"}");
-            shouldRestart = false;
-        }
-        request->send(response);
     });
 }
 

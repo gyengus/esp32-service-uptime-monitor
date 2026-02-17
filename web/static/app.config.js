@@ -187,6 +187,31 @@ $.when($.ready).then(function() {
     });
 });
 
+$('#backupButton').on('click', function() {
+    $.ajax({
+        type: 'GET',
+        url: '/api/config/backup',
+        success: function(data) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'backup.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+
+            showSuccess('Backup downloaded successfully');
+        },
+        error: function(xhr, status, error) {
+            showError(xhr, "Backup failed");
+        }
+    });
+});
+
 function showError(xhr, defaultMsg) {
     let response = defaultMsg;
     try {
