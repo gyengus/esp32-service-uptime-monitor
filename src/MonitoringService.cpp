@@ -5,6 +5,7 @@
 #include "Config.h"
 #include "MonitoredEntityRepository.h"
 #include "NotificationService.h"
+#include "globals.h"
 
 MonitoringService& MonitoringService::getInstance() {
     static MonitoringService instance;
@@ -16,6 +17,8 @@ MonitoringService::MonitoringService() {
     _online = 0;
     _entities = 0;
 }
+
+uint8_t offlineEntityCount = 0;
 
 void MonitoringService::init() {
     Logger.debug(MAINLOG, "Initializing monitoring service...");
@@ -50,6 +53,8 @@ bool MonitoringService::checkAll() {
         MonitoredEntity* entity = monitoredEntityRepository.getEntityInternal(name);
         if (!entity) continue;
         if (entity->isDisabled()) continue;
+
+        Logger.debug(MAINLOG, "Checking entity: %s (%s)", entity->getName().c_str(), entity->getAddress().c_str());
         bool oldStatus = entity->isOnline();
         bool currentMeasurement = check(*entity);
 
@@ -88,6 +93,8 @@ bool MonitoringService::checkAll() {
 
     _online = onlineCount;
     _offline = offlineCount;
+    offlineEntityCount = offlineCount;
+
     return true;
 }
 

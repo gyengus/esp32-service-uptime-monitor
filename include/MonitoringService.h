@@ -13,6 +13,7 @@ public:
     String summary();
     bool check(const MonitoredEntity& entity);
     bool checkAll();
+    uint8_t getOfflineCount() { return _offline; }
 private:
     uint8_t _entities = 0;
     uint8_t _offline = 0;

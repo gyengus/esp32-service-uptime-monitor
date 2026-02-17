@@ -35,8 +35,10 @@ volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;
 volatile bool buttonEventPending = false;
 volatile bool shouldRestart = false;
-TaskHandle_t MonitoringTaskHandle = NULL;
 
+TaskHandle_t MonitoringTaskHandle = NULL;
+TaskHandle_t MonitoringLEDTaskHandle = NULL;
+TaskHandle_t APModeLEDTaskHandle = NULL;
 temperature_sensor_handle_t temp_sensor = NULL;
 
 void setup() {
@@ -124,7 +126,7 @@ void loop() {
 #endif
         if (shouldRestart) {
             storage.unmount();
-            restartTicker.once_ms(1000, []() {
+            restartTicker.once_ms(2000, []() {
                 ESP.restart();
             });
         } else {
@@ -136,13 +138,22 @@ void loop() {
 void configurationMode() {
     isAPMode = true;
     networkContext.startAPMode();
-    
+
     dnsServer.start();
 
     // start web server for configuration
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(SD_MMC, (String(WEB_UI_PATH) + "/config.html"), "text/html");
     });
+
+    xTaskCreate(
+        apModeLEDTask,
+        "APModeLEDTask",
+        4096,
+        NULL,
+        1,
+        &APModeLEDTaskHandle
+    );
 }
 
 void initNormalMode() {
@@ -184,14 +195,25 @@ void initNormalMode() {
     }
 
     monitoringService.init();
+
+
+    xTaskCreate(
+        monitoringLEDTask,
+        "MonitoringLEDTask",
+        4096,
+        NULL,
+        1,
+        &MonitoringLEDTaskHandle
+    );
+
     xTaskCreatePinnedToCore(
-        monitoringTaskLoop,   // A függvény, amit futtatni akarunk
-        "MonitoringTask",     // A task neve
-        8192,                 // Stack mérete (HTTPS kérésekhez kell a 8KB)
-        NULL,                 // Paraméter (nem küldünk semmit)
-        5,                    // Prioritás (1 = alacsony, hogy ne zavarja a Webservert)
-        &MonitoringTaskHandle,// Task handler
-        0                     // Core ID (0-s mag, a WiFi/Webserver általában az 1-esen van)
+        monitoringTaskLoop,
+        "MonitoringTask",
+        8192,
+        NULL,
+        5,
+        &MonitoringTaskHandle,
+        0
     );
 }
 
@@ -327,5 +349,34 @@ void monitoringTaskLoop(void * pvParameters) {
             Logger.warning(MAINLOG, "Skipping monitoring cycle, WiFi not connected");
         }
         vTaskDelay(config.getConfig().checkInterval * 1000 / portTICK_PERIOD_MS);
+    }
+}
+
+void monitoringLEDTask(void * pvParameters) {
+    const int pulseSpeed = 1500; // ms
+    const uint8_t maxBrightness = 150;
+
+    while(1) {
+        if (offlineEntityCount > 0) {
+            float progress = (float)(millis() % pulseSpeed) / pulseSpeed;
+            float brightnessFactor = (sin(progress * 2.0 * PI - PI / 2) + 1.0) / 2.0;
+            uint8_t currentBrightness = (uint8_t)(brightnessFactor * maxBrightness);
+            rgbLedWrite(RGB_LED_PIN, currentBrightness, 0, currentBrightness / 3);
+        } else {
+            rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
+        }
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+}
+
+void apModeLEDTask(void * pvParameters) {
+    const int pulseSpeed = 2000; // ms
+    const uint8_t maxBrightness = 100; // 0-255
+    while(1) {
+        float progress = (float)(millis() % pulseSpeed) / pulseSpeed;
+        float brightnessFactor = (sin(progress * 2.0 * PI - PI / 2) + 1.0) / 2.0;
+        uint8_t currentBrightness = (uint8_t)(brightnessFactor * maxBrightness);
+        rgbLedWrite(RGB_LED_PIN, currentBrightness, currentBrightness / 2, 0);
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
