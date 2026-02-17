@@ -131,6 +131,32 @@ void Api::registerConfigEndpoints() {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No body provided\"}");
         }
     });
+
+    server.on("/api/config/factoryReset", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
+        [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
+        if (!isConfigFunctionsEnabled) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
+
+        bool configDeleted = storage.deleteFile(CONFIG_FILE_PATH);
+        bool entitiesDeleted = storage.deleteFile(ENTITIES_FILE_PATH);
+
+        bool success = configDeleted && entitiesDeleted;
+
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        if (success) {
+            Logger.info(MAINLOG, "Factory reset: config files deleted successfully, restarting...");
+            response->print("{\"status\":\"success\",\"message\":\"Factory reset performed, restarting...\"}");
+            shouldRestart = true;
+        } else {
+            Logger.error(MAINLOG, "Factory reset: some files could not be deleted (config=%d, entities=%d)",
+                configDeleted, entitiesDeleted);
+            response->print("{\"status\":\"error\",\"message\":\"Failed to delete config files, restart aborted\"}");
+            shouldRestart = false;
+        }
+        request->send(response);
+    });
 }
 
 void Api::registerCommonEndpoints() {

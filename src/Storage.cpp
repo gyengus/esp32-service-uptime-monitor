@@ -24,7 +24,7 @@ bool Storage::init() {
     sdmmc_host_t sdmmc_host = SDMMC_HOST_DEFAULT();
     sdmmc_host.flags = SDMMC_HOST_FLAG_1BIT;
     Logger.info(MAINLOG, "SD Card Mounted");
-    
+
     return true;
 }
 
@@ -85,6 +85,16 @@ bool Storage::writeFile(const String &path, const String &content) {
 
     Logger.debug(MAINLOG, "File written successfully: %s, %s", path.c_str(), content.c_str());
     return true;
+}
+
+bool Storage::deleteFile(const String &path) {
+    if (SD_MMC.remove(path)) {
+        Logger.debug(MAINLOG, "File deleted: %s", path.c_str());
+        return true;
+    } else {
+        Logger.error(MAINLOG, "Failed to delete file: %s", path.c_str());
+        return false;
+    }
 }
 
 Storage& storage = Storage::getInstance();
