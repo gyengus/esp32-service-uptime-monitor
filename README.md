@@ -168,9 +168,10 @@ Press the boot button to toggle configuration mode:
 
 - **LED (GPIO 2)**: Blinking during monitoring cycle
 - **RGB LED (GPIO 48)**:
-  - Normal mode: Solid green (online), solid red (offline)
-  - Error mode: Pulsing red (SD card or configuration error)
-- **AP Mode**: LED pulsing in amber color
+  - **Normal mode, no offline entities**: Off
+  - **Normal mode, offline entities**: Pulsing burgundy color
+  - **AP mode**: Pulsing amber color (configuration mode)
+  - **Error mode**: Pulsing red (SD card or configuration error)
 
 ## Troubleshooting
 
@@ -197,3 +198,12 @@ pio run --target upload
 ## License
 
 MIT
+
+## Donations
+
+If you find this project useful and would like to support its development, you can make a donation:
+
+- **Bitcoin**: bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn
+- **EVM**: 0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8
+
+Thank you for your support!
