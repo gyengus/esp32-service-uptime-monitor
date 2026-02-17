@@ -17,6 +17,7 @@ $.when($.ready).then(function() {
 
             if (config.wifiSSID != "") {
                 $('#factoryResetRow').show();
+                $('#backupRow').show();
             }
         },
         error: function(xhr, status, error) {
