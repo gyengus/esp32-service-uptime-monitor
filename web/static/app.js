@@ -114,7 +114,7 @@ function renderEntities() {
                         </h5>
                         <p class="card-text small mb-0">
                             <span class="badge bg-light text-dark me-1">${entity.type}</span>
-                            ${entity.disabled ? '<span class="badge bg-secondary me-1">Disabled</span>' : ''}
+                            ${entity.disabled ? '<span class="badge bg-secondary me-1 border border-white">Disabled</span>' : ''}
                             <span class="text-white-50">${address}</span>
                         </p>
                         <p class="card-text mt-2 mb-0" style="font-size: 0.75rem; opacity: 0.8;">

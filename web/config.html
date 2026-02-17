@@ -106,11 +106,33 @@
                                     <input type="text" class="form-control" id="hostname" value="" required />
                                 </div>
                             </div>
+                            <div class="mb-3 row" id="factoryResetRow" style="display: none;">
+                                <button type="button" class="btn btn-outline-danger" id="factoryResetButton">Factory reset</button>
+                            </div>
                             <div class="mb-3 row">
                                 <button type="button" class="btn btn-primary" id="saveButton">Save</button>
                             </div>
                         </form>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="factoryResetConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirm factory reset</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you do want to factory reset the device?</p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmFactoryResetButton">Delete</button>
                 </div>
             </div>
         </div>

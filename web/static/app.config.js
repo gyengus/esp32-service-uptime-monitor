@@ -14,6 +14,10 @@ $.when($.ready).then(function() {
             $('#checkInterval').val(config.checkInterval);
             $('#slackWebhookURL').val(config.slackWebhookURL);
             $('#hostname').val(config.hostname);
+
+            if (config.wifiSSID != "") {
+                $('#factoryResetRow').show();
+            }
         },
         error: function(xhr, status, error) {
             showError(xhr, "Can't fetch configuration");
@@ -161,6 +165,25 @@ $.when($.ready).then(function() {
         function showFeedback(msg, cls) {
             feedback.text(msg).attr('class', 'form-text mt-2 ' + cls).fadeIn();
         }
+    });
+
+    $('#factoryResetButton').on('click', function() {
+        $('#factoryResetConfirmModal').modal('show');
+    });
+
+    $('#confirmFactoryResetButton').on('click', function() {
+        $.ajax({
+            type: 'POST',
+            url: '/api/config/factoryReset',
+            success: function(response) {
+                $('#factoryResetConfirmModal').modal('hide');
+                showSuccess(response.message);
+            },
+            error: function(xhr, status, error) {
+                $('#factoryResetConfirmModal').modal('hide');
+                showError(xhr, "Factory reset failed");
+            }
+        });
     });
 });
 
