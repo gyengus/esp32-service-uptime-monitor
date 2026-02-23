@@ -18,8 +18,6 @@ MonitoringService::MonitoringService() {
     _entities = 0;
 }
 
-uint8_t offlineEntityCount = 0;
-
 void MonitoringService::init() {
     Logger.debug(MAINLOG, "Initializing monitoring service...");
     monitoredEntityRepository.load();
@@ -93,7 +91,6 @@ bool MonitoringService::checkAll() {
 
     _online = onlineCount;
     _offline = offlineCount;
-    offlineEntityCount = offlineCount;
 
     return true;
 }

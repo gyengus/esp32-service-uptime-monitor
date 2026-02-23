@@ -357,7 +357,7 @@ void monitoringLEDTask(void * pvParameters) {
     const uint8_t maxBrightness = 150;
 
     while(1) {
-        if (offlineEntityCount > 0) {
+        if (monitoringService.getOfflineCount() > 0) {
             float progress = (float)(millis() % pulseSpeed) / pulseSpeed;
             float brightnessFactor = (sin(progress * 2.0 * PI - PI / 2) + 1.0) / 2.0;
             uint8_t currentBrightness = (uint8_t)(brightnessFactor * maxBrightness);
