@@ -33,13 +33,18 @@
 #define SD_DATA_PIN 40 // SD_DATA
 #define SD_CLK_PIN 39 // SD_CLK
 
+// Discord embed colors
+#define DISCORD_COLOR_BLUE 3447003  // #3498DB
+#define DISCORD_COLOR_GREEN 1677332  // #198754
+#define DISCORD_COLOR_RED   14431557  // #DC3545
+
 typedef struct {
     String wifiSSID;
     String wifiPassword;
     String sntpServer = DEFAULT_SNTP_SERVER;
     int8_t offsetHours = DEFAULT_TIMEZONE_OFFSET_HOURS;
     uint8_t checkInterval = DEFAULT_CHECK_INTERVAL_SECONDS;
-    String slackWebhookURL;
+    String discordWebhookURL;
     String hostname = DEFAULT_HOSTNAME;
 } config_t;
 

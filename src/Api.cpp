@@ -98,7 +98,7 @@ void Api::registerConfigEndpoints() {
         request->send(response);
     });
 
-    server.on("/api/testSlack", HTTP_POST, [this](AsyncWebServerRequest* request) {
+    server.on("/api/testDiscord", HTTP_POST, [this](AsyncWebServerRequest* request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
             return;
@@ -107,8 +107,8 @@ void Api::registerConfigEndpoints() {
         if (request->hasParam("url", true)) {
             String testUrl = request->getParam("url", true)->value();
 
-            bool success = notificationService.send(testUrl, "🚀 *ESP32 Service Uptime Monitor*\nYour Slack integration is working perfectly!");
-            
+            bool success = notificationService.send(testUrl, "Your Discord integration is working perfectly!");
+
             if (success) {
                 request->send(200, "text/plain", "OK");
             } else {

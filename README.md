@@ -1,13 +1,13 @@
 # ESP32 Service Uptime Monitor
 
-An ESP32-S3 based monitoring device that periodically checks the availability of services (via HTTP HEAD or ICMP PING) and sends Slack notifications when status changes occur.
+An ESP32-S3 based monitoring device that periodically checks the availability of services (via HTTP HEAD or ICMP PING) and sends Discord notifications when status changes occur.
 
 ## Features
 
 - **Dual monitoring types**: HTTP HEAD requests or ICMP PING
 - **WiFi AP/STA mode**: Easy configuration via built-in access point or connect to existing WiFi
 - **Web UI**: Bootstrap-based interface for monitoring and configuration
-- **Slack integration**: Send notifications to Slack channels on status changes
+- **Discord integration**: Send notifications to Discord channels on status changes
 - **SD card storage**: Persistent configuration and entity storage
 - **mDNS support**: Access via hostname.local
 - **SNTP time sync**: Automatic time synchronization
@@ -58,7 +58,7 @@ pio device monitor
 2. **Connect to AP**: SSID `ESP32-Service-Uptime-Monitor`, password `29965225`
 3. **Open browser**: Navigate to `http://192.168.4.1/`
 4. **Configure WiFi**: Enter your network credentials and click Save
-5. **Configure Slack** (optional): Enter your Slack webhook URL to enable notifications
+5. **Configure Discord** (optional): Enter your Discord webhook URL to enable notifications
 6. **Device restarts** and connects to your WiFi
 
 ## Usage
@@ -81,7 +81,7 @@ Access the device at `http://<hostname>.local/` or `http://<IP>/`
 - SNTP server (default: `pool.ntp.org`)
 - Timezone offset (hours)
 - Check interval (seconds, default: 60)
-- Slack webhook URL
+- Discord webhook URL
 - Device hostname
 
 ### Adding a Monitored Entity
@@ -91,7 +91,7 @@ Access the device at `http://<hostname>.local/` or `http://<IP>/`
    - **Name**: Unique identifier for the entity
    - **Address**: IP address, hostname, or URL to monitor
    - **Type**: HTTP HEAD or ICMP PING
-   - **Notifications**: Enable Slack notifications on status change
+   - **Notifications**: Enable Discord notifications on status change
    - **Disabled**: Skip this entity from monitoring
    - **Icon**: Material Design Icons class (default: `mdi-server`)
 3. Click Save
@@ -120,7 +120,7 @@ Press the boot button to toggle configuration mode:
 | POST | `/api/config` | Update configuration |
 | POST | `/api/config/factoryReset` | Reset to factory defaults |
 | GET | `/api/wifiscan` | Scan for WiFi networks (AP mode only) |
-| POST | `/api/testSlack` | Test Slack webhook integration |
+| POST | `/api/testDiscord` | Test Discord webhook integration |
 
 ### Entities
 
@@ -143,7 +143,7 @@ Press the boot button to toggle configuration mode:
   "sntpServer": "pool.ntp.org",
   "offsetHours": 1,
   "checkInterval": 60,
-  "slackWebhookURL": "https://hooks.slack.com/services/...",
+  "discordWebhookURL": "https://discord.com/api/webhooks/...",
   "hostname": "esp32_service_uptime_monitor"
 }
 ```
@@ -179,7 +179,7 @@ Press the boot button to toggle configuration mode:
 |-------|----------|
 | No WiFi connection | Check SSID/password, verify AP mode first |
 | Config not saved | Check SD card is properly inserted and writable |
-| Slack notifications not working | Test webhook URL via `/config` page |
+| Discord notifications not working | Test webhook URL via `/config` page |
 | Device not connecting to WiFi | Check hostname format (alphanumeric, `_`, `-` only) |
 
 ## Development

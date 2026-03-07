@@ -144,10 +144,10 @@ void MonitoringService::_handleStatusChange(MonitoredEntity *entity, bool online
         delay(250);
         String msg;
         msg.reserve(256);
-        msg = "⚠️ *Status Change Alert*\n";
-        msg += "Entity: *" + entity->getName() + "*\n";
-        msg += "New status: " + String(online ? "✅ *ONLINE*" : "❌ *OFFLINE*");
-        notificationService.send(msg);
+        msg = "⚠️ Status Change Alert\n";
+        msg += "Entity: **" + entity->getName() + "**\n";
+        msg += "New status: " + String(online ? "✅ **ONLINE**" : "❌ **OFFLINE**");
+        notificationService.send(msg, online ? DISCORD_COLOR_GREEN : DISCORD_COLOR_RED);
     }
 }
 

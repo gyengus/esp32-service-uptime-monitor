@@ -12,7 +12,7 @@ $.when($.ready).then(function() {
             $('#sntpServer').val(config.sntpServer);
             $('#offsetHours').val(config.offsetHours);
             $('#checkInterval').val(config.checkInterval);
-            $('#slackWebhookURL').val(config.slackWebhookURL);
+            $('#discordWebhookURL').val(config.discordWebhookURL);
             $('#hostname').val(config.hostname);
 
             if (config.wifiSSID != "") {
@@ -40,7 +40,7 @@ $.when($.ready).then(function() {
             sntpServer: $('#sntpServer').val(),
             offsetHours: parseInt($('#offsetHours').val()),
             checkInterval: parseInt($('#checkInterval').val()),
-            slackWebhookURL: $('#slackWebhookURL').val(),
+            discordWebhookURL: $('#discordWebhookURL').val(),
             hostname: $('#hostname').val()
         });
         $.ajax({
@@ -132,13 +132,13 @@ $.when($.ready).then(function() {
         pollScan();
     });
 
-    $('#testSlackButton').on('click', function() {
+    $('#testDiscordButton').on('click', function() {
         const btn = $(this);
-        const icon = $("#testSlackButtonIcon");
-        const text = $("#testSlackButtonText");
-        const spinner = $('#testSlackButtonSpinner');
-        const feedback = $("#testSlackFeedback");
-        const webhook = $("#slackWebhookURL").val();
+        const icon = $("#testDiscordButtonIcon");
+        const text = $("#testDiscordButtonText");
+        const spinner = $('#testDiscordButtonSpinner');
+        const feedback = $("#testDiscordFeedback");
+        const webhook = $("#discordWebhookURL").val();
 
         if (!webhook) {
             showFeedback("Please enter a webhook URL first!", "text-danger");
@@ -150,9 +150,9 @@ $.when($.ready).then(function() {
         spinner.removeClass('d-none');
         feedback.hide();
 
-        $.post('/api/testSlack', { url: webhook })
+        $.post('/api/testDiscord', { url: webhook })
             .done(function(data) {
-                showFeedback("Test message sent! Check your Slack channel.", "text-success");
+                showFeedback("Test message sent! Check your Discord channel.", "text-success");
             })
             .fail(function(xhr, status, error) {
                 showFeedback(xhr.responseText, "text-danger");
@@ -232,5 +232,5 @@ function showToast(toastId, msg) {
     const toastObj = $(toastId);
     toastObj.find('.toast-body').text(msg);
     const toast = new bootstrap.Toast(toastObj[0], { delay: 3000 });
-    toast.show();    
+    toast.show();
 }

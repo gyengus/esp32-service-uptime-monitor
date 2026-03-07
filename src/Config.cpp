@@ -33,7 +33,7 @@ void Config::fillJson(JsonObject& doc, config_t config) const {
     doc["sntpServer"] = config.sntpServer;
     doc["offsetHours"] = config.offsetHours;
     doc["checkInterval"] = config.checkInterval;
-    doc["slackWebhookURL"] = config.slackWebhookURL;
+    doc["discordWebhookURL"] = config.discordWebhookURL;
     doc["hostname"] = config.hostname;
 }
 
@@ -67,7 +67,7 @@ config_t Config::fromJsonObject(const JsonObject& doc) {
     config.sntpServer = doc["sntpServer"] | DEFAULT_SNTP_SERVER;
     config.offsetHours = doc["offsetHours"] | DEFAULT_TIMEZONE_OFFSET_HOURS;
     config.checkInterval = doc["checkInterval"] | DEFAULT_CHECK_INTERVAL_SECONDS;
-    config.slackWebhookURL = doc["slackWebhookURL"] | "";
+    config.discordWebhookURL = doc["discordWebhookURL"] | "";
     config.hostname = doc["hostname"] | DEFAULT_HOSTNAME;
     return config;
 }
