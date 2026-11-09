@@ -19,9 +19,8 @@ private:
     uint8_t _offline = 0;
     uint8_t _online = 0;
     MonitoringService();
-    bool _doPing(const String& address);
     bool _doHead(const String& address);
-    void _handleStatusChange(MonitoredEntity *entity, bool online);
+    void _handleStatusChange(const String& name, bool online);
 };
 
 extern MonitoringService& monitoringService;

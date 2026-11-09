@@ -138,17 +138,85 @@ MonitoredEntity* MonitoredEntityRepository::getEntityInternal(const String& name
     return found;
 }
 
-MonitoredEntity* MonitoredEntityRepository::getEntity(const String& name) {
-    MonitoredEntity* found = nullptr;
+bool MonitoredEntityRepository::getEntity(const String& name, MonitoredEntity& outEntity) {
+    bool found = false;
     if (xSemaphoreTake(_mutex, portMAX_DELAY)) {
-        found = getEntityInternal(name);
+        MonitoredEntity* ptr = getEntityInternal(name);
+        if (ptr != nullptr) {
+            outEntity = *ptr;
+            found = true;
+        }
         xSemaphoreGive(_mutex);
     }
     return found;
 }
 
-std::vector<MonitoredEntity>& MonitoredEntityRepository::getEntities() {
-    return _entities;
+bool MonitoredEntityRepository::hasEntity(const String& name) {
+    bool found = false;
+    if (xSemaphoreTake(_mutex, portMAX_DELAY)) {
+        found = (getEntityInternal(name) != nullptr);
+        xSemaphoreGive(_mutex);
+    }
+    return found;
+}
+
+std::vector<MonitoredEntity> MonitoredEntityRepository::getEntitiesSnapshot() {
+    std::vector<MonitoredEntity> snapshot;
+    if (xSemaphoreTake(_mutex, portMAX_DELAY)) {
+        snapshot = _entities;
+        xSemaphoreGive(_mutex);
+    }
+    return snapshot;
+}
+
+bool MonitoredEntityRepository::updateCheckResult(const String& name, bool success, bool& statusChanged, bool& newStatus, bool& notify) {
+    statusChanged = false;
+    newStatus = false;
+    notify = false;
+
+    if (xSemaphoreTake(_mutex, portMAX_DELAY)) {
+        MonitoredEntity* entity = getEntityInternal(name);
+        if (entity && !entity->isDisabled()) {
+            bool oldStatus = entity->isOnline();
+            if (success) {
+                entity->resetFailCount();
+                if (!oldStatus) {
+                    entity->setOnlineStatus(true);
+                    statusChanged = true;
+                    newStatus = true;
+                    notify = entity->getNotification() && (entity->getLastChanged() != 0);
+                }
+            } else {
+                entity->incrementFailCount();
+                if ((!entity->getLastChanged() || oldStatus) && entity->getFailCount() >= HTTP_REQUEST_RETRIES) {
+                    entity->setOnlineStatus(false);
+                    statusChanged = true;
+                    newStatus = false;
+                    notify = entity->getNotification() && (entity->getLastChanged() != 0);
+                }
+            }
+        }
+        xSemaphoreGive(_mutex);
+    }
+    return statusChanged;
+}
+
+void MonitoredEntityRepository::getCounts(uint8_t& online, uint8_t& offline, unsigned int& total) {
+    online = 0;
+    offline = 0;
+    total = 0;
+    if (xSemaphoreTake(_mutex, portMAX_DELAY)) {
+        total = _entities.size();
+        for (const auto& entity : _entities) {
+            if (entity.isDisabled()) continue;
+            if (entity.isOnline()) {
+                online++;
+            } else if (entity.getLastChanged() != 0) {
+                offline++;
+            }
+        }
+        xSemaphoreGive(_mutex);
+    }
 }
 
 unsigned int MonitoredEntityRepository::size() {

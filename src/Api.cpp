@@ -273,14 +273,13 @@ void Api::registerServicesEndpoints() {
         
         response->print("[");
         
-        auto entities = monitoredEntityRepository.getEntities();
+        auto entities = monitoredEntityRepository.getEntitiesSnapshot();
         for (size_t i = 0; i < entities.size(); i++) {
             JsonDocument itemDoc;
             
             itemDoc["name"] = entities[i].getName();
             itemDoc["address"] = entities[i].getAddress();
             itemDoc["icon"] = entities[i].getIcon();
-            itemDoc["type"] = (entities[i].getType() == HEAD ? "HEAD" : "PING");
             itemDoc["isOnline"] = entities[i].isOnline();
             itemDoc["notification"] = entities[i].getNotification();
             itemDoc["disabled"] = entities[i].isDisabled();
@@ -299,12 +298,12 @@ void Api::registerServicesEndpoints() {
 
     server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
         String name = request->pathArg(0);
-        MonitoredEntity* entity = monitoredEntityRepository.getEntity(name);
+        MonitoredEntity entity;
         
-        if (entity != nullptr) {
+        if (monitoredEntityRepository.getEntity(name, entity)) {
             AsyncJsonResponse *response = new AsyncJsonResponse(false);
             JsonObject root = response->getRoot().to<JsonObject>();
-            entity->fillJson(root); 
+            entity.fillJson(root); 
             response->setLength();
             request->send(response);
         } else {
@@ -334,9 +333,8 @@ void Api::registerServicesEndpoints() {
             
             MonitoredEntity newEntity;
             if (newEntity.fromJsonObject(doc.as<JsonObject>())) {
-                if (monitoredEntityRepository.getEntity(newEntity.getName()) == nullptr) {
+                if (!monitoredEntityRepository.hasEntity(newEntity.getName())) {
                     monitoredEntityRepository.addEntity(newEntity);
-                    monitoredEntityRepository.save();
                     request->send(201, "application/json", "{\"status\":\"created\"}");
                 } else {
                     request->send(409, "application/json", "{\"error\":\"Already exists\"}");
@@ -359,6 +357,7 @@ void Api::registerServicesEndpoints() {
         if (index + len == total) {
             String oldName = request->pathArg(0);
             oldName.replace("%20", " "); 
+            oldName.replace("+", " ");
 
             JsonDocument doc(&psramAllocator);
             deserializeJson(doc, *buffer);
@@ -367,16 +366,15 @@ void Api::registerServicesEndpoints() {
             
             MonitoredEntity updatedData;
             if (updatedData.fromJsonObject(doc.as<JsonObject>())) {
-                MonitoredEntity* existingEntity = monitoredEntityRepository.getEntity(oldName);
-                if (existingEntity == nullptr) {
+                MonitoredEntity existingEntity;
+                if (!monitoredEntityRepository.getEntity(oldName, existingEntity)) {
                     request->send(404, "application/json", "{\"error\":\"Entity not found\"}");
                     return;
                 }
-                updatedData.setLastChanged(existingEntity->getLastChanged());
-                updatedData.setOnlineStatus(existingEntity->isOnline());
+                updatedData.setLastChanged(existingEntity.getLastChanged());
+                updatedData.setOnlineStatus(existingEntity.isOnline());
                 updatedData.resetFailCount();
                 if (monitoredEntityRepository.updateEntity(oldName, updatedData)) {
-                    monitoredEntityRepository.save();
                     request->send(200, "application/json", "{\"status\":\"updated\"}");
                 } else {
                     request->send(404, "application/json", "{\"error\":\"Error when saving entity\"}");
