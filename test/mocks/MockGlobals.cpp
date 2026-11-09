@@ -1,6 +1,11 @@
 #include <Arduino.h>
+#include "FS.h"
 #include "freertos/FreeRTOS.h"
 #include "globals.h"
+
+namespace fs {
+FS mockFS;
+}
 
 volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;

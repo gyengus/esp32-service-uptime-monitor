@@ -70,8 +70,8 @@ void Api::registerConfigEndpoints() {
         }
 
         if (!storage.isAvailable()) {
-            Logger.error(MAINLOG, "SD Card not available");
-            request->send(500, "text/plain", "SD Card not available");
+            Logger.error(MAINLOG, "Storage not available");
+            request->send(500, "text/plain", "Storage not available");
             return;
         }
 
@@ -311,7 +311,7 @@ void Api::registerConfigEndpoints() {
         }
 
         if (!storage.isAvailable()) {
-            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"SD Card not available\"}");
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Storage not available\"}");
             return;
         }
 

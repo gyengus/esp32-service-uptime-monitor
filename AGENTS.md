@@ -5,11 +5,13 @@ This file provides guidance to AI agents when working with code in this reposito
 ## Build & Deploy
 
 ```bash
-pio run                                           # Build firmware
+pio run                                           # Build default firmware (esp32-s3-cam)
+pio run -e esp32-s3                               # Build firmware without SD (LittleFS)
 pio run --target upload                           # Upload firmware via USB
-pio run -e esp32-s3-ota --target upload           # Upload firmware via OTA (ESP_IP=x.x.x.x)
-pio run --target packweb                          # Pack & minify Web UI into .pio/build/web_assets.zip
-pio run --target uploadweb                        # Pack, minify & upload Web UI to device SD card
+pio run -e esp32-s3-cam-ota --target upload       # Upload CAM firmware via OTA (ESP_IP=x.x.x.x)
+pio run -e esp32-s3-ota --target upload           # Upload S3 firmware via OTA (ESP_IP=x.x.x.x)
+pio run --target packweb                          # Pack & minify Web UI into web.zip
+pio run --target uploadweb                        # Pack, minify & upload Web UI to device storage
 pio device monitor                                # Serial monitor (115200 8N1)
 pio run --target clean                            # Clean build artifacts
 pio check                                         # Lint (cppcheck)
@@ -30,8 +32,8 @@ Partition table: `partitions_16MB.csv` (dual 6.5MB OTA app partitions `app0`/`ap
 | `NetworkContext` | Wi-Fi management (STA/AP), connection, SSID persistence |
 | `Config` | Load/save `/config.json` from SD |
 | `MonitoredEntityRepository` | Thread-safe entity management (semaphore), `/monitored_entities.json` |
-| `Storage` | SD_MMC interface (read/write/delete) |
-| `WebArchiveExtractor` | Extracts uploaded Web UI ZIP archive directly onto SD card with PSRAM buffers |
+| `Storage` | Storage interface (SD_MMC or LittleFS based on profile) |
+| `WebArchiveExtractor` | Extracts uploaded Web UI ZIP archive directly onto storage with PSRAM buffers |
 | `ElegantOTA` | Web/HTTP firmware update handler integrated with AsyncWebServer |
 
 **Globals** (`globals.h`): `isConfigFunctionsEnabled`, `isAPMode`, `shouldRestart`, `MonitoringTaskHandle`, `temp_sensor`

@@ -4,12 +4,12 @@
 
 #ifndef UNIT_TEST
 #include <unzipLIB.h>
-#include <SD_MMC.h>
+#include "Storage.h"
 
 static File s_zipFile;
 
 static void* zipOpenCallback(const char *filename, int32_t *size) {
-    s_zipFile = SD_MMC.open(filename, FILE_READ);
+    s_zipFile = storage.getFS().open(filename, FILE_READ);
     if (!s_zipFile) {
         return nullptr;
     }
@@ -47,20 +47,20 @@ static int32_t zipSeekCallback(void *p, int32_t position, int iType) {
 }
 
 bool WebArchiveExtractor::ensureDirExists(const String& dirPath) {
-    if (SD_MMC.exists(dirPath)) {
+    if (storage.getFS().exists(dirPath)) {
         return true;
     }
     int prevSlash = 0;
     while ((prevSlash = dirPath.indexOf('/', prevSlash + 1)) != -1) {
         String sub = dirPath.substring(0, prevSlash);
-        if (!sub.isEmpty() && !SD_MMC.exists(sub)) {
-            if (!SD_MMC.mkdir(sub)) {
+        if (!sub.isEmpty() && !storage.getFS().exists(sub)) {
+            if (!storage.getFS().mkdir(sub)) {
                 Logger.warning(MAINLOG, "Failed to create directory: %s", sub.c_str());
             }
         }
     }
-    if (!SD_MMC.exists(dirPath)) {
-        return SD_MMC.mkdir(dirPath);
+    if (!storage.getFS().exists(dirPath)) {
+        return storage.getFS().mkdir(dirPath);
     }
     return true;
 }
@@ -129,7 +129,7 @@ bool WebArchiveExtractor::extractZipArchive(const String& zipFilePath, const Str
                         }
 
                         if (pZip->openCurrentFile() == UNZ_OK) {
-                            File outFile = SD_MMC.open(targetPath, FILE_WRITE);
+                            File outFile = storage.getFS().open(targetPath, FILE_WRITE);
                             if (outFile) {
                                 int bytesRead = 0;
                                 while ((bytesRead = pZip->readCurrentFile(chunkBuf, CHUNK_SIZE)) > 0) {

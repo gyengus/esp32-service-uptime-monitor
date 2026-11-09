@@ -60,4 +60,13 @@ private:
     size_t _pos = 0;
 };
 
+namespace fs {
+class FS {
+public:
+    virtual ~FS() = default;
+};
+}
+
+extern fs::FS mockFS;
+
 #endif // _MOCK_FS_H_

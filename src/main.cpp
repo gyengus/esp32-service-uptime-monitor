@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <Elog.h>
 #include <Wire.h>
-#include <SD_MMC.h>
 #include <WiFi.h>
 #include <math.h>
 #include <ESPmDNS.h>
@@ -36,7 +35,7 @@ Ticker restartTicker;
 DNSServer dnsServer;
 AsyncWebServer server(80);
 Api api = Api(server);
-FileManager fileManager(SD_MMC, WEB_UI_PATH);
+FileManager fileManager(storage.getFS(), WEB_UI_PATH);
 
 volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;
@@ -51,8 +50,10 @@ temperature_sensor_handle_t temp_sensor = NULL;
 
 void setup() {
     ledService.init();
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, HIGH);
+    if (LED_PIN >= 0) {
+        pinMode(LED_PIN, OUTPUT);
+        digitalWrite(LED_PIN, HIGH);
+    }
     pinMode(BOOT_BTN_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(BOOT_BTN_PIN), handleButtonInterrupt, FALLING);
 
@@ -150,7 +151,9 @@ void setup() {
     commonWebServerSettings();
     server.begin();
 
-    digitalWrite(LED_PIN, LOW);
+    if (LED_PIN >= 0) {
+        digitalWrite(LED_PIN, LOW);
+    }
 }
 
 void loop() {
@@ -206,7 +209,7 @@ void configurationMode() {
 
     // start web server for configuration
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(SD_MMC, (String(WEB_UI_PATH) + "/config.html"), "text/html");
+        request->send(storage.getFS(), (String(WEB_UI_PATH) + "/config.html"), "text/html");
     });
 
     xTaskCreate(
@@ -230,14 +233,14 @@ void initNormalMode() {
 
     // web server settings
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(SD_MMC, (String(WEB_UI_PATH) + "/index.html"), "text/html");
+        request->send(storage.getFS(), (String(WEB_UI_PATH) + "/index.html"), "text/html");
     });
     server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
             return;
         }
-        request->send(SD_MMC, (String(WEB_UI_PATH) + "/config.html"), "text/html");
+        request->send(storage.getFS(), (String(WEB_UI_PATH) + "/config.html"), "text/html");
     });
 
     // mDNS
@@ -302,9 +305,9 @@ void setupOTA() {
 void commonWebServerSettings() {
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(SD_MMC, (String(WEB_UI_PATH) + "/static/favicon.ico"), "image/x-icon");
+        request->send(storage.getFS(), (String(WEB_UI_PATH) + "/static/favicon.ico"), "image/x-icon");
     });
-    server.serveStatic("/static", SD_MMC, (String(WEB_UI_PATH) + "/static").c_str());
+    server.serveStatic("/static", storage.getFS(), (String(WEB_UI_PATH) + "/static").c_str());
     setupOTA();
     api.registerEndpoints();
         server.onNotFound([](AsyncWebServerRequest *request){
@@ -424,9 +427,9 @@ void monitoringTaskLoop(void * pvParameters) {
             continue;
         }
         if (WiFi.status() == WL_CONNECTED) {
-            digitalWrite(LED_PIN, HIGH);
+            if (LED_PIN >= 0) digitalWrite(LED_PIN, HIGH);
             monitoringService.checkAll();
-            digitalWrite(LED_PIN, LOW);
+            if (LED_PIN >= 0) digitalWrite(LED_PIN, LOW);
         } else {
             Logger.warning(MAINLOG, "Skipping monitoring cycle, WiFi not connected");
         }

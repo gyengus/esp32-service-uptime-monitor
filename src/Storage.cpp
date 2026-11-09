@@ -48,9 +48,13 @@ bool Storage::deleteFile(const String& path) {
 #else
 
 #include <Elog.h>
+#ifdef USE_LITTLEFS
+#include <LittleFS.h>
+#else
 #include "driver/sdmmc_host.h"
 #include <SD_MMC.h>
 #include <SPI.h>
+#endif
 #include <FS.h>
 #include <Arduino.h>
 
@@ -61,7 +65,25 @@ Storage& Storage::getInstance() {
     return instance;
 }
 
+fs::FS& Storage::getFS() {
+#ifdef USE_LITTLEFS
+    return LittleFS;
+#else
+    return SD_MMC;
+#endif
+}
+
 bool Storage::init() {
+#ifdef USE_LITTLEFS
+    if (!LittleFS.begin(true)) {
+        Logger.critical(MAINLOG, "LittleFS Mount Failed");
+        return false;
+    }
+    Logger.info(MAINLOG, "LittleFS Mounted (Total: %u KB, Used: %u KB)",
+                (unsigned int)(LittleFS.totalBytes() / 1024),
+                (unsigned int)(LittleFS.usedBytes() / 1024));
+    return true;
+#else
     if (!SD_MMC.setPins(SD_CLK_PIN, SD_CMD_PIN, SD_DATA_PIN)) {
         Logger.critical(MAINLOG, "SD Card Pin Configuration Failed");
         return false;
@@ -74,36 +96,51 @@ bool Storage::init() {
     Logger.info(MAINLOG, "SD Card Mounted");
 
     return true;
+#endif
 }
 
 bool Storage::mount() {
+#ifdef USE_LITTLEFS
+    return LittleFS.begin(true);
+#else
     if (!SD_MMC.begin("/sdcard", true)) {
         Logger.critical(MAINLOG, "SD Card Mount Failed");
         return false;
     }
     return true;
+#endif
 }
 
 bool Storage::unmount() {
+#ifdef USE_LITTLEFS
+    LittleFS.end();
+    Logger.info(MAINLOG, "LittleFS Unmounted");
+    return true;
+#else
     SD_MMC.end();
     Logger.info(MAINLOG, "SD Card Unmounted");
     return true;
+#endif
 }
 
 bool Storage::isAvailable() {
+#ifdef USE_LITTLEFS
+    return LittleFS.totalBytes() > 0;
+#else
     return SD_MMC.cardType() != CARD_NONE;
+#endif
 }
 
 bool Storage::fileExists(const String &path) {
-    return SD_MMC.exists(path);
+    return getFS().exists(path);
 }
 
 File Storage::getFile(const String &path, const String &mode) {
-    return SD_MMC.open(path, mode.c_str());
+    return getFS().open(path, mode.c_str());
 }
 
 String Storage::readFile(const String &path) {
-    File file = SD_MMC.open(path, FILE_READ);
+    File file = getFS().open(path, FILE_READ);
     if (!file || file.isDirectory()) {
         Logger.error(MAINLOG, "Failed to open file for reading: %s", path.c_str());
         return String();
@@ -118,7 +155,7 @@ String Storage::readFile(const String &path) {
 }
 
 bool Storage::writeFile(const String &path, const String &content) {
-    File file = SD_MMC.open(path, FILE_WRITE);
+    File file = getFS().open(path, FILE_WRITE);
     if (!file) {
         Logger.error(MAINLOG, "Failed to open file for writing: %s", path.c_str());
         return false;
@@ -136,7 +173,7 @@ bool Storage::writeFile(const String &path, const String &content) {
 }
 
 bool Storage::deleteFile(const String &path) {
-    if (SD_MMC.remove(path)) {
+    if (getFS().remove(path)) {
         Logger.debug(MAINLOG, "File deleted: %s", path.c_str());
         return true;
     } else {

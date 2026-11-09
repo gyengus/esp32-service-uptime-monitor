@@ -25,8 +25,11 @@ public:
     bool deleteFile(const String &path);
 
 #ifdef UNIT_TEST
+    fs::FS& getFS() { return mockFS; }
     void clear() { files.clear(); }
     std::map<String, std::string> files;
+#else
+    fs::FS& getFS();
 #endif
 
 private:
