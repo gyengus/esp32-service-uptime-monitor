@@ -76,7 +76,7 @@ void NetworkContext::startAPMode() {
     Logger.info(MAINLOG, "Starting AP mode, SSID: %s, Password: %s", WIFI_AP_SSID, WIFI_AP_PASSWORD);
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD, 8, 0, 4);
-    IPAddress IP = WiFi.softAPIP();
+    auto IP = WiFi.softAPIP();
     Logger.info(MAINLOG, "AP IP address: %s", IP.toString());
     applyCommonWiFiSettings(true);
 }

@@ -36,7 +36,7 @@ void Api::registerConfigEndpoints() {
         String configJson = storage.readFile(CONFIG_FILE_PATH);
         String entitiesJson = storage.readFile(ENTITIES_FILE_PATH);
 
-        if (configJson.isEmpty() || entitiesJson.isEmpty()) {
+        if (configJson.length() == 0 || entitiesJson.length() == 0) {
             request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to read config files\"}");
             return;
         }
@@ -76,7 +76,7 @@ void Api::registerConfigEndpoints() {
 
         String* body = (String*)request->_tempObject;
         if (body) {
-            body->concat((char*)data, len);
+            for (size_t i = 0; i < len; i++) *body += (char)data[i];
         }
 
         if (final && body) {

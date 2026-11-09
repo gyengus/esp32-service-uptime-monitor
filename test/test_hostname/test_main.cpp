@@ -1,6 +1,7 @@
 #include <unity.h>
 #include <ArduinoFake.h>
 #include "HostnameUtils.h"
+#include "../mocks/MockGlobals.cpp"
 
 void setUp(void) {}
 void tearDown(void) {}

@@ -1,6 +1,10 @@
 #ifndef _GLOBALS_H_
 #define _GLOBALS_H_
 
+#ifdef UNIT_TEST
+#include "freertos/FreeRTOS.h"
+#endif
+
 #include <Ticker.h>
 #include "driver/temperature_sensor.h"
 

@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include "Config.h"
 #include "Storage.h"
+#include "../mocks/MockGlobals.cpp"
 
 void setUp(void) {
     storage.clear();

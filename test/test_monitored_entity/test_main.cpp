@@ -2,6 +2,7 @@
 #include <ArduinoFake.h>
 #include <ArduinoJson.h>
 #include "MonitoredEntity.h"
+#include "../mocks/MockGlobals.cpp"
 
 void setUp(void) {}
 void tearDown(void) {}

@@ -2,6 +2,12 @@
 #define _MONITORED_ENTITY_REPOSITORY_H_
 
 #include <vector>
+#include <Arduino.h>
+
+#ifdef UNIT_TEST
+#include "freertos/FreeRTOS.h"
+#endif
+
 #include "MonitoredEntity.h"
 #include "Storage.h"
 

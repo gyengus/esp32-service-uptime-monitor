@@ -18,14 +18,26 @@ bool Storage::fileExists(const String& path) {
     return files.find(path) != files.end();
 }
 
+File Storage::getFile(const String &path, const String &mode) {
+    if (mode == "r" || mode == FILE_READ) {
+        auto it = files.find(path);
+        if (it != files.end()) {
+            return File(path, mode, &(it->second));
+        }
+        return File();
+    } else {
+        return File(path, mode, &files[path]);
+    }
+}
+
 String Storage::readFile(const String& path) {
     auto it = files.find(path);
-    if (it != files.end()) return it->second;
+    if (it != files.end()) return String(it->second.c_str());
     return String();
 }
 
 bool Storage::writeFile(const String& path, const String& content) {
-    files[path] = content;
+    files[path] = content.c_str();
     return true;
 }
 
