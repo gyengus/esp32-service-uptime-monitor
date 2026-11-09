@@ -23,6 +23,7 @@ void test_config_from_json_object_complete(void) {
     doc["discordWebhookURL"] = "https://discord.com/api/webhooks/123/abc";
     doc["hostname"] = "custom_uptime_host";
     doc["logLevel"] = 4; // ERROR
+    doc["ledBrightness"] = 75;
 
     config_t cfg = config.fromJsonObject(doc.as<JsonObject>());
     TEST_ASSERT_EQUAL_STRING("MyOfficeWifi", cfg.wifiSSID.c_str());
@@ -33,6 +34,7 @@ void test_config_from_json_object_complete(void) {
     TEST_ASSERT_EQUAL_STRING("https://discord.com/api/webhooks/123/abc", cfg.discordWebhookURL.c_str());
     TEST_ASSERT_EQUAL_STRING("custom_uptime_host", cfg.hostname.c_str());
     TEST_ASSERT_EQUAL_UINT8(4, cfg.logLevel);
+    TEST_ASSERT_EQUAL_UINT8(75, cfg.ledBrightness);
 }
 
 void test_config_from_json_object_missing_fields_use_defaults(void) {
@@ -48,6 +50,7 @@ void test_config_from_json_object_missing_fields_use_defaults(void) {
     TEST_ASSERT_EQUAL_UINT8(DEFAULT_CHECK_INTERVAL_SECONDS, cfg.checkInterval);
     TEST_ASSERT_EQUAL_STRING("", cfg.discordWebhookURL.c_str());
     TEST_ASSERT_EQUAL_STRING(DEFAULT_HOSTNAME, cfg.hostname.c_str());
+    TEST_ASSERT_EQUAL_UINT8(DEFAULT_LED_BRIGHTNESS, cfg.ledBrightness);
 }
 
 void test_config_to_json_and_from_json_roundtrip(void) {
@@ -59,6 +62,7 @@ void test_config_to_json_and_from_json_roundtrip(void) {
     original.checkInterval = 45;
     original.discordWebhookURL = "https://discord.gg/webhook";
     original.hostname = "sensor_node";
+    original.ledBrightness = 35;
 
     String jsonStr = config.toJson(original);
     TEST_ASSERT_TRUE(jsonStr.length() > 0);
@@ -71,6 +75,7 @@ void test_config_to_json_and_from_json_roundtrip(void) {
     TEST_ASSERT_EQUAL_UINT8(original.checkInterval, restored.checkInterval);
     TEST_ASSERT_EQUAL_STRING(original.discordWebhookURL.c_str(), restored.discordWebhookURL.c_str());
     TEST_ASSERT_EQUAL_STRING(original.hostname.c_str(), restored.hostname.c_str());
+    TEST_ASSERT_EQUAL_UINT8(original.ledBrightness, restored.ledBrightness);
 }
 
 void test_config_from_json_invalid_syntax_returns_empty(void) {

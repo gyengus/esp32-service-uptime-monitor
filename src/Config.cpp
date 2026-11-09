@@ -48,6 +48,7 @@ void Config::fillJson(JsonObject& doc, config_t config) const {
     doc["hostname"] = config.hostname;
     doc["logLevel"] = config.logLevel;
     doc["logLevelName"] = logLevelToString(config.logLevel);
+    doc["ledBrightness"] = config.ledBrightness;
 }
 
 String Config::toJson() {
@@ -82,6 +83,15 @@ config_t Config::fromJsonObject(const JsonObject& doc) {
     config.checkInterval = doc["checkInterval"] | DEFAULT_CHECK_INTERVAL_SECONDS;
     config.discordWebhookURL = doc["discordWebhookURL"] | "";
     config.hostname = doc["hostname"] | DEFAULT_HOSTNAME;
+
+    if (doc["ledBrightness"].is<uint8_t>() || doc["ledBrightness"].is<int>()) {
+        int brightness = doc["ledBrightness"].as<int>();
+        if (brightness < 0) brightness = 0;
+        if (brightness > 100) brightness = 100;
+        config.ledBrightness = (uint8_t)brightness;
+    } else {
+        config.ledBrightness = DEFAULT_LED_BRIGHTNESS;
+    }
 
     if (doc["logLevel"].is<uint8_t>() || doc["logLevel"].is<int>()) {
         config.logLevel = doc["logLevel"].as<uint8_t>();

@@ -14,7 +14,8 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       offsetHours: 2,
       checkInterval: 45,
       discordWebhookURL: 'https://discord.com/api/webhooks/123/abc',
-      hostname: 'esp32-monitor'
+      hostname: 'esp32-monitor',
+      ledBrightness: 40
     };
 
     $.ajax = vi.fn().mockImplementation((options) => {
@@ -43,6 +44,10 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       } else if (options.url === '/api/config/restore') {
         if (options.success) {
           options.success({ message: 'Restored successfully' });
+        }
+      } else if (options.url === '/api/config/test-led') {
+        if (options.success) {
+          options.success({ status: 'success', message: 'LED test started', brightness: 50, duration: 3000 });
         }
       } else if (options.url === '/api/web/upload-archive') {
         if (options.success) {
@@ -129,6 +134,8 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       expect($('#checkInterval').val()).toBe('45');
       expect($('#discordWebhookURL').val()).toBe('https://discord.com/api/webhooks/123/abc');
       expect($('#hostname').val()).toBe('esp32-monitor');
+      expect($('#ledBrightness').val()).toBe('40');
+      expect($('#ledBrightnessVal').text()).toBe('40%');
 
       // wifiSSID is not empty, rows should be visible
       expect($('#factoryResetRow').css('display')).not.toBe('none');
@@ -170,6 +177,7 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       $('#checkInterval').val('60');
       $('#discordWebhookURL').val('https://discord.com/api/webhooks/999/xyz');
       $('#hostname').val('service-monitor');
+      $('#ledBrightness').val('75');
 
       $('#saveButton').trigger('click');
 
@@ -184,7 +192,8 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
         offsetHours: 1,
         checkInterval: 60,
         discordWebhookURL: 'https://discord.com/api/webhooks/999/xyz',
-        hostname: 'service-monitor'
+        hostname: 'service-monitor',
+        ledBrightness: 75
       });
 
       expect($('#successToast .toast-body').text()).toContain('The device will restart.');
@@ -435,6 +444,48 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       expect($('#successToast .toast-body').text()).toContain('Firmware update successful');
 
       globalThis.XMLHttpRequest = origXHR;
+    });
+  });
+
+  describe('LED Brightness and Testing', () => {
+    it('updates brightness label when slider value changes', () => {
+      $('#ledBrightness').val('65');
+      $('#ledBrightness').trigger('input');
+      expect($('#ledBrightnessVal').text()).toBe('65%');
+    });
+
+    it('triggers test LED API and shows feedback on click', () => {
+      vi.useFakeTimers();
+      $('#ledBrightness').val('80');
+      $('#testLedButton').trigger('click');
+
+      const testCall = $.ajax.mock.calls.find(c => c[0].url === '/api/config/test-led');
+      expect(testCall).toBeDefined();
+      expect(JSON.parse(testCall[0].data)).toEqual({ brightness: 80, duration: 3000 });
+
+      expect($('#testLedFeedback').text()).toContain('LED test active (cyan, 80%)');
+      expect($('#testLedFeedback').hasClass('text-success')).toBe(true);
+      expect($('#testLedButton').prop('disabled')).toBe(true);
+
+      vi.advanceTimersByTime(3100);
+      expect($('#testLedButton').prop('disabled')).toBe(false);
+      vi.useRealTimers();
+    });
+
+    it('handles test LED API failure gracefully', () => {
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.url === '/api/config/test-led') {
+          if (options.error) {
+            options.error({ responseText: JSON.stringify({ message: 'Forbidden' }) }, 403, 'Forbidden');
+          }
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+
+      $('#testLedButton').trigger('click');
+      expect($('#testLedButton').prop('disabled')).toBe(false);
+      expect($('#testLedFeedback').text()).toContain('Failed to start LED test');
+      expect($('#testLedFeedback').hasClass('text-danger')).toBe(true);
     });
   });
 });

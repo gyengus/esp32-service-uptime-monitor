@@ -106,6 +106,22 @@
                                     <input type="text" class="form-control" id="hostname" value="" required />
                                 </div>
                             </div>
+                            <div class="mb-3 row">
+                                <label for="ledBrightness" class="col-sm-4 col-form-label">LED brightness</label>
+                                <div class="col-sm-8">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="range" class="form-range flex-grow-1" id="ledBrightness" min="0" max="100" value="50" />
+                                        <span id="ledBrightnessVal" class="badge bg-secondary" style="min-width: 48px;">50%</span>
+                                        <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center" id="testLedButton">
+                                            <span id="testLedButtonIcon" class="mdi mdi-lightbulb-on-outline me-1"></span>
+                                            <span id="testLedButtonText" class="me-1">Test</span>
+                                            <span id="testLedButtonSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                    <div class="form-text text-muted">RGB LED brightness (0-100%). Default: 50%.</div>
+                                    <div id="testLedFeedback" class="form-text mt-2" style="display: none;"></div>
+                                </div>
+                            </div>
                             <div class="mb-3 row" id="backupRow" style="display: none;">
                                 <button type="button" class="btn btn-outline-secondary" id="backupButton">
                                     <span class="mdi mdi-content-save me-1"></span>

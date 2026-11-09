@@ -20,6 +20,7 @@
 #include "Config.h"
 #include "NetworkContext.h"
 #include "Api.h"
+#include "LedService.h"
 
 #include "fileManager.h"
 #include "MonitoringService.h"
@@ -48,7 +49,7 @@ TaskHandle_t APModeLEDTaskHandle = NULL;
 temperature_sensor_handle_t temp_sensor = NULL;
 
 void setup() {
-    rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
+    ledService.init();
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH);
     pinMode(BOOT_BTN_PIN, INPUT_PULLUP);
@@ -365,13 +366,9 @@ void onSntpSyncSchedule() {
 }
 
 void errorMode() {
-    const int pulseSpeed = 4000; // ms
-    const uint8_t maxBrightness = 180; // 0-255
     while(true) {
-        float progress = (float)(millis() % pulseSpeed) / pulseSpeed;
-        float brightnessFactor = (sin(progress * 2.0 * PI - PI / 2) + 1.0) / 2.0;
-        uint8_t currentBrightness = (uint8_t)(brightnessFactor * maxBrightness);
-        rgbLedWrite(RGB_LED_PIN, currentBrightness, 0, 0);
+        ledService.updateErrorLed();
+        delay(20);
     }
 }
 
@@ -410,30 +407,15 @@ void monitoringTaskLoop(void * pvParameters) {
 }
 
 void monitoringLEDTask(void * pvParameters) {
-    const int pulseSpeed = 1500; // ms
-    const uint8_t maxBrightness = 150;
-
     while(1) {
-        if (monitoringService.getOfflineCount() > 0) {
-            float progress = (float)(millis() % pulseSpeed) / pulseSpeed;
-            float brightnessFactor = (sin(progress * 2.0 * PI - PI / 2) + 1.0) / 2.0;
-            uint8_t currentBrightness = (uint8_t)(brightnessFactor * maxBrightness);
-            rgbLedWrite(RGB_LED_PIN, currentBrightness, 0, currentBrightness / 3);
-        } else {
-            rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
-        }
+        ledService.updateMonitoringLed(monitoringService.getOfflineCount());
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 
 void apModeLEDTask(void * pvParameters) {
-    const int pulseSpeed = 2000; // ms
-    const uint8_t maxBrightness = 100; // 0-255
     while(1) {
-        float progress = (float)(millis() % pulseSpeed) / pulseSpeed;
-        float brightnessFactor = (sin(progress * 2.0 * PI - PI / 2) + 1.0) / 2.0;
-        uint8_t currentBrightness = (uint8_t)(brightnessFactor * maxBrightness);
-        rgbLedWrite(RGB_LED_PIN, currentBrightness, currentBrightness / 2, 0);
+        ledService.updateApModeLed();
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 }

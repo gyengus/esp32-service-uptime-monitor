@@ -14,6 +14,7 @@
 #include "MonitoringService.h"
 #include "NotificationService.h"
 #include "WsService.h"
+#include "LedService.h"
 #include "PSRAMAllocator.h"
 #include "WebArchiveExtractor.h"
 
@@ -182,6 +183,56 @@ void Api::registerConfigEndpoints() {
         }
     });
 
+    server.on("/api/config/test-led", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
+        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            if (!isConfigFunctionsEnabled && !isAPMode) {
+                request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+                return;
+            }
+
+            if (index == 0) request->_tempObject = new String("");
+            String* body = (String*)request->_tempObject;
+            for (size_t i = 0; i < len; i++) *body += (char)data[i];
+
+            if (index + len == total) {
+                uint8_t brightness = config.getConfig().ledBrightness;
+                uint32_t duration = 3000;
+
+                if (body && body->length() > 0) {
+                    JsonDocument doc(&psramAllocator);
+                    DeserializationError err = deserializeJson(doc, *body);
+                    if (!err) {
+                        if (doc["brightness"].is<int>() || doc["brightness"].is<uint8_t>()) {
+                            int b = doc["brightness"].as<int>();
+                            if (b < 0) b = 0;
+                            if (b > 100) b = 100;
+                            brightness = (uint8_t)b;
+                        }
+                        if (doc["duration"].is<int>() || doc["duration"].is<uint32_t>()) {
+                            int d = doc["duration"].as<int>();
+                            if (d > 0 && d <= 10000) duration = (uint32_t)d;
+                        }
+                    }
+                }
+
+                ledService.startTest(brightness, duration);
+
+                AsyncJsonResponse *response = new AsyncJsonResponse(false);
+                JsonObject doc = response->getRoot().to<JsonObject>();
+                doc["status"] = "success";
+                doc["message"] = "LED test started";
+                doc["brightness"] = brightness;
+                doc["duration"] = duration;
+                response->setLength();
+                request->send(response);
+
+                if (body) {
+                    delete body;
+                    request->_tempObject = nullptr;
+                }
+            }
+        });
+
     server.on("/api/config", HTTP_GET, [this](AsyncWebServerRequest* request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
@@ -233,7 +284,7 @@ void Api::registerConfigEndpoints() {
             }
 
             newConfig.hostname = Api::cleanHostname(newConfig.hostname);
-            if (storage.writeFile(CONFIG_FILE_PATH, config.toJson(newConfig))) {
+            if (config.saveConfig(newConfig)) {
                 shouldRestart = isAPMode || wifiChanged || !newConfig.hostname.equals(currentConfig.hostname);
                 AsyncJsonResponse *response = new AsyncJsonResponse(false);
                 JsonObject doc = response->getRoot().to<JsonObject>();

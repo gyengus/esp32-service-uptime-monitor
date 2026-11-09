@@ -14,6 +14,9 @@ $.when($.ready).then(function() {
             $('#checkInterval').val(config.checkInterval);
             $('#discordWebhookURL').val(config.discordWebhookURL);
             $('#hostname').val(config.hostname);
+            let ledBrightness = (config.ledBrightness !== undefined) ? config.ledBrightness : 50;
+            $('#ledBrightness').val(ledBrightness);
+            $('#ledBrightnessVal').text(ledBrightness + '%');
 
             if (config.wifiSSID != "") {
                 $('#factoryResetRow').show();
@@ -41,7 +44,8 @@ $.when($.ready).then(function() {
             offsetHours: parseInt($('#offsetHours').val()),
             checkInterval: parseInt($('#checkInterval').val()),
             discordWebhookURL: $('#discordWebhookURL').val(),
-            hostname: $('#hostname').val()
+            hostname: $('#hostname').val(),
+            ledBrightness: parseInt($('#ledBrightness').val())
         });
         $.ajax({
             type: 'POST',
@@ -166,6 +170,52 @@ $.when($.ready).then(function() {
         function showFeedback(msg, cls) {
             feedback.text(msg).attr('class', 'form-text mt-2 ' + cls).fadeIn();
         }
+    });
+
+    $('#ledBrightness').on('input', function() {
+        $('#ledBrightnessVal').text($(this).val() + '%');
+    });
+
+    $('#testLedButton').on('click', function() {
+        let $btn = $(this);
+        let $spinner = $('#testLedButtonSpinner');
+        let $icon = $('#testLedButtonIcon');
+        let $text = $('#testLedButtonText');
+        let $feedback = $('#testLedFeedback');
+
+        let brightness = parseInt($('#ledBrightness').val());
+        if (isNaN(brightness) || brightness < 0) brightness = 0;
+        if (brightness > 100) brightness = 100;
+
+        $btn.prop('disabled', true);
+        $spinner.removeClass('d-none');
+        $icon.addClass('d-none');
+        $text.text('Testing');
+        $feedback.hide().removeClass('text-danger text-success');
+
+        $.ajax({
+            type: 'POST',
+            url: '/api/config/test-led',
+            data: JSON.stringify({ brightness: brightness, duration: 3000 }),
+            contentType: 'application/json',
+            success: function(response) {
+                $feedback.text('LED test active (cyan, ' + brightness + '%).').addClass('text-success').fadeIn();
+                setTimeout(function() {
+                    $btn.prop('disabled', false);
+                    $spinner.addClass('d-none');
+                    $icon.removeClass('d-none');
+                    $text.text('Test');
+                }, 3000);
+            },
+            error: function(xhr, status, error) {
+                showError(xhr, "Failed to start LED test");
+                $btn.prop('disabled', false);
+                $spinner.addClass('d-none');
+                $icon.removeClass('d-none');
+                $text.text('Test');
+                $feedback.text('Failed to start LED test').addClass('text-danger').fadeIn();
+            }
+        });
     });
 
     $('#factoryResetButton').on('click', function() {

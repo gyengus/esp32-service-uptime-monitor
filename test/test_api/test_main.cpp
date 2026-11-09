@@ -9,6 +9,7 @@
 #include "MonitoringService.h"
 #include "NotificationService.h"
 #include "NetworkContext.h"
+#include "LedService.h"
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 
@@ -310,6 +311,29 @@ void test_api_web_upload_archive_success(void) {
     TEST_ASSERT_EQUAL_INT(200, req.lastCode);
 }
 
+void test_api_config_test_led_forbidden(void) {
+    isConfigFunctionsEnabled = false;
+    isAPMode = false;
+    AsyncWebServerRequest req;
+    bool handled = testServer->dispatch("/api/config/test-led", HTTP_POST, &req, "{\"brightness\":60}");
+    TEST_ASSERT_TRUE(handled);
+    TEST_ASSERT_EQUAL_INT(403, req.lastCode);
+}
+
+void test_api_config_test_led_success(void) {
+    isConfigFunctionsEnabled = true;
+    isAPMode = false;
+    AsyncWebServerRequest req;
+    bool handled = testServer->dispatch("/api/config/test-led", HTTP_POST, &req, "{\"brightness\":70,\"duration\":3000}");
+    TEST_ASSERT_TRUE(handled);
+    TEST_ASSERT_EQUAL_INT(200, req.lastCode);
+    TEST_ASSERT_TRUE(ledService.isTestActive());
+    TEST_ASSERT_EQUAL_UINT8(70, ledService.getTestBrightness());
+    TEST_ASSERT_EQUAL_UINT8(0, ledService.getLastR());
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)((255ULL * 70) / 100), ledService.getLastG());
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)((255ULL * 70) / 100), ledService.getLastB());
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_api_health);
@@ -322,6 +346,8 @@ int main(int argc, char **argv) {
     RUN_TEST(test_api_config_factory_reset);
     RUN_TEST(test_api_wifiscan);
     RUN_TEST(test_api_test_discord);
+    RUN_TEST(test_api_config_test_led_forbidden);
+    RUN_TEST(test_api_config_test_led_success);
     RUN_TEST(test_api_summary);
     RUN_TEST(test_api_monitoredentities_get_all);
     RUN_TEST(test_api_monitoredentity_crud);
