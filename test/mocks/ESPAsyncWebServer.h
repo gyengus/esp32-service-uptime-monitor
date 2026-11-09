@@ -168,10 +168,15 @@ public:
     virtual ~AsyncWebHandler() = default;
 };
 
+#ifndef WS_CONNECTED
+#define WS_CONNECTED 1
+#endif
+
 class AsyncWebSocketClient {
 public:
     AsyncWebSocketClient(uint32_t id = 1) : _id(id) {}
     uint32_t id() const { return _id; }
+    uint8_t status() const { return WS_CONNECTED; }
     bool text(const String& message) {
         lastMessage = message;
         sentMessages.push_back(message);
@@ -211,6 +216,12 @@ public:
     }
     void cleanupClients() {}
     size_t count() const { return _clients.size(); }
+    AsyncWebSocketClient* client(uint32_t id) {
+        for (auto c : _clients) {
+            if (c->id() == id) return c;
+        }
+        return nullptr;
+    }
     void closeAll() {
         for (auto c : _clients) delete c;
         _clients.clear();
@@ -233,6 +244,12 @@ public:
         if (it != _clients.end()) {
             _clients.erase(it);
             delete c;
+        }
+    }
+
+    void mockData(AsyncWebSocketClient* c, const String& data) {
+        if (_handler) {
+            _handler(this, c, WS_EVT_DATA, nullptr, (uint8_t*)data.c_str(), data.length());
         }
     }
 

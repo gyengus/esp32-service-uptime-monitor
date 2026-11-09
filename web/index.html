@@ -186,6 +186,43 @@
         </div>
     </div>
 
+    <div id="terminalDrawer" class="terminal-drawer">
+        <div class="terminal-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom border-secondary bg-dark">
+            <div class="d-flex align-items-center gap-2">
+                <span class="mdi mdi-console text-info"></span>
+                <span class="fw-semibold small text-light">Device Logs</span>
+                <span id="terminalLineCount" class="badge bg-secondary">0 lines</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="terminalLogLevel" class="small text-secondary mb-0">Log Level:</label>
+                    <select id="terminalLogLevel" class="form-select form-select-sm bg-dark text-light border-secondary" style="width: auto;">
+                        <option value="VERBOSE">VERBOSE</option>
+                        <option value="TRACE">TRACE</option>
+                        <option value="DEBUG">DEBUG</option>
+                        <option value="INFO">INFO</option>
+                        <option value="NOTICE">NOTICE</option>
+                        <option value="WARNING">WARNING</option>
+                        <option value="ERROR">ERROR</option>
+                        <option value="CRITICAL">CRITICAL</option>
+                        <option value="NOLOG">NOLOG</option>
+                    </select>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="terminalAutoScroll" checked>
+                    <label class="form-check-label small text-secondary" for="terminalAutoScroll">Auto-scroll</label>
+                </div>
+                <button type="button" id="btnTerminalClear" class="btn btn-sm btn-outline-secondary" title="Clear logs">
+                    <span class="mdi mdi-delete"></span>
+                </button>
+                <button type="button" id="btnTerminalClose" class="btn-close btn-close-white" aria-label="Close terminal"></button>
+            </div>
+        </div>
+        <div id="terminalBody" class="terminal-body font-monospace p-2">
+            <div id="terminalLogs" class="terminal-logs"></div>
+        </div>
+    </div>
+
     <footer class="footer mt-auto py-3 bg-dark text-white border-top border-secondary">
         <div class="container-fluid d-flex align-items-center justify-content-center justify-content-md-between">
             <div class="small text-secondary d-flex gap-2 gap-sm-3 align-items-center">
@@ -201,6 +238,12 @@
                 <span>
                     <span class="mdi mdi-thermometer me-1"></span><span id="tempVal">--</span>
                 </span>
+            </div>
+
+            <div class="d-none d-md-flex align-items-center justify-content-center">
+                <button type="button" id="btnToggleTerminal" class="btn btn-sm btn-outline-secondary d-flex align-items-center" title="Toggle Device Logs">
+                    <span class="mdi mdi-console"></span>
+                </button>
             </div>
             
             <div class="small text-secondary text-end d-none d-md-flex gap-3 align-items-center">

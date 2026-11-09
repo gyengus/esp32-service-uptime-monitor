@@ -4,6 +4,10 @@ let entityToDelete = "";
 let ws = null;
 let wsReconnectTimer = null;
 let wsReconnectDelay = 1000;
+let terminalOpen = false;
+let terminalAutoScroll = true;
+let terminalLogsBuffer = [];
+const MAX_TERMINAL_LOGS = 300;
 
 $(document).ready(function() {
     initWebSocket();
@@ -88,6 +92,24 @@ function handleWsMessage(msg) {
             }
             if (msg.summary) updateSummaryUI(msg.summary);
             if (msg.sysinfo) updateSysinfoUI(msg.sysinfo);
+            if (msg.logLevelName) {
+                $('#terminalLogLevel').val(msg.logLevelName);
+            }
+            if (terminalOpen) {
+                sendWsMessage({ type: 'subscribe_logs', enabled: true });
+            }
+            break;
+
+        case 'log':
+            if (msg.line) {
+                appendLogLine(msg.line);
+            }
+            break;
+
+        case 'log_level':
+            if (msg.name) {
+                $('#terminalLogLevel').val(msg.name);
+            }
             break;
 
         case 'entity_update':
@@ -451,6 +473,86 @@ function formatUptime(seconds) {
     return result;
 }
 
+function sendWsMessage(obj) {
+    if (ws && ws.readyState === 1) { // 1 = WebSocket.OPEN
+        ws.send(JSON.stringify(obj));
+    }
+}
+
+function toggleTerminal(force) {
+    terminalOpen = (typeof force === 'boolean') ? force : !terminalOpen;
+    const $drawer = $('#terminalDrawer');
+    const $btn = $('#btnToggleTerminal');
+    if (terminalOpen) {
+        $drawer.addClass('open');
+        $btn.addClass('active btn-secondary').removeClass('btn-outline-secondary');
+        sendWsMessage({ type: 'subscribe_logs', enabled: true });
+        scrollToTerminalBottom();
+    } else {
+        $drawer.removeClass('open');
+        $btn.removeClass('active btn-secondary').addClass('btn-outline-secondary');
+        sendWsMessage({ type: 'subscribe_logs', enabled: false });
+    }
+}
+
+function appendLogLine(line) {
+    if (!line) return;
+    terminalLogsBuffer.push(line);
+    if (terminalLogsBuffer.length > MAX_TERMINAL_LOGS) {
+        terminalLogsBuffer.shift();
+    }
+    $('#terminalLineCount').text(`${terminalLogsBuffer.length} lines`);
+
+    let levelClass = '';
+    if (/\[DEBUG\]|\[TRACE\]|\[VERBOSE\]/i.test(line)) {
+        levelClass = 'terminal-log-level-debug';
+    } else if (/\[INFO\]|\[NOTICE\]/i.test(line)) {
+        levelClass = 'terminal-log-level-info';
+    } else if (/\[WARN|WARNING\]/i.test(line)) {
+        levelClass = 'terminal-log-level-warning';
+    } else if (/\[ERROR|CRITICAL|ALERT|EMERGENCY\]/i.test(line)) {
+        levelClass = 'terminal-log-level-error';
+    }
+
+    const $entry = $('<div>')
+        .addClass('terminal-log-entry ' + levelClass)
+        .text(line);
+
+    const $container = $('#terminalLogs');
+    $container.append($entry);
+
+    while ($container.children().length > MAX_TERMINAL_LOGS) {
+        $container.children().first().remove();
+    }
+
+    if (terminalAutoScroll) {
+        scrollToTerminalBottom();
+    }
+}
+
+function scrollToTerminalBottom() {
+    const body = document.getElementById('terminalBody');
+    if (body) {
+        body.scrollTop = body.scrollHeight;
+    }
+}
+
+$('#btnToggleTerminal').on('click', () => toggleTerminal());
+$('#btnTerminalClose').on('click', () => toggleTerminal(false));
+$('#btnTerminalClear').on('click', () => {
+    terminalLogsBuffer = [];
+    $('#terminalLogs').empty();
+    $('#terminalLineCount').text('0 lines');
+});
+$('#terminalAutoScroll').on('change', function() {
+    terminalAutoScroll = $(this).is(':checked');
+    if (terminalAutoScroll) scrollToTerminalBottom();
+});
+$('#terminalLogLevel').on('change', function() {
+    const val = $(this).val();
+    sendWsMessage({ type: 'set_log_level', level: val });
+});
+
 $('#filterAll').click(() => { currentFilter = 'ALL'; renderEntities(); });
 $('#filterOnline').click(() => { currentFilter = 'ONLINE'; renderEntities(); });
 $('#filterOffline').click(() => { currentFilter = 'OFFLINE'; renderEntities(); });
@@ -471,6 +573,13 @@ if (typeof window !== 'undefined') {
     window.handleEntityDelete = handleEntityDelete;
     window.triggerCardPulse = triggerCardPulse;
     window.setWsStatus = setWsStatus;
+    window.toggleTerminal = toggleTerminal;
+    window.appendLogLine = appendLogLine;
+    window.sendWsMessage = sendWsMessage;
+    window.get_terminalOpen = () => terminalOpen;
+    window.set_terminalOpen = (v) => { terminalOpen = v; };
+    window.get_terminalLogsBuffer = () => terminalLogsBuffer;
+    window.clearTerminal = () => { terminalLogsBuffer = []; $('#terminalLogs').empty(); };
     window.get_ws = () => ws;
     window.set_ws = (v) => { ws = v; };
     window.get_allEntities = () => allEntities;

@@ -216,3 +216,74 @@ div#mainContainer {
     animation: card-pulse 0.8s ease-in-out;
     z-index: 5;
 }
+
+/* Terminal Drawer */
+.terminal-drawer {
+    position: fixed;
+    bottom: 56px;
+    left: 0;
+    right: 0;
+    height: 320px;
+    background-color: #121212;
+    border-top: 1px solid #333;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.6);
+    z-index: 1020;
+    transform: translateY(calc(100% + 60px));
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.terminal-drawer.open {
+    transform: translateY(0);
+}
+
+.terminal-header {
+    background-color: #1a1a1a !important;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.terminal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    background-color: #0d0d0d;
+    color: #e0e0e0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.terminal-log-entry {
+    padding: 2px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.terminal-log-entry:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.terminal-log-level-debug,
+.terminal-log-level-trace,
+.terminal-log-level-verbose {
+    color: #8a8a8a;
+}
+
+.terminal-log-level-info,
+.terminal-log-level-notice {
+    color: #4caf50;
+}
+
+.terminal-log-level-warning {
+    color: #ffb74d;
+}
+
+.terminal-log-level-error,
+.terminal-log-level-critical,
+.terminal-log-level-alert,
+.terminal-log-level-emergency {
+    color: #f44336;
+}
+

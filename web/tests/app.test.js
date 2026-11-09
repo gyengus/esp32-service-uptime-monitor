@@ -385,4 +385,68 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#configButton').css('display')).not.toBe('none');
     });
   });
+
+  describe('Terminal Drawer & Log Streaming', () => {
+    let mockWs;
+
+    beforeEach(() => {
+      mockWs = {
+        readyState: 1, // WebSocket.OPEN
+        send: vi.fn(),
+        close: vi.fn()
+      };
+      window.set_ws(mockWs);
+      window.clearTerminal();
+      window.toggleTerminal(false);
+    });
+
+    it('toggles terminal drawer open and closed, sending subscription messages', () => {
+      expect($('#terminalDrawer').hasClass('open')).toBe(false);
+
+      // Open terminal
+      $('#btnToggleTerminal').click();
+      expect($('#terminalDrawer').hasClass('open')).toBe(true);
+      expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: 'subscribe_logs', enabled: true }));
+
+      // Close terminal via close button
+      $('#btnTerminalClose').click();
+      expect($('#terminalDrawer').hasClass('open')).toBe(false);
+      expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: 'subscribe_logs', enabled: false }));
+    });
+
+    it('renders incoming log lines with appropriate severity classes and updates line count', () => {
+      window.handleWsMessage({ type: 'log', line: '2026-11-09 [DEBUG] Scanning WiFi networks' });
+      window.handleWsMessage({ type: 'log', line: '2026-11-09 [INFO] WiFi connected successfully' });
+      window.handleWsMessage({ type: 'log', line: '2026-11-09 [WARNING] High memory usage detected' });
+      window.handleWsMessage({ type: 'log', line: '2026-11-09 [ERROR] Connection timed out' });
+
+      const entries = $('#terminalLogs .terminal-log-entry');
+      expect(entries.length).toBe(4);
+      expect(entries.eq(0).hasClass('terminal-log-level-debug')).toBe(true);
+      expect(entries.eq(1).hasClass('terminal-log-level-info')).toBe(true);
+      expect(entries.eq(2).hasClass('terminal-log-level-warning')).toBe(true);
+      expect(entries.eq(3).hasClass('terminal-log-level-error')).toBe(true);
+
+      expect($('#terminalLineCount').text()).toBe('4 lines');
+    });
+
+    it('clears terminal logs on clear button click', () => {
+      window.handleWsMessage({ type: 'log', line: 'Some test log message' });
+      expect($('#terminalLogs .terminal-log-entry').length).toBe(1);
+
+      $('#btnTerminalClear').click();
+      expect($('#terminalLogs .terminal-log-entry').length).toBe(0);
+      expect($('#terminalLineCount').text()).toBe('0 lines');
+    });
+
+    it('handles log_level message and sends set_log_level on dropdown change', () => {
+      // Remote device informs about log level
+      window.handleWsMessage({ type: 'log_level', name: 'WARNING', level: 5 });
+      expect($('#terminalLogLevel').val()).toBe('WARNING');
+
+      // User changes dropdown
+      $('#terminalLogLevel').val('ERROR').trigger('change');
+      expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: 'set_log_level', level: 'ERROR' }));
+    });
+  });
 });

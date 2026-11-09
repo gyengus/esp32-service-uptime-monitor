@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
+#include <vector>
 #include "MonitoredEntity.h"
 
 #ifdef UNIT_TEST
@@ -53,6 +54,7 @@ public:
     void queueEntityDeleted(const String& name);
     void queueSummary(uint8_t online, uint8_t offline, unsigned int total);
     void queueSysinfo();
+    void queueLogLine(const char* line);
 
     // Process queued events on Core 1 / main loop
     void processEvents();
@@ -63,6 +65,13 @@ public:
     void broadcastSummary();
     void broadcastSummary(uint8_t online, uint8_t offline, unsigned int total);
     void broadcastSysinfo();
+    void broadcastLogLine(const char* line);
+
+    // Log streaming subscriber management & log level control
+    void addLogSubscriber(uint32_t clientId);
+    void removeLogSubscriber(uint32_t clientId);
+    bool hasLogSubscribers() const;
+    void setLogLevel(uint8_t level);
 
     // Send initial snapshot to a specific client on connect
     void sendInitState(AsyncWebSocketClient* client);
@@ -75,9 +84,12 @@ private:
 
     AsyncWebSocket _ws;
     QueueHandle_t _eventQueue;
+    QueueHandle_t _logQueue;
+    std::vector<uint32_t> _logSubscribers;
     bool _initialized;
 
     void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+    void handleIncomingData(AsyncWebSocketClient* client, uint8_t* data, size_t len);
     void handleQueueItem(const WsQueueItem& item);
 };
 

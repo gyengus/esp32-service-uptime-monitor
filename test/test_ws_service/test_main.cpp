@@ -4,6 +4,8 @@
 #include <ArduinoFake.h>
 #include "WiFi.h"
 #include "WsService.h"
+#include "WsLogStream.h"
+#include "Config.h"
 #include "MonitoredEntityRepository.h"
 #include "ESPAsyncWebServer.h"
 
@@ -171,6 +173,53 @@ void test_ws_queue_and_process_events(void) {
     TEST_ASSERT_EQUAL_STRING("DeletedQueueItem", doc3["name"]);
 }
 
+void test_ws_log_subscribe_and_streaming(void) {
+    AsyncWebSocketClient* client = wsService.getWebSocket().mockConnect(20);
+    client->sentMessages.clear();
+
+    TEST_ASSERT_FALSE(wsService.hasLogSubscribers());
+
+    // Subscribe to logs
+    String subMsg = "{\"type\":\"subscribe_logs\",\"enabled\":true}";
+    wsService.getWebSocket().mockData(client, subMsg);
+    TEST_ASSERT_TRUE(wsService.hasLogSubscribers());
+
+    // Write log line to stream
+    const char* logMsg = "2026-11-09 [INFO] System is healthy\n";
+    wsLogStream.write((const uint8_t*)logMsg, strlen(logMsg));
+
+    // Process queued events
+    wsService.processEvents();
+
+    TEST_ASSERT_TRUE(client->sentMessages.size() > 0);
+    JsonDocument doc;
+    deserializeJson(doc, client->sentMessages.back());
+    TEST_ASSERT_EQUAL_STRING("log", doc["type"]);
+    TEST_ASSERT_EQUAL_STRING("2026-11-09 [INFO] System is healthy", doc["line"]);
+
+    // Unsubscribe
+    String unsubMsg = "{\"type\":\"subscribe_logs\",\"enabled\":false}";
+    wsService.getWebSocket().mockData(client, unsubMsg);
+    TEST_ASSERT_FALSE(wsService.hasLogSubscribers());
+}
+
+void test_ws_set_log_level(void) {
+    AsyncWebSocketClient* client = wsService.getWebSocket().mockConnect(21);
+    client->sentMessages.clear();
+
+    String setMsg = "{\"type\":\"set_log_level\",\"level\":\"WARNING\"}";
+    wsService.getWebSocket().mockData(client, setMsg);
+
+    TEST_ASSERT_EQUAL_UINT8(5, config.getConfig().logLevel);
+
+    TEST_ASSERT_TRUE(client->sentMessages.size() > 0);
+    JsonDocument doc;
+    deserializeJson(doc, client->sentMessages.back());
+    TEST_ASSERT_EQUAL_STRING("log_level", doc["type"]);
+    TEST_ASSERT_EQUAL_UINT8(5, doc["level"].as<uint8_t>());
+    TEST_ASSERT_EQUAL_STRING("WARNING", doc["name"]);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_ws_initialization);
@@ -180,5 +229,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_ws_broadcast_summary);
     RUN_TEST(test_ws_broadcast_sysinfo);
     RUN_TEST(test_ws_queue_and_process_events);
+    RUN_TEST(test_ws_log_subscribe_and_streaming);
+    RUN_TEST(test_ws_set_log_level);
     return UNITY_END();
 }

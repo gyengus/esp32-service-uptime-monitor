@@ -131,7 +131,7 @@ bool Storage::writeFile(const String &path, const String &content) {
         return false;
     }
 
-    Logger.debug(MAINLOG, "File written successfully: %s, %s", path.c_str(), content.c_str());
+    Logger.debug(MAINLOG, "File written successfully: %s (%u bytes)", path.c_str(), (unsigned int)content.length());
     return true;
 }
 

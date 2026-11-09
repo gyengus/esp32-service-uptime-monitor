@@ -25,6 +25,7 @@
 #include "MonitoringService.h"
 #include "MonitoredEntityRepository.h"
 #include "WsService.h"
+#include "WsLogStream.h"
 #include <ElegantOTA.h>
 #include "esp_ota_ops.h"
 
@@ -61,6 +62,7 @@ void setup() {
     delay(5000);
 
     Logger.registerSerial(MAINLOG, MIN_LOG_LEVEL, "LOG", Serial);
+    Logger.registerSerial(MAINLOG, MIN_LOG_LEVEL, "LOG", wsLogStream);
 
     Logger.info(MAINLOG, "ESP32 Service Uptime Monitor v%s", FIRMWARE_VERSION);
     Logger.info(MAINLOG, "Commit hash: %s, Build date: %s", COMMIT_HASH, BUILD_TIMESTAMP);
@@ -189,6 +191,8 @@ void configurationMode() {
 }
 
 void initNormalMode() {
+    Logger.setSerialLogLevel(MAINLOG, config.getConfig().logLevel, Serial);
+    Logger.setSerialLogLevel(MAINLOG, config.getConfig().logLevel, wsLogStream);
     Logger.info(MAINLOG, "Config file found, loading...");
     if (!config.loadConfig()) {
         errorMode();

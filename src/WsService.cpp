@@ -1,4 +1,5 @@
 #include "WsService.h"
+#include "WsLogStream.h"
 #include <ArduinoJson.h>
 #include <Elog.h>
 #include <WiFi.h>
@@ -17,10 +18,14 @@ WsService& WsService::getInstance() {
     return instance;
 }
 
-WsService::WsService() : _ws("/ws"), _eventQueue(nullptr), _initialized(false) {
+WsService::WsService() : _ws("/ws"), _eventQueue(nullptr), _logQueue(nullptr), _initialized(false) {
     _eventQueue = xQueueCreate(32, sizeof(WsQueueItem));
     if (_eventQueue == nullptr) {
         Logger.error(MAINLOG, "Failed to create WebSocket event queue");
+    }
+    _logQueue = xQueueCreate(20, 384);
+    if (_logQueue == nullptr) {
+        Logger.error(MAINLOG, "Failed to create WebSocket log queue");
     }
 }
 
@@ -28,6 +33,10 @@ WsService::~WsService() {
     if (_eventQueue != nullptr) {
         vQueueDelete(_eventQueue);
         _eventQueue = nullptr;
+    }
+    if (_logQueue != nullptr) {
+        vQueueDelete(_logQueue);
+        _logQueue = nullptr;
     }
 }
 
@@ -115,7 +124,31 @@ void WsService::queueSysinfo() {
     xQueueSend(_eventQueue, &item, 0);
 }
 
+void WsService::queueLogLine(const char* line) {
+    if (!line || line[0] == '\0') return;
+    if (!hasLogSubscribers() || _logQueue == nullptr) return;
+
+    char buffer[384];
+    strncpy(buffer, line, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0';
+
+    xQueueSend(_logQueue, buffer, 0);
+}
+
 void WsService::processEvents() {
+    if (_logQueue != nullptr) {
+        if (!hasLogSubscribers()) {
+            char dummy[384];
+            while (xQueueReceive(_logQueue, dummy, 0)) {}
+        } else {
+            char lineBuf[384];
+            int count = 0;
+            while (xQueueReceive(_logQueue, lineBuf, 0) && count++ < 16) {
+                broadcastLogLine(lineBuf);
+            }
+        }
+    }
+
     if (!hasActiveClients() || _eventQueue == nullptr) {
         // Drain queue if there are no listeners
         WsQueueItem dummy;
@@ -302,10 +335,103 @@ void WsService::sendInitState(AsyncWebSocketClient* client) {
     sys["commit"] = COMMIT_HASH;
     sys["configEnabled"] = isConfigFunctionsEnabled;
 
+    doc["logLevel"] = config.getConfig().logLevel;
+    doc["logLevelName"] = Config::logLevelToString(config.getConfig().logLevel);
+
     String out;
     serializeJson(doc, out);
     bool ok = client->text(out);
     Logger.info(MAINLOG, "Sent init state to WS client #%u (%d bytes, success: %s)", client->id(), out.length(), ok ? "true" : "false");
+}
+
+void WsService::broadcastLogLine(const char* line) {
+    if (!line || _logSubscribers.empty()) return;
+
+    JsonDocument doc;
+    doc["type"] = "log";
+    doc["line"] = line;
+
+    String out;
+    serializeJson(doc, out);
+
+    for (auto it = _logSubscribers.begin(); it != _logSubscribers.end(); ) {
+        AsyncWebSocketClient* c = _ws.client(*it);
+        if (c && c->status() == WS_CONNECTED) {
+            c->text(out);
+            ++it;
+        } else {
+            it = _logSubscribers.erase(it);
+        }
+    }
+}
+
+void WsService::addLogSubscriber(uint32_t clientId) {
+    for (uint32_t id : _logSubscribers) {
+        if (id == clientId) return;
+    }
+    _logSubscribers.push_back(clientId);
+}
+
+void WsService::removeLogSubscriber(uint32_t clientId) {
+    for (auto it = _logSubscribers.begin(); it != _logSubscribers.end(); ++it) {
+        if (*it == clientId) {
+            _logSubscribers.erase(it);
+            return;
+        }
+    }
+}
+
+bool WsService::hasLogSubscribers() const {
+    return !_logSubscribers.empty();
+}
+
+void WsService::setLogLevel(uint8_t level) {
+    if (level > 11) level = DEFAULT_LOG_LEVEL;
+
+    Logger.info(MAINLOG, "Changing log level to %s (%u)", Config::logLevelToString(level), level);
+    Logger.setSerialLogLevel(MAINLOG, level, Serial);
+    Logger.setSerialLogLevel(MAINLOG, level, wsLogStream);
+
+    config.updateLogLevel(level);
+
+    JsonDocument doc;
+    doc["type"] = "log_level";
+    doc["level"] = level;
+    doc["name"] = Config::logLevelToString(level);
+
+    String out;
+    serializeJson(doc, out);
+    _ws.textAll(out);
+}
+
+void WsService::handleIncomingData(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
+    if (!client || !data || len == 0) return;
+
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, (const char*)data, len);
+    if (err) {
+        return;
+    }
+
+    const char* type = doc["type"] | "";
+    if (strcmp(type, "subscribe_logs") == 0) {
+        bool enable = doc["enabled"] | false;
+        if (enable) {
+            addLogSubscriber(client->id());
+            Logger.debug(MAINLOG, "WS client #%u subscribed to logs", client->id());
+        } else {
+            removeLogSubscriber(client->id());
+            Logger.debug(MAINLOG, "WS client #%u unsubscribed from logs", client->id());
+        }
+    } else if (strcmp(type, "set_log_level") == 0) {
+        uint8_t newLevel = config.getConfig().logLevel;
+        if (doc["level"].is<int>() || doc["level"].is<uint8_t>()) {
+            newLevel = doc["level"].as<uint8_t>();
+        } else if (doc["level"].is<const char*>()) {
+            newLevel = Config::stringToLogLevel(doc["level"].as<const char*>(), newLevel);
+        }
+        setLogLevel(newLevel);
+    }
 }
 
 void WsService::onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
@@ -313,10 +439,10 @@ void WsService::onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, Aw
         Logger.info(MAINLOG, "WebSocket client #%u connected", client->id());
         sendInitState(client);
     } else if (type == WS_EVT_DISCONNECT) {
+        removeLogSubscriber(client->id());
         Logger.info(MAINLOG, "WebSocket client #%u disconnected", client->id());
     } else if (type == WS_EVT_DATA) {
-        Logger.debug(MAINLOG, "WebSocket client #%u sent data (%u bytes)", client->id(), len);
-        broadcastSysinfo();
+        handleIncomingData(client, data, len);
     }
 }
 

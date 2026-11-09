@@ -22,6 +22,7 @@ void test_config_from_json_object_complete(void) {
     doc["checkInterval"] = 30;
     doc["discordWebhookURL"] = "https://discord.com/api/webhooks/123/abc";
     doc["hostname"] = "custom_uptime_host";
+    doc["logLevel"] = 4; // ERROR
 
     config_t cfg = config.fromJsonObject(doc.as<JsonObject>());
     TEST_ASSERT_EQUAL_STRING("MyOfficeWifi", cfg.wifiSSID.c_str());
@@ -31,6 +32,7 @@ void test_config_from_json_object_complete(void) {
     TEST_ASSERT_EQUAL_UINT8(30, cfg.checkInterval);
     TEST_ASSERT_EQUAL_STRING("https://discord.com/api/webhooks/123/abc", cfg.discordWebhookURL.c_str());
     TEST_ASSERT_EQUAL_STRING("custom_uptime_host", cfg.hostname.c_str());
+    TEST_ASSERT_EQUAL_UINT8(4, cfg.logLevel);
 }
 
 void test_config_from_json_object_missing_fields_use_defaults(void) {
@@ -97,6 +99,33 @@ void test_config_load_config_file_valid(void) {
     TEST_ASSERT_EQUAL_STRING("office_monitor", cfg.hostname.c_str());
 }
 
+void test_config_log_level_helpers_and_persistence(void) {
+    TEST_ASSERT_EQUAL_STRING("DEBUG", Config::logLevelToString(8));
+    TEST_ASSERT_EQUAL_STRING("INFO", Config::logLevelToString(7));
+    TEST_ASSERT_EQUAL_STRING("ERROR", Config::logLevelToString(4));
+
+    TEST_ASSERT_EQUAL_UINT8(7, Config::stringToLogLevel("INFO"));
+    TEST_ASSERT_EQUAL_UINT8(5, Config::stringToLogLevel("WARNING"));
+    TEST_ASSERT_EQUAL_UINT8(5, Config::stringToLogLevel("WARN"));
+    TEST_ASSERT_EQUAL_UINT8(11, Config::stringToLogLevel("NOLOG"));
+    TEST_ASSERT_EQUAL_UINT8(4, Config::stringToLogLevel("4"));
+
+    // Persistence via updateLogLevel
+    config_t initial;
+    initial.hostname = "log_test_node";
+    initial.logLevel = 8;
+    storage.writeFile(CONFIG_FILE_PATH, config.toJson(initial));
+    config.loadConfig();
+
+    bool updated = config.updateLogLevel(7); // Change to INFO
+    TEST_ASSERT_TRUE(updated);
+    TEST_ASSERT_EQUAL_UINT8(7, config.getConfig().logLevel);
+
+    // Verify stored content
+    String fileContent = storage.readFile(CONFIG_FILE_PATH);
+    TEST_ASSERT_TRUE(fileContent.indexOf("\"logLevel\":7") >= 0);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_config_from_json_object_complete);
@@ -105,5 +134,6 @@ int main(int argc, char **argv) {
     RUN_TEST(test_config_from_json_invalid_syntax_returns_empty);
     RUN_TEST(test_config_load_config_file_missing_or_empty);
     RUN_TEST(test_config_load_config_file_valid);
+    RUN_TEST(test_config_log_level_helpers_and_persistence);
     return UNITY_END();
 }
