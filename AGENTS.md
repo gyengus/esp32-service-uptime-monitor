@@ -5,27 +5,34 @@ This file provides guidance to AI agents when working with code in this reposito
 ## Build & Deploy
 
 ```bash
-pio run              # Build
-pio run --target upload   # Upload firmware
-pio device monitor        # Serial monitor (115200 8N1)
-pio run --target clean    # Clean build artifacts
-pio check                 # Lint (cppcheck)
+pio run                                           # Build firmware
+pio run --target upload                           # Upload firmware via USB
+pio run -e esp32-s3-ota --target upload           # Upload firmware via OTA (ESP_IP=x.x.x.x)
+pio run --target packweb                          # Pack & minify Web UI into .pio/build/web_assets.zip
+pio run --target uploadweb                        # Pack, minify & upload Web UI to device SD card
+pio device monitor                                # Serial monitor (115200 8N1)
+pio run --target clean                            # Clean build artifacts
+pio check                                         # Lint (cppcheck)
+pio test -e native                                # Run native unit tests
 ```
 
-Build flags: `MIN_LOG_LEVEL=ELOG_LEVEL_DEBUG`, PSRAM enable, `CONFIG_ASYNC_TCP_RUNNING_CORE=1`
+Build flags: `MIN_LOG_LEVEL=ELOG_LEVEL_DEBUG`, PSRAM enable, `CONFIG_ASYNC_TCP_RUNNING_CORE=1`, `ELEGANTOTA_USE_ASYNC_WEBSERVER=1`
+Partition table: `partitions_16MB.csv` (dual 6.5MB OTA app partitions `app0`/`app1`, NVS, otadata, coredump)
 
 ## Architecture
 
-**Singleton services** (getInstance() + deleted copy constructor):
+**Singleton services & helpers** (getInstance() + deleted copy constructor where applicable):
 
-| Service | Responsibility |
-|---------|----------------|
+| Service / Module | Responsibility |
+|------------------|----------------|
 | `MonitoringService` | HEAD/PING checks, Discord notification after 3 failures |
 | `NotificationService` | HTTP POST to Discord webhook (WiFiClientSecure) |
 | `NetworkContext` | Wi-Fi management (STA/AP), connection, SSID persistence |
 | `Config` | Load/save `/config.json` from SD |
 | `MonitoredEntityRepository` | Thread-safe entity management (semaphore), `/monitored_entities.json` |
 | `Storage` | SD_MMC interface (read/write/delete) |
+| `WebArchiveExtractor` | Extracts uploaded Web UI ZIP archive directly onto SD card with PSRAM buffers |
+| `ElegantOTA` | Web/HTTP firmware update handler integrated with AsyncWebServer |
 
 **Globals** (`globals.h`): `isConfigFunctionsEnabled`, `isAPMode`, `shouldRestart`, `MonitoringTaskHandle`, `temp_sensor`
 
@@ -33,9 +40,10 @@ Build flags: `MIN_LOG_LEVEL=ELOG_LEVEL_DEBUG`, PSRAM enable, `CONFIG_ASYNC_TCP_R
 
 **Boot sequence**:
 1. SD initialization → `storage.init()`
-2. `/config.json` exists? → Yes: `initNormalMode()`, No: `configurationMode()` (AP)
-3. Normal mode: Wi-Fi connect → mDNS (http://hostname.local) → SNTP time sync → `MonitoringService::init()`
-4. `xTaskCreatePinnedToCore(monitoringTaskLoop, ..., 0)` - runs on Core 0 (WiFi on Core 1)
+2. Cancel OTA rollback if booted fine → `esp_ota_mark_app_valid_cancel_rollback()`
+3. `/config.json` exists? → Yes: `initNormalMode()`, No: `configurationMode()` (AP)
+4. Normal mode: Wi-Fi connect → mDNS (http://hostname.local) → SNTP time sync → `setupOTA()` → `MonitoringService::init()`
+5. `xTaskCreatePinnedToCore(monitoringTaskLoop, ..., 0)` - runs on Core 0 (WiFi on Core 1)
 
 **Monitoring task** (Core 0, 5 sec initial delay):
 - Periodic `checkAll()` based on config interval
@@ -44,8 +52,15 @@ Build flags: `MIN_LOG_LEVEL=ELOG_LEVEL_DEBUG`, PSRAM enable, `CONFIG_ASYNC_TCP_R
 - Discord notification on status change (if `notification=true`)
 - Auto-save via `MonitoredEntityRepository::save()`
 
+**OTA & Web UI updates**:
+- ElegantOTA handles firmware `.bin` uploads on `/update`. On OTA start: monitoring task is suspended and SD card is unmounted to prevent bus contention or SPI collisions.
+- Web UI update accepts `.zip` at `/api/web/upload-archive`. Extracted safely to SD card using `WebArchiveExtractor` (`unzipLIB`).
+- PlatformIO script `scripts/pio_ota_targets.py` provides `packweb` and `uploadweb` with in-memory minification (HTML/CSS/JS) before ZIP creation without touching source files on disk.
+
 **Web UI**:
-- `/` - main page (index.html), `/config` - settings page
+- `/` - main page (index.html), `/config` - settings page (includes OTA firmware & web asset update forms)
+- `/update` - ElegantOTA firmware update endpoint
+- `/api/web/upload-archive` - Web UI archive upload endpoint
 - `/api/wifiscan` - scan networks (in AP mode)
 - `/api/config` - load/save configuration
 - `/api/monitoredentities` - list entities (GET)

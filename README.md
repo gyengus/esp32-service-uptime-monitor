@@ -6,6 +6,8 @@ An ESP32-S3 based monitoring device that periodically checks the availability of
 
 - **Dual monitoring types**: HTTP HEAD requests or ICMP PING
 - **WiFi AP/STA mode**: Easy configuration via built-in access point or connect to existing WiFi
+- **OTA Firmware updates**: Update firmware over-the-air via Web UI or PlatformIO (`esp32-s3-ota` environment)
+- **Over-the-Air Web UI updates**: Update web assets (.zip) directly onto the SD card with automatic in-memory minification
 - **Web UI**: Bootstrap-based interface for monitoring and configuration
 - **Discord integration**: Send notifications to Discord channels on status changes
 - **SD card storage**: Persistent configuration and entity storage
@@ -41,15 +43,44 @@ An ESP32-S3 based monitoring device that periodically checks the availability of
 
 ### Build & Upload
 
+#### USB Upload
+
 ```bash
 # Build firmware
 pio run
 
-# Upload to ESP32
+# Upload to ESP32 via USB
 pio run --target upload
 
 # Monitor serial output
 pio device monitor
+```
+
+#### OTA Firmware Upload
+
+You can update the firmware wirelessly via PlatformIO or through the web interface:
+
+```bash
+# Upload via OTA using default hostname (esp32_service_uptime_monitor.local)
+pio run -e esp32-s3-ota --target upload
+
+# Upload via OTA using a specific IP address
+ESP_IP=192.168.0.118 pio run -e esp32-s3-ota --target upload
+```
+
+#### Web UI Asset Upload
+
+Web UI assets (HTML, JS, CSS) reside on the FAT32 microSD card. You can package, minify, and upload them over the network:
+
+```bash
+# Package, minify in-memory, and upload directly to the device's SD card
+pio run --target uploadweb
+
+# Or specify a custom device host/IP
+ESP_IP=192.168.0.118 pio run --target uploadweb
+
+# Create the minified archive locally without uploading (.pio/build/web_assets.zip)
+pio run --target packweb
 ```
 
 ### Initial Setup
@@ -83,6 +114,8 @@ Access the device at `http://<hostname>.local/` or `http://<IP>/`
 - Check interval (seconds, default: 60)
 - Discord webhook URL
 - Device hostname
+- **Firmware Update**: Upload `.bin` binary over HTTP with live progress indicator and auto-reboot
+- **Web UI Update**: Upload `.zip` archive containing updated web assets directly onto the SD card
 
 ### Adding a Monitored Entity
 
@@ -121,6 +154,13 @@ Press the boot button to toggle configuration mode:
 | POST | `/api/config/factoryReset` | Reset to factory defaults |
 | GET | `/api/wifiscan` | Scan for WiFi networks (AP mode only) |
 | POST | `/api/testDiscord` | Test Discord webhook integration |
+
+### Updates & OTA
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/update` | Firmware binary upload (handled by ElegantOTA) |
+| POST | `/api/web/upload-archive` | Web assets ZIP upload and extraction to SD card |
 
 ### Entities
 
@@ -182,17 +222,29 @@ Press the boot button to toggle configuration mode:
 | Discord notifications not working | Test webhook URL via `/config` page |
 | Device not connecting to WiFi | Check hostname format (alphanumeric, `_`, `-` only) |
 
-## Development
+## Development & Testing
 
 ```bash
-# Clean build
+# Clean build artifacts
 pio run --target clean
 
 # Linting
 pio check
 
-# Upload OTA (if supported)
-pio run --target upload
+# Run C++ unit tests (native)
+pio test -e native
+
+# Run Web UI unit tests (Jest)
+cd web && npm test
+
+# Build and minify web assets
+pio run --target packweb
+
+# Upload web assets over network
+pio run --target uploadweb
+
+# Upload firmware via OTA
+pio run -e esp32-s3-ota --target upload
 ```
 
 ## License
