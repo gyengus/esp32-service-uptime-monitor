@@ -8,13 +8,13 @@ class Api {
 public:
     Api(AsyncWebServer& server);
     void registerEndpoints();
+    static String cleanHostname(const String &input);
 private:
     AsyncWebServer &server;
     void registerConfigEndpoints();
     void registerCommonEndpoints();
     void registerSystemInformationEndpoints();
     void registerServicesEndpoints();
-    String cleanHostname(String &input);
 };
 
 #endif // _API_H_
