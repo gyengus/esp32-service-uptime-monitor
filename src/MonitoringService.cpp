@@ -2,6 +2,7 @@
 #include <Elog.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <WiFi.h>
 #include "Config.h"
 #include "MonitoredEntityRepository.h"
 #include "NotificationService.h"
@@ -79,6 +80,28 @@ bool MonitoringService::check(const MonitoredEntity& entity) {
     return _doHead(entity.getAddress());
 }
 
+static String extractHost(const String& address) {
+    String host = address;
+    int protoIdx = host.indexOf("://");
+    if (protoIdx != -1) {
+        host = host.substring(protoIdx + 3);
+    }
+    int slashIdx = host.indexOf('/');
+    if (slashIdx != -1) {
+        host = host.substring(0, slashIdx);
+    }
+    int colonIdx = host.indexOf(':');
+    if (colonIdx != -1) {
+        host = host.substring(0, colonIdx);
+    }
+    return host;
+}
+
+static bool isIpAddress(const String& host) {
+    IPAddress ip;
+    return ip.fromString(host);
+}
+
 bool MonitoringService::_doHead(const String& address) {
     bool success = false;
 
@@ -96,8 +119,19 @@ bool MonitoringService::_doHead(const String& address) {
     if (httpCode > 0) {
         success = true;
     } else {
-        char buffer[128];
-        snprintf(buffer, sizeof(buffer), "HEAD %s failed with HTTP Error: %s", address.c_str(), http.errorToString(httpCode).c_str());
+        char buffer[160];
+        String host = extractHost(address);
+
+        if (!isIpAddress(host)) {
+            IPAddress resolvedIp;
+            if (WiFi.hostByName(host.c_str(), resolvedIp) != 1 || resolvedIp == IPAddress(0, 0, 0, 0)) {
+                snprintf(buffer, sizeof(buffer), "HEAD %s failed: host not found (DNS/mDNS resolution failed)", address.c_str());
+            } else {
+                snprintf(buffer, sizeof(buffer), "HEAD %s failed with HTTP Error: %s", address.c_str(), http.errorToString(httpCode).c_str());
+            }
+        } else {
+            snprintf(buffer, sizeof(buffer), "HEAD %s failed with HTTP Error: %s", address.c_str(), http.errorToString(httpCode).c_str());
+        }
         Logger.error(MAINLOG, buffer);
     }
     http.end();

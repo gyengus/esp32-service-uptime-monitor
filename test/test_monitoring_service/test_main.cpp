@@ -7,6 +7,7 @@
 #include "Config.h"
 #include "Storage.h"
 #include "HTTPClient.h"
+#include "WiFi.h"
 
 using namespace fakeit;
 
@@ -73,10 +74,21 @@ void test_monitoring_service_check_https_client(void) {
 }
 
 void test_monitoring_service_check_http_failure(void) {
+    MockWiFiClass::hostByNameCalls = 0;
     HTTPClient::mockResponseCode = -1; // Connection failed
     MonitoredEntity e("dead_node", "http://unreachable.host", "mdi-server", true);
 
     TEST_ASSERT_FALSE(monitoringService.check(e));
+    TEST_ASSERT_EQUAL_INT(1, MockWiFiClass::hostByNameCalls);
+}
+
+void test_monitoring_service_check_http_failure_ip_skips_dns(void) {
+    MockWiFiClass::hostByNameCalls = 0;
+    HTTPClient::mockResponseCode = -1; // Connection failed
+    MonitoredEntity e("dead_ip", "http://192.168.1.99:8080/health", "mdi-server", true);
+
+    TEST_ASSERT_FALSE(monitoringService.check(e));
+    TEST_ASSERT_EQUAL_INT(0, MockWiFiClass::hostByNameCalls);
 }
 
 void test_monitoring_service_checkall_transitions_to_offline_after_3_failures(void) {
@@ -169,6 +181,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_monitoring_service_check_http_success);
     RUN_TEST(test_monitoring_service_check_https_client);
     RUN_TEST(test_monitoring_service_check_http_failure);
+    RUN_TEST(test_monitoring_service_check_http_failure_ip_skips_dns);
     RUN_TEST(test_monitoring_service_checkall_transitions_to_offline_after_3_failures);
     RUN_TEST(test_monitoring_service_checkall_recovery_on_success);
     RUN_TEST(test_monitoring_service_checkall_skips_disabled);

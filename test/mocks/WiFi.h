@@ -58,6 +58,7 @@ public:
         mockMode = WIFI_OFF;
         mockIP = MockIPAddress(192, 168, 1, 105);
         mockScanResult = 0;
+        hostByNameCalls = 0;
         lastSSID = "";
         lastPassword = "";
         lastHostname = "";
@@ -105,12 +106,24 @@ public:
     String BSSIDstr(int i) { return "AA:BB:CC:DD:EE:0" + String(i); }
     int32_t channel(int) { return 6; }
     uint8_t encryptionType(int) { return 3; }
+
+    static int hostByNameCalls;
+    int hostByName(const char* host, IPAddress& outIp) {
+        hostByNameCalls++;
+        String h(host);
+        if (h.indexOf("unreachable") >= 0 || h.indexOf("test_device") >= 0 || h.indexOf("dead_node") >= 0) {
+            return 0;
+        }
+        outIp = IPAddress(192, 168, 1, 200);
+        return 1;
+    }
 };
 
 inline wl_status_t MockWiFiClass::mockStatus = WL_CONNECTED;
 inline wifi_mode_t MockWiFiClass::mockMode = WIFI_OFF;
 inline MockIPAddress MockWiFiClass::mockIP = MockIPAddress(192, 168, 1, 105);
 inline int MockWiFiClass::mockScanResult = 0;
+inline int MockWiFiClass::hostByNameCalls = 0;
 inline String MockWiFiClass::lastSSID = "";
 inline String MockWiFiClass::lastPassword = "";
 inline String MockWiFiClass::lastHostname = "";
