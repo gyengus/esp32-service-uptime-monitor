@@ -290,6 +290,26 @@ void test_api_ap_mode_excludes_service_endpoints(void) {
     TEST_ASSERT_FALSE(handled);
 }
 
+void test_api_web_upload_archive_forbidden(void) {
+    isConfigFunctionsEnabled = false;
+    isAPMode = false;
+
+    AsyncWebServerRequest req;
+    bool handled = testServer->dispatch("/api/web/upload-archive", HTTP_POST, &req);
+    TEST_ASSERT_TRUE(handled);
+    TEST_ASSERT_EQUAL_INT(403, req.lastCode);
+}
+
+void test_api_web_upload_archive_success(void) {
+    isConfigFunctionsEnabled = true;
+    isAPMode = false;
+
+    AsyncWebServerRequest req;
+    bool handled = testServer->dispatch("/api/web/upload-archive", HTTP_POST, &req);
+    TEST_ASSERT_TRUE(handled);
+    TEST_ASSERT_EQUAL_INT(200, req.lastCode);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_api_health);
@@ -306,5 +326,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_api_monitoredentities_get_all);
     RUN_TEST(test_api_monitoredentity_crud);
     RUN_TEST(test_api_ap_mode_excludes_service_endpoints);
+    RUN_TEST(test_api_web_upload_archive_forbidden);
+    RUN_TEST(test_api_web_upload_archive_success);
     return UNITY_END();
 }

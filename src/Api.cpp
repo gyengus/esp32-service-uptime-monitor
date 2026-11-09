@@ -14,6 +14,7 @@
 #include "MonitoringService.h"
 #include "NotificationService.h"
 #include "PSRAMAllocator.h"
+#include "WebArchiveExtractor.h"
 
 static PSRAMAllocator psramAllocator;
 
@@ -248,6 +249,62 @@ void Api::registerConfigEndpoints() {
             delete body; request->_tempObject = nullptr;
         } else {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No body provided\"}");
+        }
+    });
+
+    server.on("/api/web/upload-archive", HTTP_POST, [](AsyncWebServerRequest *request) {
+        if (!isConfigFunctionsEnabled && !isAPMode && !request->hasHeader("X-PlatformIO-Upload")) {
+            request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            return;
+        }
+
+        if (!storage.isAvailable()) {
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"SD Card not available\"}");
+            return;
+        }
+
+        Logger.info(MAINLOG, "Web archive upload completed. Starting extraction...");
+
+        if (MonitoringTaskHandle != NULL) {
+            vTaskSuspend(MonitoringTaskHandle);
+        }
+        xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY);
+
+        bool success = WebArchiveExtractor::extractZipArchive("/web_update_tmp.zip", WEB_UI_PATH);
+
+        storage.deleteFile("/web_update_tmp.zip");
+
+        xSemaphoreGive(monitoredEntityRepository.getMutex());
+        if (MonitoringTaskHandle != NULL) {
+            vTaskResume(MonitoringTaskHandle);
+        }
+
+        if (success) {
+            request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Web UI updated successfully\"}");
+        } else {
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to extract web archive\"}");
+        }
+    }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+        if (!isConfigFunctionsEnabled && !isAPMode && !request->hasHeader("X-PlatformIO-Upload")) {
+            return;
+        }
+        if (!storage.isAvailable()) {
+            return;
+        }
+
+        if (index == 0) {
+            Logger.info(MAINLOG, "Receiving web archive: %s", filename.c_str());
+            request->_tempFile = storage.getFile("/web_update_tmp.zip", FILE_WRITE);
+        }
+
+        if (request->_tempFile) {
+            if (len) {
+                request->_tempFile.write(data, len);
+            }
+            if (final) {
+                request->_tempFile.close();
+                Logger.info(MAINLOG, "Web archive received successfully.");
+            }
         }
     });
 }

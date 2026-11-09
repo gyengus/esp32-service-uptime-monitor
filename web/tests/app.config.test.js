@@ -44,6 +44,14 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
         if (options.success) {
           options.success({ message: 'Restored successfully' });
         }
+      } else if (options.url === '/api/web/upload-archive') {
+        if (options.success) {
+          options.success({ status: 'success', message: 'Web UI updated successfully' });
+        }
+      } else if (options.url === '/ota/start?mode=fr') {
+        if (options.success) {
+          options.success();
+        }
       }
       return {
         fail: vi.fn().mockReturnThis(),
@@ -371,6 +379,62 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       expect(restoreCall[0].processData).toBe(false);
       expect(restoreCall[0].contentType).toBe(false);
       expect($('#successToast .toast-body').text()).toContain('The device will restart.');
+    });
+
+    it('triggers file selection when update web button is clicked', () => {
+      const clickSpy = vi.spyOn($('#webArchiveFile')[0], 'click');
+      $('#updateWebButton').trigger('click');
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('uploads web archive file and displays success notification', () => {
+      const mockZip = new File(['PK...'], 'web.zip', { type: 'application/zip' });
+      const event = { target: { files: [mockZip] } };
+
+      $('#webArchiveFile').trigger($.Event('change', event));
+
+      const updateCall = $.ajax.mock.calls.find(c => c[0].url === '/api/web/upload-archive');
+      expect(updateCall).toBeDefined();
+      expect(updateCall[0].type).toBe('POST');
+      expect(updateCall[0].processData).toBe(false);
+      expect(updateCall[0].contentType).toBe(false);
+      expect($('#successToast .toast-body').text()).toContain('Web UI updated successfully');
+    });
+
+    it('triggers file selection when update firmware button is clicked', () => {
+      const clickSpy = vi.spyOn($('#firmwareBinaryFile')[0], 'click');
+      $('#updateFirmwareButton').trigger('click');
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('starts OTA and uploads firmware binary file with progress', () => {
+      const mockXHR = {
+        open: vi.fn(),
+        send: vi.fn().mockImplementation(function() {
+          this.status = 200;
+          if (this.onload) this.onload();
+        }),
+        upload: {
+          onprogress: null
+        }
+      };
+      const origXHR = globalThis.XMLHttpRequest;
+      globalThis.XMLHttpRequest = vi.fn().mockImplementation(function() {
+        return mockXHR;
+      });
+
+      const mockBin = new File(['firmware binary bytes'], 'firmware.bin', { type: 'application/octet-stream' });
+      const event = { target: { files: [mockBin] } };
+
+      $('#firmwareBinaryFile').trigger($.Event('change', event));
+
+      const otaStartCall = $.ajax.mock.calls.find(c => c[0].url === '/ota/start?mode=fr');
+      expect(otaStartCall).toBeDefined();
+      expect(mockXHR.open).toHaveBeenCalledWith('POST', '/ota/upload', true);
+      expect(mockXHR.send).toHaveBeenCalled();
+      expect($('#successToast .toast-body').text()).toContain('Firmware update successful');
+
+      globalThis.XMLHttpRequest = origXHR;
     });
   });
 });

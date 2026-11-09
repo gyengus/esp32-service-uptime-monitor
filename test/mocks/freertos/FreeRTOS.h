@@ -16,3 +16,5 @@ inline SemaphoreHandle_t xSemaphoreCreateMutex() { return (SemaphoreHandle_t)1; 
 inline bool xSemaphoreTake(SemaphoreHandle_t, TickType_t) { return true; }
 inline bool xSemaphoreGive(SemaphoreHandle_t) { return true; }
 inline void vSemaphoreDelete(SemaphoreHandle_t) {}
+inline void vTaskSuspend(TaskHandle_t) {}
+inline void vTaskResume(TaskHandle_t) {}

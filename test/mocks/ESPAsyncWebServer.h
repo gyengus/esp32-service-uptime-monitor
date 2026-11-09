@@ -8,6 +8,7 @@
 #include <map>
 #include <regex>
 #include "Esp.h"
+#include "FS.h"
 
 #define HTTP_GET     0b00000001
 #define HTTP_POST    0b00000010
@@ -90,17 +91,31 @@ public:
 class AsyncWebServerRequest {
 public:
     void* _tempObject = nullptr;
+    File _tempFile;
     int lastCode = 0;
     String lastContentType;
     String lastBody;
     std::vector<String> _pathArgs;
     std::map<String, String> _params;
+    std::map<String, String> _headers;
 
     ~AsyncWebServerRequest() {
         if (_tempObject) {
             delete (String*)_tempObject;
             _tempObject = nullptr;
         }
+    }
+
+    bool hasHeader(const char* name) const {
+        return _headers.find(String(name)) != _headers.end();
+    }
+
+    bool hasHeader(const String& name) const {
+        return _headers.find(name) != _headers.end();
+    }
+
+    void setHeader(const String& name, const String& val) {
+        _headers[name] = val;
     }
 
     void send(int code, const char* contentType = "text/plain", const String& content = "") {

@@ -23,6 +23,9 @@
 
 #include "fileManager.h"
 #include "MonitoringService.h"
+#include "MonitoredEntityRepository.h"
+#include <ElegantOTA.h>
+#include "esp_ota_ops.h"
 
 Ticker sntpSyncTicker;
 Ticker restartTicker;
@@ -59,6 +62,15 @@ void setup() {
 
     Logger.info(MAINLOG, "ESP32 Service Uptime Monitor v%s", FIRMWARE_VERSION);
     Logger.info(MAINLOG, "Commit hash: %s, Build date: %s", COMMIT_HASH, BUILD_TIMESTAMP);
+
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    esp_ota_img_states_t ota_state;
+    if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
+        if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
+            Logger.info(MAINLOG, "OTA update successful, confirming new firmware (canceling rollback)");
+            esp_ota_mark_app_valid_cancel_rollback();
+        }
+    }
 
     if (psramInit()) {
         Logger.info(MAINLOG, "PSRAM initialized, size: %d bytes, free: %d bytes", ESP.getPsramSize(), ESP.getFreePsram());
@@ -217,6 +229,39 @@ void initNormalMode() {
     );
 }
 
+void setupOTA() {
+    ElegantOTA.begin(&server);
+
+    ElegantOTA.onStart([]() {
+        Logger.warning(MAINLOG, "OTA firmware update started! Suspending monitoring and locking SD...");
+        if (MonitoringTaskHandle != NULL) {
+            vTaskSuspend(MonitoringTaskHandle);
+        }
+        xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY);
+    });
+
+    ElegantOTA.onProgress([](size_t current, size_t final) {
+        static unsigned long lastOtaProgress = 0;
+        if (millis() - lastOtaProgress > 1000) {
+            lastOtaProgress = millis();
+            Logger.info(MAINLOG, "OTA progress: %u%% (%u / %u bytes)", (current * 100) / final, current, final);
+        }
+    });
+
+    ElegantOTA.onEnd([](bool success) {
+        if (success) {
+            Logger.info(MAINLOG, "OTA update finished successfully! Unmounting SD card...");
+            storage.unmount();
+        } else {
+            Logger.error(MAINLOG, "OTA update failed!");
+            xSemaphoreGive(monitoredEntityRepository.getMutex());
+            if (MonitoringTaskHandle != NULL) {
+                vTaskResume(MonitoringTaskHandle);
+            }
+        }
+    });
+}
+
 void commonWebServerSettings() {
     DefaultHeaders::Instance().addHeader("Connection", "close");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
@@ -224,6 +269,7 @@ void commonWebServerSettings() {
         request->send(SD_MMC, (String(WEB_UI_PATH) + "/static/favicon.ico"), "image/x-icon");
     });
     server.serveStatic("/static", SD_MMC, (String(WEB_UI_PATH) + "/static").c_str());
+    setupOTA();
     api.registerEndpoints();
         server.onNotFound([](AsyncWebServerRequest *request){
         String host = request->host();

@@ -240,6 +240,155 @@ $('#restoreFile').on('change', function(event) {
     });
 });
 
+$('#updateWebButton').on('click', function() {
+    $('#webArchiveFile').click();
+});
+
+$('#webArchiveFile').on('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    let $btn = $('#updateWebButton');
+    let $icon = $('#updateWebIcon');
+    let $text = $('#updateWebText');
+    let $spinner = $('#updateWebSpinner');
+
+    $btn.prop('disabled', true);
+    $icon.addClass('d-none');
+    $spinner.removeClass('d-none');
+    $text.text('Updating Web UI...');
+
+    const formData = new FormData();
+    formData.append('archive', file);
+
+    $.ajax({
+        type: 'POST',
+        url: '/api/web/upload-archive',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            $btn.prop('disabled', false);
+            $spinner.addClass('d-none');
+            $icon.removeClass('d-none');
+            $text.text('Update Web UI (.zip)');
+            $('#webArchiveFile').val('');
+            showSuccess('Web UI updated successfully! Reloading page in 2s...');
+            setTimeout(function() {
+                window.location.reload();
+            }, 2000);
+        },
+        error: function(xhr, status, error) {
+            $btn.prop('disabled', false);
+            $spinner.addClass('d-none');
+            $icon.removeClass('d-none');
+            $text.text('Update Web UI (.zip)');
+            $('#webArchiveFile').val('');
+            showError(xhr, "Web UI update failed");
+        }
+    });
+});
+
+$('#updateFirmwareButton').on('click', function() {
+    $('#firmwareBinaryFile').click();
+});
+
+$('#firmwareBinaryFile').on('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    let $btn = $('#updateFirmwareButton');
+    let $icon = $('#updateFirmwareIcon');
+    let $text = $('#updateFirmwareText');
+    let $spinner = $('#updateFirmwareSpinner');
+    let $progressContainer = $('#firmwareProgressContainer');
+    let $progressBar = $('#firmwareProgressBar');
+    let $progressText = $('#firmwareProgressText');
+
+    $btn.prop('disabled', true);
+    $icon.addClass('d-none');
+    $spinner.removeClass('d-none');
+    $text.text('Starting OTA...');
+    $progressContainer.removeClass('d-none');
+    $progressBar.removeClass('bg-success bg-danger').addClass('bg-warning');
+    $progressBar.css('width', '0%');
+    $progressText.text('0%');
+
+    function resetFirmwareUI(errorMsg) {
+        $btn.prop('disabled', false);
+        $spinner.addClass('d-none');
+        $icon.removeClass('d-none');
+        $text.text('Update Firmware (.bin)');
+        $('#firmwareBinaryFile').val('');
+        if (errorMsg) {
+            $progressBar.removeClass('bg-warning').addClass('bg-danger');
+            showToast('#errorToast', errorMsg);
+        } else {
+            $progressContainer.addClass('d-none');
+        }
+    }
+
+    $.ajax({
+        type: 'GET',
+        url: '/ota/start?mode=fr',
+        success: function() {
+            $text.text('Uploading firmware...');
+
+            const formData = new FormData();
+            formData.append('firmware', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/ota/upload', true);
+
+            if (xhr.upload) {
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable && e.total > 0) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        $progressBar.css('width', percent + '%');
+                        $progressText.text(percent + '% (' + Math.round(e.loaded / 1024) + ' / ' + Math.round(e.total / 1024) + ' KB)');
+                    }
+                };
+            }
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    $progressBar.removeClass('bg-warning bg-danger').addClass('bg-success');
+                    $progressBar.css('width', '100%');
+                    $progressText.text('100% - Firmware update successful!');
+                    $text.text('Rebooting...');
+                    showSuccess('Firmware update successful! The device is restarting...');
+
+                    let remaining = 12;
+                    const timer = setInterval(function() {
+                        remaining--;
+                        if (remaining > 0) {
+                            $text.text('Reconnecting in ' + remaining + 's...');
+                        } else {
+                            clearInterval(timer);
+                            window.location.reload();
+                        }
+                    }, 1000);
+                } else {
+                    let errMsg = 'Firmware upload failed (status ' + xhr.status + ')';
+                    if (xhr.responseText) errMsg += ': ' + xhr.responseText;
+                    resetFirmwareUI(errMsg);
+                }
+            };
+
+            xhr.onerror = function() {
+                resetFirmwareUI('Network error occurred during firmware upload');
+            };
+
+            xhr.send(formData);
+        },
+        error: function(xhr) {
+            let msg = 'Failed to initiate OTA session';
+            if (xhr.responseText) msg += ': ' + xhr.responseText;
+            resetFirmwareUI(msg);
+        }
+    });
+});
+
 function showError(xhr, defaultMsg) {
     let response = defaultMsg;
     try {

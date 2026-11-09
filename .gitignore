@@ -37,3 +37,4 @@ CLAUDE.md
 # Node / Frontend testing
 node_modules/
 coverage/
+*.zip

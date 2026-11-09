@@ -119,6 +119,33 @@
                                     <span>Restore configuration</span>
                                 </button>
                             </div>
+                            <hr class="my-4" />
+                            <h6 class="text-muted text-uppercase mb-3">System & Firmware Updates</h6>
+                            <div class="mb-3 row" id="webUpdateRow">
+                                <input type="file" id="webArchiveFile" accept=".zip" style="display: none;" />
+                                <button type="button" class="btn btn-outline-info d-inline-flex align-items-center justify-content-center" id="updateWebButton">
+                                    <span id="updateWebIcon" class="mdi mdi-web-sync me-1"></span>
+                                    <span id="updateWebText">Update Web UI (.zip)</span>
+                                    <span id="updateWebSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status" aria-hidden="true"></span>
+                                </button>
+                                <div class="form-text text-muted text-center mt-1">Upload a ZIP archive containing updated Web UI files to the SD card.</div>
+                            </div>
+                            <div class="mb-3 row" id="otaFirmwareRow">
+                                <input type="file" id="firmwareBinaryFile" accept=".bin" style="display: none;" />
+                                <button type="button" class="btn btn-outline-warning d-inline-flex align-items-center justify-content-center" id="updateFirmwareButton">
+                                    <span id="updateFirmwareIcon" class="mdi mdi-chip me-1"></span>
+                                    <span id="updateFirmwareText">Update Firmware (.bin)</span>
+                                    <span id="updateFirmwareSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status" aria-hidden="true"></span>
+                                </button>
+                                <div class="form-text text-muted text-center mt-1">Upload compiled firmware binary (.bin) to update the device over the air.</div>
+                                <div id="firmwareProgressContainer" class="d-none mt-2">
+                                    <div class="progress" style="height: 12px;">
+                                        <div id="firmwareProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%;"></div>
+                                    </div>
+                                    <div id="firmwareProgressText" class="text-center small text-muted mt-1">0%</div>
+                                </div>
+                            </div>
+                            <hr class="my-4" />
                             <div class="mb-3 row" id="factoryResetRow" style="display: none;">
                                 <button type="button" class="btn btn-outline-danger" id="factoryResetButton">Factory reset</button>
                             </div>
