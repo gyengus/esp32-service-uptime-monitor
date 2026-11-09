@@ -213,6 +213,33 @@ $('#backupButton').on('click', function() {
     });
 });
 
+$('#restoreButton').on('click', function() {
+    $('#restoreFile').click();
+});
+
+$('#restoreFile').on('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    $.ajax({
+        type: 'POST',
+        url: '/api/config/restore',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            showSuccess('Restore completed. The device will restart.');
+        },
+        error: function(xhr, status, error) {
+            showError(xhr, "Restore failed");
+            $('#restoreFile').val('');
+        }
+    });
+});
+
 function showError(xhr, defaultMsg) {
     let response = defaultMsg;
     try {

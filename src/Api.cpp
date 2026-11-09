@@ -59,6 +59,67 @@ void Api::registerConfigEndpoints() {
         request->send(response);
     });
 
+    server.on("/api/config/restore", HTTP_POST, [](AsyncWebServerRequest *request) {
+    }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+        if (!isConfigFunctionsEnabled && !isAPMode) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
+
+        if (!storage.isAvailable()) {
+            Logger.error(MAINLOG, "SD Card not available");
+            request->send(500, "text/plain", "SD Card not available");
+            return;
+        }
+
+        if (index == 0) request->_tempObject = new String("");
+
+        String* body = (String*)request->_tempObject;
+        if (body) {
+            body->concat((char*)data, len);
+        }
+
+        if (final && body) {
+            JsonDocument doc(&psramAllocator);
+            DeserializationError error = deserializeJson(doc, *body);
+
+            if (error) {
+                Logger.error(MAINLOG, "Restore failed: JSON parse error: %s", error.c_str());
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+                delete body; request->_tempObject = nullptr;
+                return;
+            }
+
+            JsonObject root = doc.as<JsonObject>();
+
+            if (!root.containsKey("config") || !root.containsKey("entities")) {
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing config or entities\"}");
+                delete body; request->_tempObject = nullptr;
+                return;
+            }
+
+            String configJson;
+            String entitiesJson;
+
+            serializeJson(root["config"], configJson);
+            serializeJson(root["entities"], entitiesJson);
+
+            bool configSaved = storage.writeFile(CONFIG_FILE_PATH, configJson);
+            bool entitiesSaved = storage.writeFile(ENTITIES_FILE_PATH, entitiesJson);
+
+            delete body; request->_tempObject = nullptr;
+
+            if (configSaved && entitiesSaved) {
+                Logger.info(MAINLOG, "Restore completed successfully");
+                request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Restore completed, restarting...\"}");
+                shouldRestart = true;
+            } else {
+                Logger.error(MAINLOG, "Restore failed: configSaved=%d, entitiesSaved=%d", configSaved, entitiesSaved);
+                request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to write config files\"}");
+            }
+        }
+    });
+
     server.on("/api/config/factoryReset", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
         [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (!isConfigFunctionsEnabled) {
