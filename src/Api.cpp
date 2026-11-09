@@ -269,7 +269,7 @@ void Api::registerConfigEndpoints() {
             bool wifiChanged = (!newConfig.wifiSSID.equals(currentConfig.wifiSSID) || !newConfig.wifiPassword.equals(currentConfig.wifiPassword)) 
                 && newConfig.wifiSSID.length() > 0 && newConfig.wifiPassword.length() > 0;
             if (wifiChanged) {
-                if (!networkContext.connect(newConfig.wifiSSID, newConfig.wifiPassword, true)) {
+                if (!networkContext.connect(newConfig.wifiSSID, newConfig.wifiPassword, newConfig.hostname, WIFI_CONNECT_TIMEOUT, true)) {
                     AsyncJsonResponse *response = new AsyncJsonResponse(false);
                     response->setCode(400);
                     JsonObject doc = response->getRoot().to<JsonObject>();

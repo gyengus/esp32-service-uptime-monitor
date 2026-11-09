@@ -1,0 +1,12 @@
+{
+  "name": "NetworkContext",
+  "version": "1.0.0",
+  "description": "High-performance ESP32 Wi-Fi STA and AP manager with non-blocking scanner and connection watchdog",
+  "keywords": "esp32, wifi, access-point, network, scanner",
+  "authors": {
+    "name": "Gabor Gyenge",
+    "url": "https://github.com/gyengus"
+  },
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

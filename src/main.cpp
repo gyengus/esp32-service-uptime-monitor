@@ -65,6 +65,18 @@ void setup() {
     Logger.registerSerial(MAINLOG, MIN_LOG_LEVEL, "LOG", Serial);
     Logger.registerSerial(MAINLOG, MIN_LOG_LEVEL, "LOG", wsLogStream);
 
+    networkContext.setLogger([](const char* level, const char* msg) {
+        if (strcmp(level, "ERROR") == 0) {
+            Logger.error(MAINLOG, "%s", msg);
+        } else if (strcmp(level, "WARNING") == 0) {
+            Logger.warning(MAINLOG, "%s", msg);
+        } else if (strcmp(level, "DEBUG") == 0) {
+            Logger.debug(MAINLOG, "%s", msg);
+        } else {
+            Logger.info(MAINLOG, "%s", msg);
+        }
+    });
+
     Logger.info(MAINLOG, "ESP32 Service Uptime Monitor v%s", FIRMWARE_VERSION);
     Logger.info(MAINLOG, "Commit hash: %s, Build date: %s", COMMIT_HASH, BUILD_TIMESTAMP);
 
@@ -172,7 +184,7 @@ void loop() {
 
 void configurationMode() {
     isAPMode = true;
-    networkContext.startAPMode();
+    networkContext.startAPMode(WIFI_AP_SSID, WIFI_AP_PASSWORD, 8, 4);
 
     dnsServer.start();
 
@@ -198,7 +210,7 @@ void initNormalMode() {
     if (!config.loadConfig()) {
         errorMode();
     }
-    networkContext.connect(config.getConfig().wifiSSID, config.getConfig().wifiPassword);
+    networkContext.connect(config.getConfig().wifiSSID, config.getConfig().wifiPassword, config.getConfig().hostname, WIFI_CONNECT_TIMEOUT);
 
     // web server settings
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
