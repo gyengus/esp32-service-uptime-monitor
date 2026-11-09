@@ -16,10 +16,8 @@ void LedService::setRgb(uint8_t r, uint8_t g, uint8_t b) {
     _lastR = r;
     _lastG = g;
     _lastB = b;
-#ifndef UNIT_TEST
-    if (RGB_LED_PIN >= 0) {
-        rgbLedWrite(RGB_LED_PIN, r, g, b);
-    }
+#if defined(HAS_RGB_LED) && !defined(UNIT_TEST)
+    rgbLedWrite(RGB_LED_PIN, r, g, b);
 #endif
 }
 

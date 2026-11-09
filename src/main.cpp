@@ -44,16 +44,20 @@ volatile bool shouldRestart = false;
 volatile bool isOtaUpdating = false;
 
 TaskHandle_t MonitoringTaskHandle = NULL;
+#ifdef HAS_RGB_LED
 TaskHandle_t MonitoringLEDTaskHandle = NULL;
 TaskHandle_t APModeLEDTaskHandle = NULL;
+#endif
 temperature_sensor_handle_t temp_sensor = NULL;
 
 void setup() {
+#ifdef HAS_RGB_LED
     ledService.init();
-    if (LED_PIN >= 0) {
-        pinMode(LED_PIN, OUTPUT);
-        digitalWrite(LED_PIN, HIGH);
-    }
+#endif
+#ifdef HAS_STATUS_LED
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH);
+#endif
     pinMode(BOOT_BTN_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(BOOT_BTN_PIN), handleButtonInterrupt, FALLING);
 
@@ -151,9 +155,9 @@ void setup() {
     commonWebServerSettings();
     server.begin();
 
-    if (LED_PIN >= 0) {
-        digitalWrite(LED_PIN, LOW);
-    }
+#ifdef HAS_STATUS_LED
+    digitalWrite(LED_PIN, LOW);
+#endif
 }
 
 void loop() {
@@ -212,6 +216,7 @@ void configurationMode() {
         request->send(storage.getFS(), (String(WEB_UI_PATH) + "/config.html"), "text/html");
     });
 
+#ifdef HAS_RGB_LED
     xTaskCreate(
         apModeLEDTask,
         "APModeLEDTask",
@@ -220,6 +225,7 @@ void configurationMode() {
         1,
         &APModeLEDTaskHandle
     );
+#endif
 }
 
 void initNormalMode() {
@@ -266,6 +272,7 @@ void initNormalMode() {
     monitoringService.init();
 
 
+#ifdef HAS_RGB_LED
     xTaskCreate(
         monitoringLEDTask,
         "MonitoringLEDTask",
@@ -274,6 +281,7 @@ void initNormalMode() {
         1,
         &MonitoringLEDTaskHandle
     );
+#endif
 
     xTaskCreatePinnedToCore(
         monitoringTaskLoop,
@@ -427,9 +435,13 @@ void monitoringTaskLoop(void * pvParameters) {
             continue;
         }
         if (WiFi.status() == WL_CONNECTED) {
-            if (LED_PIN >= 0) digitalWrite(LED_PIN, HIGH);
+#ifdef HAS_STATUS_LED
+            digitalWrite(LED_PIN, HIGH);
+#endif
             monitoringService.checkAll();
-            if (LED_PIN >= 0) digitalWrite(LED_PIN, LOW);
+#ifdef HAS_STATUS_LED
+            digitalWrite(LED_PIN, LOW);
+#endif
         } else {
             Logger.warning(MAINLOG, "Skipping monitoring cycle, WiFi not connected");
         }
@@ -437,6 +449,7 @@ void monitoringTaskLoop(void * pvParameters) {
     }
 }
 
+#ifdef HAS_RGB_LED
 void monitoringLEDTask(void * pvParameters) {
     while(1) {
         ledService.updateMonitoringLed(monitoringService.getOfflineCount());
@@ -450,3 +463,4 @@ void apModeLEDTask(void * pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
+#endif

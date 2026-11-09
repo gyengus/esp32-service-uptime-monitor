@@ -215,6 +215,7 @@ void Api::registerConfigEndpoints() {
                     }
                 }
 
+#ifdef HAS_RGB_LED
                 ledService.startTest(brightness, duration);
 
                 AsyncJsonResponse *response = new AsyncJsonResponse(false);
@@ -225,6 +226,9 @@ void Api::registerConfigEndpoints() {
                 doc["duration"] = duration;
                 response->setLength();
                 request->send(response);
+#else
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"RGB LED not supported on this board\"}");
+#endif
 
                 if (body) {
                     delete body;

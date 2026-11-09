@@ -28,27 +28,7 @@
 
 #define HTTP_REQUEST_RETRIES 3
 
-#define BOOT_BTN_PIN 0
-
-#ifndef LED_PIN
-#define LED_PIN 2
-#endif
-
-#ifndef RGB_LED_PIN
-#define RGB_LED_PIN 48
-#endif
-
-#ifndef SD_CMD_PIN
-#define SD_CMD_PIN 38
-#endif
-
-#ifndef SD_DATA_PIN
-#define SD_DATA_PIN 40
-#endif
-
-#ifndef SD_CLK_PIN
-#define SD_CLK_PIN 39
-#endif
+#include "devices.h"
 
 // Discord embed colors
 #define DISCORD_COLOR_BLUE 3447003  // #3498DB
