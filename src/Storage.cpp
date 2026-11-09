@@ -1,4 +1,40 @@
 #include "Storage.h"
+
+#ifdef UNIT_TEST
+
+Storage& Storage::getInstance() {
+    static Storage instance;
+    return instance;
+}
+
+Storage& storage = Storage::getInstance();
+
+bool Storage::init() { return true; }
+bool Storage::mount() { return true; }
+bool Storage::unmount() { return true; }
+bool Storage::isAvailable() { return true; }
+
+bool Storage::fileExists(const String& path) {
+    return files.find(path) != files.end();
+}
+
+String Storage::readFile(const String& path) {
+    auto it = files.find(path);
+    if (it != files.end()) return it->second;
+    return String();
+}
+
+bool Storage::writeFile(const String& path, const String& content) {
+    files[path] = content;
+    return true;
+}
+
+bool Storage::deleteFile(const String& path) {
+    return files.erase(path) > 0;
+}
+
+#else
+
 #include <Elog.h>
 #include "driver/sdmmc_host.h"
 #include <SD_MMC.h>
@@ -98,3 +134,5 @@ bool Storage::deleteFile(const String &path) {
 }
 
 Storage& storage = Storage::getInstance();
+
+#endif // !UNIT_TEST

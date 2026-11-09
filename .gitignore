@@ -33,3 +33,7 @@ info.txt
 CLAUDE.md
 .claude_session
 .claude/
+
+# Node / Frontend testing
+node_modules/
+coverage/

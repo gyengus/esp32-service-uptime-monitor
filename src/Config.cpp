@@ -10,7 +10,7 @@ Config& Config::getInstance() {
 bool Config::loadConfig() {
     String json = storage.readFile(CONFIG_FILE_PATH);
 
-    if (json.isEmpty()) {
+    if (json.length() == 0) {
         Logger.error(MAINLOG, "Config file is empty or could not be read");
         return false;
     }

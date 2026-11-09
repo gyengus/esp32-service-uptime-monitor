@@ -3,12 +3,15 @@
 
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
+#include "HostnameUtils.h"
 
 class Api {
 public:
     Api(AsyncWebServer& server);
     void registerEndpoints();
-    static String cleanHostname(const String &input);
+    static String cleanHostname(const String &input) {
+        return HostnameUtils::cleanHostname(input);
+    }
 private:
     AsyncWebServer &server;
     void registerConfigEndpoints();
