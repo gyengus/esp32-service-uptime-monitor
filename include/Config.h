@@ -16,11 +16,11 @@
 #define ENTITIES_FILE_PATH "/monitored_entities.json"
 
 #define MAINLOG 0
-//#define MIN_LOG_LEVEL ELOG_LEVEL_DEBUG
 
 #define WIFI_CONNECT_TIMEOUT 10 // seconds
 #define SNTP_SYNC_INTERVAL 15 * 60 // seconds
 #define HTTP_REQUEST_TIMEOUT 5000 // milliseconds
+#define WS_SYSINFO_INTERVAL 2000 // milliseconds
 
 #define FALLBACK_SNTP_SERVER_IP "216.239.35.0" // Google NTP
 
@@ -29,9 +29,9 @@
 #define BOOT_BTN_PIN 0
 #define LED_PIN 2
 #define RGB_LED_PIN 48
-#define SD_CMD_PIN 38 // SD_CMD
-#define SD_DATA_PIN 40 // SD_DATA
-#define SD_CLK_PIN 39 // SD_CLK
+#define SD_CMD_PIN 38
+#define SD_DATA_PIN 40
+#define SD_CLK_PIN 39
 
 // Discord embed colors
 #define DISCORD_COLOR_BLUE 3447003  // #3498DB

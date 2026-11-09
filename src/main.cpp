@@ -39,6 +39,7 @@ volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;
 volatile bool buttonEventPending = false;
 volatile bool shouldRestart = false;
+volatile bool isOtaUpdating = false;
 
 TaskHandle_t MonitoringTaskHandle = NULL;
 TaskHandle_t MonitoringLEDTaskHandle = NULL;
@@ -65,11 +66,15 @@ void setup() {
     Logger.info(MAINLOG, "Commit hash: %s, Build date: %s", COMMIT_HASH, BUILD_TIMESTAMP);
 
     const esp_partition_t *running = esp_ota_get_running_partition();
-    esp_ota_img_states_t ota_state;
-    if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
-        if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
-            Logger.info(MAINLOG, "OTA update successful, confirming new firmware (canceling rollback)");
-            esp_ota_mark_app_valid_cancel_rollback();
+    if (running != NULL) {
+        Logger.info(MAINLOG, "Running partition: %s (address: 0x%06x)", running->label, running->address);
+        esp_ota_img_states_t ota_state;
+        if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
+            Logger.info(MAINLOG, "OTA state: 0x%02x", ota_state);
+            if (ota_state == ESP_OTA_IMG_PENDING_VERIFY || ota_state == ESP_OTA_IMG_NEW) {
+                Logger.info(MAINLOG, "OTA update successful, confirming new firmware (canceling rollback)");
+                esp_ota_mark_app_valid_cancel_rollback();
+            }
         }
     }
 
@@ -105,6 +110,7 @@ void setup() {
     }
 
     if (!storage.fileExists(CONFIG_FILE_PATH)) {
+        Logger.warning(MAINLOG, "Config file not found, entering configuration mode");
         configurationMode();
     } else {
         initNormalMode();
@@ -117,6 +123,7 @@ void setup() {
 }
 
 void loop() {
+    ElegantOTA.loop();
     if (buttonEventPending) {
         buttonEventPending = false;
         Logger.debug(MAINLOG, "BOOT button pressed, configuration functions %s", isConfigFunctionsEnabled ? "enabled" : "disabled");
@@ -124,12 +131,12 @@ void loop() {
     }
     if (isAPMode) {
         dnsServer.processNextRequest();
-    } else {
+    } else if (!isOtaUpdating) {
         wsService.cleanupClients();
         wsService.processEvents();
 
         static unsigned long lastWsSysinfo = 0;
-        if (millis() - lastWsSysinfo >= 2000) {
+        if (millis() - lastWsSysinfo >= WS_SYSINFO_INTERVAL) {
             lastWsSysinfo = millis();
             if (wsService.hasActiveClients()) {
                 wsService.broadcastSysinfo();
@@ -154,7 +161,7 @@ void loop() {
             restartTicker.once_ms(2000, []() {
                 ESP.restart();
             });
-        } else {
+        } else if (!isOtaUpdating) {
             networkContext.checkConnection();
         }
     }
@@ -247,32 +254,14 @@ void setupOTA() {
     ElegantOTA.begin(&server);
 
     ElegantOTA.onStart([]() {
-        Logger.warning(MAINLOG, "OTA firmware update started! Suspending monitoring and locking SD...");
-        wsService.closeAll();
-        if (MonitoringTaskHandle != NULL) {
-            vTaskSuspend(MonitoringTaskHandle);
-        }
-        xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY);
-    });
-
-    ElegantOTA.onProgress([](size_t current, size_t final) {
-        static unsigned long lastOtaProgress = 0;
-        if (millis() - lastOtaProgress > 1000) {
-            lastOtaProgress = millis();
-            Logger.info(MAINLOG, "OTA progress: %u%% (%u / %u bytes)", (current * 100) / final, current, final);
-        }
+        isOtaUpdating = true;
     });
 
     ElegantOTA.onEnd([](bool success) {
         if (success) {
-            Logger.info(MAINLOG, "OTA update finished successfully! Unmounting SD card...");
             storage.unmount();
         } else {
-            Logger.error(MAINLOG, "OTA update failed!");
-            xSemaphoreGive(monitoredEntityRepository.getMutex());
-            if (MonitoringTaskHandle != NULL) {
-                vTaskResume(MonitoringTaskHandle);
-            }
+            isOtaUpdating = false;
         }
     });
 }
@@ -401,6 +390,10 @@ void monitoringTaskLoop(void * pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(5000));
     Logger.info(MAINLOG, "Started monitoring task on core: %d", xPortGetCoreID);
     for(;;) {
+        if (isOtaUpdating) {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            continue;
+        }
         if (WiFi.status() == WL_CONNECTED) {
             digitalWrite(LED_PIN, HIGH);
             monitoringService.checkAll();

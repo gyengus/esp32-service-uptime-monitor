@@ -64,7 +64,7 @@ def minify_js(text, project_dir):
         if cmd == "terser" or os.path.isfile(cmd):
             try:
                 proc = subprocess.run(
-                    [cmd, "--compress", "--mangle"],
+                    [cmd, "--compress", "toplevel=true", "--mangle", "toplevel=true"],
                     input=text.encode("utf-8"),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -185,6 +185,60 @@ def upload_web_action(source, target, env):
         print(f"[UPLOAD_WEB] Error connecting to {url}: {e}")
         raise
 
+def upload_firmware_ota_action(source, target, env):
+    esp_host = os.environ.get("ESP_IP", "esp32_service_uptime_monitor.local")
+    firmware_path = str(source[0])
+    file_size = os.path.getsize(firmware_path)
+
+    import hashlib
+    with open(firmware_path, "rb") as f:
+        firmware_bytes = f.read()
+    md5 = hashlib.md5(firmware_bytes).hexdigest()
+
+    print(f"\n[OTA_UPLOAD] Initiating firmware update to: http://{esp_host}/ ...")
+    print(f"[OTA_UPLOAD] Firmware binary: {firmware_path} ({file_size} bytes, MD5: {md5})")
+
+    try:
+        import requests
+        from requests_toolbelt import MultipartEncoder
+    except ImportError:
+        env.Execute("$PYTHONEXE -m pip install requests_toolbelt")
+        from requests_toolbelt import MultipartEncoder
+        import requests
+
+    start_url = f"http://{esp_host}/ota/start?mode=fr&hash={md5}"
+    try:
+        resp = requests.get(start_url, timeout=15)
+        if resp.status_code != 200:
+            print(f"[OTA_UPLOAD] Handshake failed: {resp.status_code} {resp.text}")
+            raise RuntimeError(f"OTA start failed: {resp.status_code}")
+        print(f"[OTA_UPLOAD] Handshake response: {resp.text.strip()}")
+    except Exception as e:
+        print(f"[OTA_UPLOAD] Error connecting to {start_url}: {e}")
+        raise
+
+    upload_url = f"http://{esp_host}/ota/upload"
+    print(f"[OTA_UPLOAD] Streaming firmware upload to {upload_url}...")
+    try:
+        with open(firmware_path, "rb") as f:
+            encoder = MultipartEncoder(fields={
+                "MD5": md5,
+                "firmware": ("firmware.bin", f, "application/octet-stream")
+            })
+            headers = {
+                "Content-Type": encoder.content_type,
+                "Content-Length": str(encoder.len)
+            }
+            resp = requests.post(upload_url, data=encoder, headers=headers, timeout=90)
+            if resp.status_code != 200:
+                print(f"[OTA_UPLOAD] Upload failed: {resp.status_code} {resp.text}")
+                raise RuntimeError(f"OTA upload failed: {resp.status_code}")
+            print(f"[OTA_UPLOAD] Server response: {resp.text.strip()}")
+            print("[OTA_UPLOAD] Firmware update successful! ESP32 is rebooting into the new firmware.\n")
+    except Exception as e:
+        print(f"[OTA_UPLOAD] Upload error: {e}")
+        raise
+
 env.AddCustomTarget(
     name="uploadweb",
     dependencies=None,
@@ -200,3 +254,6 @@ env.AddCustomTarget(
     title="Pack Web UI to web.zip",
     description="Create web.zip containing all production assets from web/"
 )
+
+if env.get("UPLOAD_PROTOCOL") == "custom":
+    env.Replace(UPLOADCMD=upload_firmware_ota_action)

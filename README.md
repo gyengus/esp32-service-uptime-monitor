@@ -1,17 +1,16 @@
 # ESP32 Service Uptime Monitor
 
-An ESP32-S3 based monitoring device that periodically checks the availability of services (via HTTP HEAD or ICMP PING) and sends Discord notifications when status changes occur.
+An ESP32-S3 based monitoring device that periodically checks the availability of services (via HTTP HEAD) and sends Discord notifications when status changes occur.
 
 ## Features
 
-- **Dual monitoring types**: HTTP HEAD requests or ICMP PING
 - **WiFi AP/STA mode**: Easy configuration via built-in access point or connect to existing WiFi
 - **OTA Firmware updates**: Update firmware over-the-air via Web UI or PlatformIO (`esp32-s3-ota` environment)
 - **Over-the-Air Web UI updates**: Update web assets (.zip) directly onto the SD card with automatic in-memory minification
 - **Web UI**: Bootstrap-based interface for monitoring and configuration
 - **Discord integration**: Send notifications to Discord channels on status changes
 - **SD card storage**: Persistent configuration and entity storage
-- **mDNS support**: Access via hostname.local
+- **mDNS support**: Access via esp32_service_uptime_monitor.local
 - **SNTP time sync**: Automatic time synchronization
 - **LED status indicator**: Visual feedback on monitoring status
 - **Temperature monitoring**: ESP32 internal temperature monitoring
@@ -123,7 +122,6 @@ Access the device at `http://<hostname>.local/` or `http://<IP>/`
 2. Fill in:
    - **Name**: Unique identifier for the entity
    - **Address**: IP address, hostname, or URL to monitor
-   - **Type**: HTTP HEAD or ICMP PING
    - **Notifications**: Enable Discord notifications on status change
    - **Disabled**: Skip this entity from monitoring
    - **Icon**: Material Design Icons class (default: `mdi-server`)
@@ -195,7 +193,6 @@ Press the boot button to toggle configuration mode:
   {
     "name": "WebServer",
     "address": "https://example.com",
-    "type": "HEAD",
     "icon": "mdi-web",
     "notification": true,
     "disabled": false,

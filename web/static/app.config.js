@@ -335,7 +335,7 @@ $('#firmwareBinaryFile').on('change', function(event) {
             $text.text('Uploading firmware...');
 
             const formData = new FormData();
-            formData.append('firmware', file);
+            formData.append('file', file, file.name);
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/ota/upload', true);

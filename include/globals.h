@@ -11,6 +11,7 @@
 extern volatile bool isConfigFunctionsEnabled;
 extern bool isAPMode;
 extern volatile bool shouldRestart;
+extern volatile bool isOtaUpdating;
 extern TaskHandle_t MonitoringTaskHandle;
 extern temperature_sensor_handle_t temp_sensor;
 
