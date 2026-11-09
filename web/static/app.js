@@ -298,3 +298,19 @@ function formatUptime(seconds) {
 $('#filterAll').click(() => { currentFilter = 'ALL'; renderEntities(); });
 $('#filterOnline').click(() => { currentFilter = 'ONLINE'; renderEntities(); });
 $('#filterOffline').click(() => { currentFilter = 'OFFLINE'; renderEntities(); });
+
+if (typeof window !== 'undefined') {
+    window.formatUptime = formatUptime;
+    window.loadSummary = loadSummary;
+    window.loadEntities = loadEntities;
+    window.renderEntities = renderEntities;
+    window.loadSystemStats = loadSystemStats;
+    window.showSuccess = showSuccess;
+    window.showError = showError;
+    window.get_allEntities = () => allEntities;
+    window.set_allEntities = (v) => { allEntities = v; };
+    window.get_currentFilter = () => currentFilter;
+    window.set_currentFilter = (v) => { currentFilter = v; };
+    window.get_entityToDelete = () => entityToDelete;
+    window.set_entityToDelete = (v) => { entityToDelete = v; };
+}

@@ -261,3 +261,9 @@ function showToast(toastId, msg) {
     const toast = new bootstrap.Toast(toastObj[0], { delay: 3000 });
     toast.show();
 }
+
+if (typeof window !== 'undefined') {
+    window.showError = showError;
+    window.showSuccess = showSuccess;
+    window.showToast = showToast;
+}
