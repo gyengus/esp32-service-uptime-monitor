@@ -292,4 +292,97 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#errorToast').hasClass('show')).toBe(true);
     });
   });
+
+  describe('WebSocket Real-Time Updates & Pulse Animation', () => {
+    it('updates connection status dot', () => {
+      window.setWsStatus(true);
+      expect($('#wsStatusDot').hasClass('bg-success')).toBe(true);
+      expect($('#wsStatusDot').attr('title')).toContain('Live');
+
+      window.setWsStatus(false);
+      expect($('#wsStatusDot').hasClass('bg-danger')).toBe(true);
+      expect($('#wsStatusDot').attr('title')).toContain('Disconnected');
+    });
+
+    it('handles init message correctly', () => {
+      window.handleWsMessage({
+        type: 'init',
+        entities: [
+          { name: 'WsEntity1', address: 'http://ws1.local', icon: 'mdi-lan', isOnline: true, notification: false, disabled: false, lastChanged: 1700000000 }
+        ],
+        summary: { total: 1, online: 1, offline: 0 },
+        sysinfo: { uptime: 200, rssi: -50, freeHeap: 80000, temperature: 40, version: '2.0.0', configEnabled: false }
+      });
+
+      expect(window.get_allEntities().length).toBe(1);
+      expect($('#entityGrid .monitoredEntity').length).toBe(1);
+      expect($('#navTotal').text()).toBe('1');
+      expect($('#uptimeVal').text()).toBe('3m');
+    });
+
+    it('handles entity_update message and triggers pulse animation on status change', () => {
+      window.set_allEntities([
+        { name: 'Server1', address: 'http://server1.local', icon: 'mdi-server', isOnline: true, notification: false, disabled: false, lastChanged: 100 }
+      ]);
+      window.renderEntities();
+
+      const card = $('.monitoredEntity[data-entity-name="Server1"]');
+      expect(card.hasClass('text-bg-success')).toBe(true);
+
+      // Status change to offline -> should update class and trigger pulse animation
+      window.handleWsMessage({
+        type: 'entity_update',
+        entity: { name: 'Server1', address: 'http://server1.local', icon: 'mdi-server', isOnline: false, notification: false, disabled: false, lastChanged: 200 }
+      });
+
+      const updatedCard = $('.monitoredEntity[data-entity-name="Server1"]');
+      expect(updatedCard.hasClass('text-bg-danger')).toBe(true);
+      expect(updatedCard.hasClass('card-status-pulse')).toBe(true);
+
+      // Fast-forward timer to clear pulse class
+      vi.advanceTimersByTime(900);
+      expect(updatedCard.hasClass('card-status-pulse')).toBe(false);
+    });
+
+    it('handles entity_delete message and removes card from DOM', () => {
+      window.set_allEntities([
+        { name: 'KeepMe', address: 'http://keep.local', icon: 'mdi-server', isOnline: true, notification: false, disabled: false, lastChanged: 100 },
+        { name: 'DeleteMe', address: 'http://del.local', icon: 'mdi-server', isOnline: true, notification: false, disabled: false, lastChanged: 100 }
+      ]);
+      window.renderEntities();
+      expect($('#entityGrid .monitoredEntity').length).toBe(2);
+
+      window.handleWsMessage({
+        type: 'entity_delete',
+        name: 'DeleteMe'
+      });
+
+      expect(window.get_allEntities().length).toBe(1);
+      expect($('#entityGrid .monitoredEntity').length).toBe(1);
+      expect($('.monitoredEntity[data-entity-name="DeleteMe"]').length).toBe(0);
+    });
+
+    it('handles real-time summary update message', () => {
+      window.handleWsMessage({
+        type: 'summary',
+        data: { total: 10, online: 8, offline: 2 }
+      });
+
+      expect($('#navTotal').text()).toBe('10');
+      expect($('#navOnline').text()).toBe('8');
+      expect($('#navOffline').text()).toBe('2');
+    });
+
+    it('handles real-time sysinfo update message', () => {
+      window.handleWsMessage({
+        type: 'sysinfo',
+        data: { uptime: 7200, rssi: -45, freeHeap: 90000, temperature: 44.2, configEnabled: true }
+      });
+
+      expect($('#uptimeVal').text()).toBe('2h 0m');
+      expect($('#rssiVal').text()).toBe('-45 dBm');
+      expect($('#tempVal').text()).toBe('44.2 °C');
+      expect($('#configButton').css('display')).not.toBe('none');
+    });
+  });
 });

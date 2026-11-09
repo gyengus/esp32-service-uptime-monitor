@@ -197,3 +197,22 @@ div#mainContainer {
 @keyframes icon-blink {
     50% { opacity: 0.5; }
 }
+
+.ws-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+@keyframes card-pulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.03); filter: brightness(1.25); box-shadow: 0 0 18px rgba(255, 255, 255, 0.7); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+.card-status-pulse {
+    animation: card-pulse 0.8s ease-in-out;
+    z-index: 5;
+}

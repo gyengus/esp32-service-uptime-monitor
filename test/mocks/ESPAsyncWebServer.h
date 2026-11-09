@@ -163,6 +163,86 @@ typedef std::function<void(AsyncWebServerRequest *request)> ArRequestHandlerFunc
 typedef std::function<void(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)> ArUploadHandlerFunction;
 typedef std::function<void(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)> ArBodyHandlerFunction;
 
+class AsyncWebHandler {
+public:
+    virtual ~AsyncWebHandler() = default;
+};
+
+class AsyncWebSocketClient {
+public:
+    AsyncWebSocketClient(uint32_t id = 1) : _id(id) {}
+    uint32_t id() const { return _id; }
+    bool text(const String& message) {
+        lastMessage = message;
+        sentMessages.push_back(message);
+        return true;
+    }
+    String lastMessage;
+    std::vector<String> sentMessages;
+private:
+    uint32_t _id;
+};
+
+enum AwsEventType {
+    WS_EVT_CONNECT,
+    WS_EVT_DISCONNECT,
+    WS_EVT_DATA,
+    WS_EVT_PONG,
+    WS_EVT_ERROR
+};
+
+class AsyncWebSocket;
+typedef std::function<void(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)> AwsEventHandler;
+
+class AsyncWebSocket : public AsyncWebHandler {
+public:
+    AsyncWebSocket(const char* url) : _url(url) {}
+    ~AsyncWebSocket() {
+        for (auto c : _clients) delete c;
+        _clients.clear();
+    }
+    void onEvent(AwsEventHandler handler) { _handler = handler; }
+    void textAll(const String& message) {
+        lastBroadcast = message;
+        allBroadcasts.push_back(message);
+        for (auto c : _clients) {
+            c->text(message);
+        }
+    }
+    void cleanupClients() {}
+    size_t count() const { return _clients.size(); }
+    void closeAll() {
+        for (auto c : _clients) delete c;
+        _clients.clear();
+    }
+
+    AsyncWebSocketClient* mockConnect(uint32_t id = 1) {
+        auto c = new AsyncWebSocketClient(id);
+        _clients.push_back(c);
+        if (_handler) {
+            _handler(this, c, WS_EVT_CONNECT, nullptr, nullptr, 0);
+        }
+        return c;
+    }
+
+    void mockDisconnect(AsyncWebSocketClient* c) {
+        if (_handler) {
+            _handler(this, c, WS_EVT_DISCONNECT, nullptr, nullptr, 0);
+        }
+        auto it = std::find(_clients.begin(), _clients.end(), c);
+        if (it != _clients.end()) {
+            _clients.erase(it);
+            delete c;
+        }
+    }
+
+    String lastBroadcast;
+    std::vector<String> allBroadcasts;
+    AwsEventHandler _handler;
+    std::vector<AsyncWebSocketClient*> _clients;
+    String _url;
+};
+
 struct MockRoute {
     String uri;
     WebRequestMethodComposite method;
@@ -175,8 +255,13 @@ struct MockRoute {
 class AsyncWebServer {
 public:
     std::vector<MockRoute> routes;
+    std::vector<AsyncWebHandler*> handlers;
 
     AsyncWebServer(uint16_t port = 80) {}
+
+    void addHandler(AsyncWebHandler* handler) {
+        handlers.push_back(handler);
+    }
 
     void on(const char* uri, WebRequestMethodComposite method, ArRequestHandlerFunction onRequest,
             ArUploadHandlerFunction onUpload = NULL, ArBodyHandlerFunction onBody = NULL) {

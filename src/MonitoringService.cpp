@@ -5,6 +5,7 @@
 #include "Config.h"
 #include "MonitoredEntityRepository.h"
 #include "NotificationService.h"
+#include "WsService.h"
 #include "globals.h"
 
 MonitoringService& MonitoringService::getInstance() {
@@ -53,6 +54,12 @@ bool MonitoringService::checkAll() {
             if (notify) {
                 _handleStatusChange(entitySnapshot.getName(), newStatus);
             }
+            if (statusChanged) {
+                MonitoredEntity updated;
+                if (monitoredEntityRepository.getEntity(entitySnapshot.getName(), updated)) {
+                    wsService.queueEntityUpdate(updated);
+                }
+            }
         }
     }
 
@@ -63,6 +70,7 @@ bool MonitoringService::checkAll() {
     unsigned int total = 0;
     monitoredEntityRepository.getCounts(_online, _offline, total);
     _entities = total;
+    wsService.queueSummary(_online, _offline, total);
 
     return true;
 }

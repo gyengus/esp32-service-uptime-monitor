@@ -1,28 +1,174 @@
 let allEntities = [];
 let currentFilter = 'ALL';
 let entityToDelete = "";
+let ws = null;
+let wsReconnectTimer = null;
+let wsReconnectDelay = 1000;
 
 $(document).ready(function() {
+    initWebSocket();
     loadEntities();
     loadSystemStats();
     loadSummary();
-    setInterval(loadSummary, 10000);
-    setInterval(loadSystemStats, 2000);
-    setInterval(loadEntities, 30000); 
 });
+
+function setWsStatus(connected) {
+    const dot = $('#wsStatusDot');
+    if (!dot.length) return;
+    if (connected) {
+        dot.removeClass('bg-secondary bg-danger').addClass('bg-success').attr('title', 'Live (WebSocket connected)');
+    } else {
+        dot.removeClass('bg-secondary bg-success').addClass('bg-danger').attr('title', 'Disconnected (Reconnecting...)');
+    }
+}
+
+function initWebSocket() {
+    if (typeof WebSocket === 'undefined') return;
+    const loc = window.location;
+    if (!loc || !loc.host) return;
+
+    const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${loc.host}/ws`;
+
+    try {
+        ws = new WebSocket(wsUrl);
+        if (typeof window !== 'undefined') {
+            window.ws = ws;
+        }
+    } catch (e) {
+        setWsStatus(false);
+        scheduleReconnect();
+        return;
+    }
+
+    ws.onopen = function() {
+        console.log('[WS] Connected to ' + wsUrl);
+        wsReconnectDelay = 1000;
+        setWsStatus(true);
+    };
+
+    ws.onmessage = function(event) {
+        try {
+            const msg = JSON.parse(event.data);
+            console.log('[WS Received]', msg);
+            handleWsMessage(msg);
+        } catch (e) {
+            console.error('[WS] Invalid message:', e, event.data);
+        }
+    };
+
+    ws.onclose = function(e) {
+        console.warn('[WS] Closed:', e.code, e.reason);
+        setWsStatus(false);
+        scheduleReconnect();
+    };
+
+    ws.onerror = function(err) {
+        console.error('[WS] Error:', err);
+        setWsStatus(false);
+    };
+}
+
+function scheduleReconnect() {
+    if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = setTimeout(() => {
+        initWebSocket();
+        wsReconnectDelay = Math.min(wsReconnectDelay * 1.5, 10000);
+    }, wsReconnectDelay);
+}
+
+function handleWsMessage(msg) {
+    if (!msg || !msg.type) return;
+
+    switch (msg.type) {
+        case 'init':
+            if (Array.isArray(msg.entities)) {
+                allEntities = msg.entities;
+                renderEntities();
+            }
+            if (msg.summary) updateSummaryUI(msg.summary);
+            if (msg.sysinfo) updateSysinfoUI(msg.sysinfo);
+            break;
+
+        case 'entity_update':
+            if (msg.entity) {
+                handleEntityUpdate(msg.entity);
+            }
+            break;
+
+        case 'entity_delete':
+            if (msg.name) {
+                handleEntityDelete(msg.name);
+            }
+            break;
+
+        case 'summary':
+            if (msg.data) updateSummaryUI(msg.data);
+            break;
+
+        case 'sysinfo':
+            if (msg.data) updateSysinfoUI(msg.data);
+            break;
+
+        default:
+            break;
+    }
+}
+
+function handleEntityUpdate(updatedEntity) {
+    const index = allEntities.findIndex(e => e.name === updatedEntity.name);
+    let statusChanged = false;
+
+    if (index >= 0) {
+        const prev = allEntities[index];
+        statusChanged = (prev.isOnline !== updatedEntity.isOnline) || (prev.disabled !== updatedEntity.disabled);
+        allEntities[index] = { ...prev, ...updatedEntity };
+    } else {
+        allEntities.push(updatedEntity);
+        statusChanged = true;
+    }
+
+    renderEntities();
+
+    if (statusChanged) {
+        triggerCardPulse(updatedEntity.name);
+    }
+}
+
+function handleEntityDelete(name) {
+    allEntities = allEntities.filter(e => e.name !== name);
+    renderEntities();
+}
+
+function triggerCardPulse(entityName) {
+    const card = $(`.monitoredEntity[data-entity-name="${CSS.escape(entityName)}"]`);
+    if (card.length) {
+        card.removeClass('card-status-pulse');
+        void card[0].offsetWidth; // trigger reflow
+        card.addClass('card-status-pulse');
+        setTimeout(() => {
+            card.removeClass('card-status-pulse');
+        }, 850);
+    }
+}
 
 function loadSummary() {
     $.getJSON('/api/summary', function(stats) {
-        if ($('#navTotal').text() != stats.total) {
-            $('#navTotal').fadeOut(200, function() { $(this).text(stats.total).fadeIn(200); });
-        }
-        if ($('#navOnline').text() != stats.online) {
-            $('#navOnline').fadeOut(200, function() { $(this).text(stats.online).fadeIn(200); });
-        }
-        if ($('#navOffline').text() != stats.offline) {
-            $('#navOffline').fadeOut(200, function() { $(this).text(stats.offline).fadeIn(200); });
-        }
+        updateSummaryUI(stats);
     });
+}
+
+function updateSummaryUI(stats) {
+    if (!stats) return;
+    if ($('#navTotal').text() != stats.total) {
+        $('#navTotal').fadeOut(200, function() { $(this).text(stats.total).fadeIn(200); });
+    }
+    if ($('#navOnline').text() != stats.online) {
+        $('#navOnline').fadeOut(200, function() { $(this).text(stats.online).fadeIn(200); });
+    }
+    if ($('#navOffline').text() != stats.offline) {
+        $('#navOffline').fadeOut(200, function() { $(this).text(stats.offline).fadeIn(200); });
+    }
 }
 
 $('#refreshButton').click(function() {
@@ -38,7 +184,6 @@ function loadEntities() {
     $.getJSON('/api/monitoredentities', function(data) {
         allEntities = data;
         renderEntities();
-        
     }).fail(function() {
         showError("Can't fetch monitored entities");
     }).always(function() {
@@ -97,7 +242,7 @@ function renderEntities() {
 
         let cardHtml = `
             <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 shadow monitoredEntity ${cardBgClass}">
+                <div class="card h-100 shadow monitoredEntity ${cardBgClass}" data-entity-name="${entity.name}">
                     <div class="card-body position-relative">
                         <div class="position-absolute top-0 end-0 p-2 buttons">
                             <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-edit p-1" data-name="${entity.name}" title="Edit">
@@ -177,7 +322,6 @@ $('#saveButton').click(function(event) {
         disabled: $('#disabledEnabled').is(':checked')
     };
 
-
     let url = '/api/monitoredentity';
     let method = 'POST';
     if ($('#id').val()) {
@@ -231,7 +375,6 @@ $('#confirmDeleteButton').click(function() {
         $('#deleteEntityNameDisplay').text('');
         entityToDelete = "";
     });
-
 });
 
 function showSuccess(msg) {
@@ -251,7 +394,14 @@ function showToast(toastId, msg) {
 
 function loadSystemStats() {
     $.getJSON("/api/sysinfo", function(data) {
-        $("#uptimeVal").text(formatUptime(data.uptime));
+        updateSysinfoUI(data);
+    });
+}
+
+function updateSysinfoUI(data) {
+    if (!data) return;
+    if (data.uptime !== undefined) $("#uptimeVal").text(formatUptime(data.uptime));
+    if (data.rssi !== undefined) {
         $("#rssiVal").text(data.rssi + " dBm");
         $("#rssiIcon").removeClass("text-success text-warning text-danger");
         $("#rssiVal").removeClass("text-success text-warning text-danger");
@@ -265,19 +415,25 @@ function loadSystemStats() {
             $("#rssiIcon").addClass("text-danger");
             $("#rssiVal").addClass("text-danger");
         }
+    }
+    if (data.freeHeap !== undefined) {
         $("#heapVal").text((data.freeHeap / 1024).toFixed(0) + " KB");
+    }
+    if (data.temperature !== undefined) {
         $("#tempVal").text(data.temperature ? data.temperature.toFixed(1) + " °C" : "--");
-        
-        $("#versionVal").text(data.version);
-        $("#commitVal").text('#' + data.commit);
-        $("#buildDateVal").text(data.buildDate);
+    }
+    
+    if (data.version !== undefined) $("#versionVal").text(data.version);
+    if (data.commit !== undefined) $("#commitVal").text('#' + data.commit);
+    if (data.buildDate !== undefined) $("#buildDateVal").text(data.buildDate);
 
+    if (data.configEnabled !== undefined) {
         if (data.configEnabled) {
             $('#configButton').show();
         } else {
             $('#configButton').hide();
         }
-    });
+    }
 }
 
 function formatUptime(seconds) {
@@ -302,11 +458,21 @@ $('#filterOffline').click(() => { currentFilter = 'OFFLINE'; renderEntities(); }
 if (typeof window !== 'undefined') {
     window.formatUptime = formatUptime;
     window.loadSummary = loadSummary;
+    window.updateSummaryUI = updateSummaryUI;
     window.loadEntities = loadEntities;
     window.renderEntities = renderEntities;
     window.loadSystemStats = loadSystemStats;
+    window.updateSysinfoUI = updateSysinfoUI;
     window.showSuccess = showSuccess;
     window.showError = showError;
+    window.initWebSocket = initWebSocket;
+    window.handleWsMessage = handleWsMessage;
+    window.handleEntityUpdate = handleEntityUpdate;
+    window.handleEntityDelete = handleEntityDelete;
+    window.triggerCardPulse = triggerCardPulse;
+    window.setWsStatus = setWsStatus;
+    window.get_ws = () => ws;
+    window.set_ws = (v) => { ws = v; };
     window.get_allEntities = () => allEntities;
     window.set_allEntities = (v) => { allEntities = v; };
     window.get_currentFilter = () => currentFilter;

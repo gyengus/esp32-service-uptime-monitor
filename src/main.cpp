@@ -24,6 +24,7 @@
 #include "fileManager.h"
 #include "MonitoringService.h"
 #include "MonitoredEntityRepository.h"
+#include "WsService.h"
 #include <ElegantOTA.h>
 #include "esp_ota_ops.h"
 
@@ -119,10 +120,22 @@ void loop() {
     if (buttonEventPending) {
         buttonEventPending = false;
         Logger.debug(MAINLOG, "BOOT button pressed, configuration functions %s", isConfigFunctionsEnabled ? "enabled" : "disabled");
+        wsService.broadcastSysinfo();
     }
     if (isAPMode) {
         dnsServer.processNextRequest();
     } else {
+        wsService.cleanupClients();
+        wsService.processEvents();
+
+        static unsigned long lastWsSysinfo = 0;
+        if (millis() - lastWsSysinfo >= 2000) {
+            lastWsSysinfo = millis();
+            if (wsService.hasActiveClients()) {
+                wsService.broadcastSysinfo();
+            }
+        }
+
 #ifdef MEM_STATS_LOGGING
         static unsigned long lastMemCheck = 0;
         if (millis() - lastMemCheck > 10000) {
@@ -206,6 +219,7 @@ void initNormalMode() {
         sntpSyncTicker.attach(SNTP_SYNC_INTERVAL, onSntpSyncSchedule);
     }
 
+    wsService.init(server);
     monitoringService.init();
 
 
@@ -234,6 +248,7 @@ void setupOTA() {
 
     ElegantOTA.onStart([]() {
         Logger.warning(MAINLOG, "OTA firmware update started! Suspending monitoring and locking SD...");
+        wsService.closeAll();
         if (MonitoringTaskHandle != NULL) {
             vTaskSuspend(MonitoringTaskHandle);
         }
@@ -263,7 +278,6 @@ void setupOTA() {
 }
 
 void commonWebServerSettings() {
-    DefaultHeaders::Instance().addHeader("Connection", "close");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(SD_MMC, (String(WEB_UI_PATH) + "/static/favicon.ico"), "image/x-icon");

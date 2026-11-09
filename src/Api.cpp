@@ -13,6 +13,7 @@
 #include "MonitoredEntityRepository.h"
 #include "MonitoringService.h"
 #include "NotificationService.h"
+#include "WsService.h"
 #include "PSRAMAllocator.h"
 #include "WebArchiveExtractor.h"
 
@@ -265,6 +266,8 @@ void Api::registerConfigEndpoints() {
 
         Logger.info(MAINLOG, "Web archive upload completed. Starting extraction...");
 
+        wsService.closeAll();
+
         if (MonitoringTaskHandle != NULL) {
             vTaskSuspend(MonitoringTaskHandle);
         }
@@ -372,6 +375,8 @@ void Api::registerServicesEndpoints() {
         String name = request->pathArg(0);
         
         if (monitoredEntityRepository.removeEntity(name)) {
+            wsService.broadcastEntityDeleted(name);
+            wsService.broadcastSummary();
             request->send(200, "application/json", "{\"status\":\"deleted\"}");
         } else {
             request->send(404, "application/json", "{\"error\":\"Not found\"}");
@@ -392,6 +397,8 @@ void Api::registerServicesEndpoints() {
             if (newEntity.fromJsonObject(doc.as<JsonObject>())) {
                 if (!monitoredEntityRepository.hasEntity(newEntity.getName())) {
                     monitoredEntityRepository.addEntity(newEntity);
+                    wsService.broadcastEntityUpdate(newEntity);
+                    wsService.broadcastSummary();
                     request->send(201, "application/json", "{\"status\":\"created\"}");
                 } else {
                     request->send(409, "application/json", "{\"error\":\"Already exists\"}");
@@ -432,6 +439,11 @@ void Api::registerServicesEndpoints() {
                 updatedData.setOnlineStatus(existingEntity.isOnline());
                 updatedData.resetFailCount();
                 if (monitoredEntityRepository.updateEntity(oldName, updatedData)) {
+                    if (!oldName.equals(updatedData.getName())) {
+                        wsService.broadcastEntityDeleted(oldName);
+                    }
+                    wsService.broadcastEntityUpdate(updatedData);
+                    wsService.broadcastSummary();
                     request->send(200, "application/json", "{\"status\":\"updated\"}");
                 } else {
                     request->send(404, "application/json", "{\"error\":\"Error when saving entity\"}");
