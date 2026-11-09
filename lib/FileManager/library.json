@@ -1,0 +1,12 @@
+{
+  "name": "FileManager",
+  "version": "1.0.0",
+  "description": "AsyncWebServer-based file manager for ESP32 filesystems (SD_MMC, SD, LittleFS, SPIFFS) with upload, download, list, delete, and mkdir",
+  "keywords": "esp32, asyncwebserver, filemanager, sd, littlefs, spiffs, upload",
+  "authors": {
+    "name": "Gabor Gyenge",
+    "url": "https://github.com/gyengus"
+  },
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

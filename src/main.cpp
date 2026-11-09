@@ -22,7 +22,7 @@
 #include "Api.h"
 #include "LedService.h"
 
-#include "fileManager.h"
+#include "FileManager.h"
 #include "MonitoringService.h"
 #include "MonitoredEntityRepository.h"
 #include "WsService.h"
@@ -36,6 +36,7 @@ Ticker restartTicker;
 DNSServer dnsServer;
 AsyncWebServer server(80);
 Api api = Api(server);
+FileManager fileManager(SD_MMC, WEB_UI_PATH);
 
 volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;
@@ -75,6 +76,21 @@ void setup() {
         } else {
             Logger.info(MAINLOG, "%s", msg);
         }
+    });
+
+    fileManager.setLogger([](const char* level, const char* msg) {
+        if (strcasecmp(level, "error") == 0) {
+            Logger.error(MAINLOG, "%s", msg);
+        } else if (strcasecmp(level, "warning") == 0) {
+            Logger.warning(MAINLOG, "%s", msg);
+        } else if (strcasecmp(level, "debug") == 0) {
+            Logger.debug(MAINLOG, "%s", msg);
+        } else {
+            Logger.info(MAINLOG, "%s", msg);
+        }
+    });
+    fileManager.setAvailabilityCheck([]() {
+        return storage.isAvailable();
     });
 
     Logger.info(MAINLOG, "ESP32 Service Uptime Monitor v%s", FIRMWARE_VERSION);
@@ -303,7 +319,7 @@ void commonWebServerSettings() {
             request->send(404, "text/plain", "Not found");
         }
     });
-    registerFileHandlers(server);
+    fileManager.registerHandlers(server);
 }
 
 void onSntpSyncSchedule() {
