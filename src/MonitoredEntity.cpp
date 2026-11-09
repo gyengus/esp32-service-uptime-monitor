@@ -1,16 +1,15 @@
 #include "MonitoredEntity.h"
 
-MonitoredEntity::MonitoredEntity(const String& name, const String& address, CheckType type, const String& icon, bool notify)
-    : _name(name), _address(address), _type(type), _icon(icon), _notification(notify),
+MonitoredEntity::MonitoredEntity(const String& name, const String& address, const String& icon, bool notify)
+    : _name(name), _address(address), _icon(icon), _notification(notify),
       _isOnline(false), _lastChanged(0), _disabled(false), _failCount(0) {}
 
-MonitoredEntity::MonitoredEntity() : _type(PING), _isOnline(false), _lastChanged(0), _notification(true), _disabled(false), _failCount(0) { }
+MonitoredEntity::MonitoredEntity() : _isOnline(false), _lastChanged(0), _notification(true), _disabled(false), _failCount(0) { }
 
 // --- Getters ---
 String MonitoredEntity::getName() const { return _name; }
 String MonitoredEntity::getAddress() const { return _address; }
 String MonitoredEntity::getIcon() const { return _icon; }
-CheckType MonitoredEntity::getType() const { return _type; }
 bool MonitoredEntity::isOnline() const { return _isOnline; }
 bool MonitoredEntity::getNotification() const { return _notification; }
 bool MonitoredEntity::isDisabled() const { return _disabled; }
@@ -20,7 +19,6 @@ time_t MonitoredEntity::getLastChanged() const { return _lastChanged; }
 void MonitoredEntity::setName(String &name) { _name = name; }
 void MonitoredEntity::setAddress(String &addr) { _address = addr; }
 void MonitoredEntity::setIcon(String &icon) { _icon = icon; }
-void MonitoredEntity::setType(CheckType type) { _type = type; }
 void MonitoredEntity::setNotification(bool notify) { _notification = notify; }
 void MonitoredEntity::setDisabled(bool disabled) { _disabled = disabled; }
 void MonitoredEntity::setLastChanged(time_t lastChanged) { _lastChanged = lastChanged; }
@@ -46,7 +44,6 @@ void MonitoredEntity::fillJson(JsonObject& doc) const {
     doc["name"] = _name;
     doc["address"] = _address;
     doc["icon"] = _icon;
-    doc["type"] = (_type == HEAD) ? "HEAD" : "PING";
     doc["isOnline"] = _isOnline;
     doc["notification"] = _notification;
     doc["disabled"] = _disabled;
@@ -62,11 +59,6 @@ bool MonitoredEntity::fromJsonObject(const JsonObject& doc) {
     _address = doc["address"].as<String>();
     if (doc["icon"].is<const char*>()) {
         _icon = doc["icon"].as<String>();
-    }
-    if (doc["type"].is<const char*>()) {
-        String t = doc["type"].as<String>();
-        t.toUpperCase();
-        _type = (t == "PING") ? PING : HEAD;
     }
 
     if (doc["notification"].is<bool>()) _notification = doc["notification"].as<bool>();
@@ -94,7 +86,6 @@ MonitoredEntity& MonitoredEntity::operator=(const MonitoredEntity& other) {
         _name = other._name;
         _address = other._address;
         _icon = other._icon;
-        _type = other._type;
         _isOnline = other._isOnline;
         _notification = other._notification;
         _disabled = other._disabled;

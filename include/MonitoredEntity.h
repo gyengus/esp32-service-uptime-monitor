@@ -4,21 +4,15 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-enum CheckType : uint8_t {
-    HEAD,
-    PING
-};
-
 class MonitoredEntity {
 public:
-    MonitoredEntity(const String& name, const String& address, CheckType type, const String& icon, bool notify);
+    MonitoredEntity(const String& name, const String& address, const String& icon, bool notify);
     MonitoredEntity();
 
     // Getters
     String getName() const;
     String getAddress() const;
     String getIcon() const;
-    CheckType getType() const;
     bool isOnline() const;
     bool getNotification() const;
     bool isDisabled() const;
@@ -28,7 +22,6 @@ public:
     void setName(String &name);
     void setAddress(String &addr);
     void setIcon(String &icon);
-    void setType(CheckType type);
     void setNotification(bool notify);
     void setDisabled(bool disabled);
     void setOnlineStatus(bool online);
@@ -49,7 +42,6 @@ private:
     String _address;
     String _icon;
     time_t _lastChanged;
-    CheckType _type;
     bool _isOnline;
     bool _notification;
     bool _disabled;

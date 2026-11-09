@@ -83,9 +83,10 @@ function renderEntities() {
         let cardBgClass = entity.disabled ? "text-bg-secondary" : entity.lastChanged ? (entity.isOnline ? "text-bg-success" : "text-bg-danger") : "text-bg-light";
         let icon = entity.icon || "mdi-server";
         let notifyIcon = entity.notification ? '<span class="mdi mdi-bell-outline ms-2" title="Notifications ON"></span>' : '';
-        let address = (entity.type === "HEAD")
-            ? `<a href="${entity.address}" target="_blank" class="link-light text-truncate" style="max-width:150px">${entity.address}</a>`
-            : entity.address;
+        let addressUrl = (entity.address.startsWith("http://") || entity.address.startsWith("https://")) 
+            ? entity.address 
+            : "http://" + entity.address;
+        let address = `<a href="${addressUrl}" target="_blank" class="link-light text-truncate" style="max-width:150px">${entity.address}</a>`;
 
         const lastChanged = new Date(entity.lastChanged * 1000);
         const formatter = new Intl.DateTimeFormat('hu-HU', {
@@ -113,7 +114,6 @@ function renderEntities() {
                             ${notifyIcon}
                         </h5>
                         <p class="card-text small mb-0">
-                            <span class="badge bg-light text-dark me-1">${entity.type}</span>
                             ${entity.disabled ? '<span class="badge bg-secondary me-1 border border-white">Disabled</span>' : ''}
                             <span class="text-white-50">${address}</span>
                         </p>
@@ -134,7 +134,6 @@ $('#entityModal').on('shown.bs.modal', function () {
 $('#entityModal').on('hidden.bs.modal', function () {
     $('#entityForm')[0].reset();
     $('#entityForm').removeClass('was-validated');
-    $('#typePing').prop('checked', true);
     $('#disabledEnabled').prop('checked', false);
     $("#saveButton").prop('disabled', false);
     $('#id').val("");
@@ -153,7 +152,6 @@ $(document).on('click', '.btn-edit', function() {
     $.getJSON(`/api/monitoredentity/${encodeURIComponent(oldName)}`, function(entity) {
         $('#name').val(entity.name);
         $('#address').val(entity.address);
-        $(`input[name='type'][value='${entity.type}']`).prop('checked', true);
         $('#icon').val(entity.icon);
         $('#notificationsEnabled').prop('checked', entity.notification);
         $('#disabledEnabled').prop('checked', entity.disabled);
@@ -174,7 +172,6 @@ $('#saveButton').click(function(event) {
     const entity = {
         name: $('#name').val(),
         address: $('#address').val(),
-        type: $("input[name='type']:checked").val(),
         icon: $('#icon').val() || "mdi-server",
         notification: $('#notificationsEnabled').is(':checked'),
         disabled: $('#disabledEnabled').is(':checked')
