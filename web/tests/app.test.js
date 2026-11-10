@@ -382,7 +382,17 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#uptimeVal').text()).toBe('2h 0m');
       expect($('#rssiVal').text()).toBe('-45 dBm');
       expect($('#tempVal').text()).toBe('44.2 °C');
+      expect($('#tempContainer').css('display')).not.toBe('none');
       expect($('#configButton').css('display')).not.toBe('none');
+    });
+
+    it('hides temperature container when temperature is not supported or missing', () => {
+      window.handleWsMessage({
+        type: 'sysinfo',
+        data: { uptime: 7200, rssi: -45, freeHeap: 90000, configEnabled: true }
+      });
+
+      expect($('#tempContainer').css('display')).toBe('none');
     });
   });
 

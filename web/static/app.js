@@ -441,8 +441,11 @@ function updateSysinfoUI(data) {
     if (data.freeHeap !== undefined) {
         $("#heapVal").text((data.freeHeap / 1024).toFixed(0) + " KB");
     }
-    if (data.temperature !== undefined) {
-        $("#tempVal").text(data.temperature ? data.temperature.toFixed(1) + " °C" : "--");
+    if (data.temperature !== undefined && data.temperature !== null) {
+        $("#tempVal").text(data.temperature.toFixed(1) + " °C");
+        $("#tempContainer").show();
+    } else {
+        $("#tempContainer").hide();
     }
     
     if (data.version !== undefined) $("#versionVal").text(data.version);
