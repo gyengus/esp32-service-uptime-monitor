@@ -66,6 +66,21 @@
     #define HAS_STATUS_LED
     #define LED_PIN 8
 
+#elif defined(BOARD_ESP32_C6)
+
+    #define BOARD_NAME "ESP32-C6"
+    // Boot strapping pin on ESP32-C6 is GPIO 9
+    #define BOOT_BTN_PIN 9
+
+    // Internal Flash via LittleFS
+    #ifndef USE_LITTLEFS
+    #define USE_LITTLEFS
+    #endif
+
+    // Onboard addressable RGB LED (WS2812 on GPIO 8)
+    #define HAS_RGB_LED
+    #define RGB_LED_PIN 8
+
 #else
 
     // Default fallback configuration (ESP32-S3-CAM)

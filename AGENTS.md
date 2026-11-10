@@ -14,10 +14,12 @@ This document provides internal architectural guidance, design patterns, and cod
 | `esp32-s3` *(default)* | ESP32-S3 DevKit | Internal Flash (`LittleFS`) | `BOARD_ESP32_S3`, `USE_LITTLEFS`, `HAS_RGB_LED` |
 | `esp32` *(default)* | ESP32-WROOM-32 | Internal Flash (`LittleFS`) | `BOARD_ESP32_WROOM`, `USE_LITTLEFS`, `HAS_STATUS_LED` |
 | `esp32-c3` *(default)* | ESP32-C3 SuperMini | Internal Flash (`LittleFS`) | `BOARD_ESP32_C3`, `USE_LITTLEFS`, `HAS_STATUS_LED`, `ARDUINO_USB_MODE=1` |
+| `esp32-c6` *(default)* | ESP32-C6 DevKit | Internal Flash (`LittleFS`) | `BOARD_ESP32_C6`, `USE_LITTLEFS`, `HAS_RGB_LED`, `ARDUINO_USB_MODE=1` |
 | `esp32-s3-cam-ota` | ESP32-S3-CAM | MicroSD (`SD_MMC`) | OTA wireless flash target for CAM board |
 | `esp32-s3-ota` | ESP32-S3 DevKit | Internal Flash (`LittleFS`) | OTA wireless flash target for S3 board |
 | `esp32-ota` | ESP32-WROOM-32 | Internal Flash (`LittleFS`) | OTA wireless flash target for classic ESP32 board |
 | `esp32-c3-ota` | ESP32-C3 SuperMini | Internal Flash (`LittleFS`) | OTA wireless flash target for ESP32-C3 board |
+| `esp32-c6-ota` | ESP32-C6 DevKit | Internal Flash (`LittleFS`) | OTA wireless flash target for ESP32-C6 board |
 | `native` | Host PC | Mocked memory | Unit testing suite (Unity + ArduinoFake) |
 
 *Full build, test, and upload command reference is documented in [README.md - Installation & Build](README.md#installation--build).*
@@ -58,7 +60,7 @@ All core subsystems follow singleton or repository patterns with controlled life
 - **Dual-Core Targets (ESP32-S3, ESP32)**:
   - **Core 1**: Arduino `loop()`, Wi-Fi networking stack, and `AsyncWebServer` callbacks (`CONFIG_ASYNC_TCP_RUNNING_CORE=1`).
   - **Core 0**: `monitoringTaskLoop` runs pinned to Core 0 with priority 5 and an 8192-byte stack (`xTaskCreatePinnedToCore`) to ensure HTTPS TLS handshakes do not block network or UI responsiveness.
-- **Single-Core Target (ESP32-C3)**:
+- **Single-Core Targets (ESP32-C3, ESP32-C6)**:
   - Runs on Core 0 (`CONFIG_ASYNC_TCP_RUNNING_CORE=0`).
   - `monitoringTaskLoop` is launched via standard FreeRTOS `xTaskCreate` with FreeRTOS time-slicing and cooperative yields (`vTaskDelay`) during HTTP/TLS checks.
 - **RGB LED Task**: Separate FreeRTOS task running smooth sine-wave pulses without blocking monitoring or networking (on boards with `HAS_RGB_LED`).
