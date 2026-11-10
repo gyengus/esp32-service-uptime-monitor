@@ -122,7 +122,7 @@ def process_file_content(full_path, rel_path, project_dir):
 
 def get_web_files(web_dir):
     skip_dirs = {"node_modules", "tests", "coverage", ".git", ".vite"}
-    skip_exts = {".map", ".test.js"}
+    skip_exts = {".map", ".test.js", ".md"}
     skip_files = {"package.json", "package-lock.json", "vitest.config.js", ".version"}
     
     file_list = []
