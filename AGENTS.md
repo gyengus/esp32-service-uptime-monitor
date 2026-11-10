@@ -11,7 +11,7 @@ This document provides internal architectural guidance, design patterns, and cod
 | Environment | Target Board | Storage Backend | Features & Defines |
 |---|---|---|---|
 | `esp32-s3-cam` *(default)* | ESP32-S3-CAM | MicroSD (`SD_MMC`) | `BOARD_ESP32_S3_CAM`, `HAS_SD_CARD`, `HAS_STATUS_LED`, `HAS_RGB_LED` |
-| `esp32-s3` | ESP32-S3 DevKit | Internal Flash (`LittleFS`) | `BOARD_ESP32_S3`, `USE_LITTLEFS`, `HAS_RGB_LED` |
+| `esp32-s3` *(default)* | ESP32-S3 DevKit | Internal Flash (`LittleFS`) | `BOARD_ESP32_S3`, `USE_LITTLEFS`, `HAS_RGB_LED` |
 | `esp32-s3-cam-ota` | ESP32-S3-CAM | MicroSD (`SD_MMC`) | OTA wireless flash target for CAM board |
 | `esp32-s3-ota` | ESP32-S3 DevKit | Internal Flash (`LittleFS`) | OTA wireless flash target for S3 board |
 | `native` | Host PC | Mocked memory | Unit testing suite (Unity + ArduinoFake) |

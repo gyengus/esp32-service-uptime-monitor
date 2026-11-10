@@ -43,11 +43,12 @@ The project uses `include/devices.h` to define board pins and available hardware
 #### Firmware Build & Upload
 
 ```bash
-# Build default firmware (ESP32-S3 CAM with SD card support)
-pio run -e esp32-s3-cam
+# Build firmware for both default boards (ESP32-S3 CAM & standard ESP32-S3)
+pio run
 
-# Build firmware for standard ESP32-S3 (internal Flash via LittleFS)
-pio run -e esp32-s3
+# Or build for a specific target board:
+pio run -e esp32-s3-cam   # ESP32-S3-CAM (MicroSD)
+pio run -e esp32-s3       # ESP32-S3 DevKit (LittleFS Flash)
 
 # Upload firmware via USB
 pio run -e esp32-s3-cam --target upload
