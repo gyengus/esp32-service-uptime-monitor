@@ -203,7 +203,41 @@ div#mainContainer {
     height: 8px;
     border-radius: 50%;
     display: inline-block;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ws-dot.bg-success {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
+    animation: ws-dot-pulse 2s infinite;
+}
+
+.ws-dot.bg-danger {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    animation: ws-dot-pulse-danger 2s infinite;
+}
+
+@keyframes ws-dot-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(25, 135, 84, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+    }
+}
+
+@keyframes ws-dot-pulse-danger {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
 }
 
 @keyframes card-pulse {
