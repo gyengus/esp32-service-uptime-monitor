@@ -40,6 +40,9 @@ coverage/
 *.zip
 dist/
 
+# Auto-generated embedded web assets
+src/EmbeddedWebArchive.cpp
+
 # Python cache
 __pycache__/
 *.py[cod]
