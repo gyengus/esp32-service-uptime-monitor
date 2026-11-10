@@ -185,7 +185,9 @@ void setup() {
         }
 
         if (WebArchiveExtractor::extractEmbeddedArchive(WEB_UI_PATH)) {
-            storage.writeFile(versionFilePath, currentVersion);
+            if (!storage.fileExists(versionFilePath)) {
+                storage.writeFile(versionFilePath, currentVersion);
+            }
             Logger.info(MAINLOG, "Embedded Web UI successfully extracted to %s (version: %s)", WEB_UI_PATH, currentVersion.c_str());
         } else {
             Logger.error(MAINLOG, "Failed to extract embedded Web UI archive");

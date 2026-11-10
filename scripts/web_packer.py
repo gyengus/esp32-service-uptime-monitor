@@ -5,6 +5,26 @@ import subprocess
 import zipfile
 import hashlib
 
+def get_firmware_version(project_dir):
+    version_file = os.path.join(project_dir, "include", "version.h")
+    if os.path.isfile(version_file):
+        try:
+            with open(version_file, "r", encoding="utf-8") as f:
+                content = f.read()
+                m = re.search(r'#define\s+FIRMWARE_VERSION\s+"([^"]+)"', content)
+                if m:
+                    return m.group(1)
+        except Exception:
+            pass
+    return "0.0.1"
+
+def get_git_commit_hash(project_dir):
+    try:
+        out = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=project_dir)
+        return out.decode('ascii').strip()
+    except Exception:
+        return "unknown"
+
 def minify_html(text):
     text = re.sub(r'<!--(?!\s*\[if).*?-->', '', text, flags=re.DOTALL)
     text = re.sub(r'>\s+<', '><', text)
@@ -103,7 +123,7 @@ def process_file_content(full_path, rel_path, project_dir):
 def get_web_files(web_dir):
     skip_dirs = {"node_modules", "tests", "coverage", ".git", ".vite"}
     skip_exts = {".map", ".test.js"}
-    skip_files = {"package.json", "package-lock.json", "vitest.config.js"}
+    skip_files = {"package.json", "package-lock.json", "vitest.config.js", ".version"}
     
     file_list = []
     for root, dirs, files in os.walk(web_dir):
@@ -138,6 +158,21 @@ def create_web_zip_bytes(web_dir, project_dir, verbose=False):
                     print(f"  [MINIFY] {rel_path}: {orig_size} -> {len(content)} bytes (-{pct}%)")
                 else:
                     print(f"  [ASSET]  {rel_path}: {orig_size} bytes")
+
+        # Inject .version file into root of archive
+        version = get_firmware_version(project_dir)
+        commit = get_git_commit_hash(project_dir)
+        version_str = f"{version}-{commit}\n"
+        version_bytes = version_str.encode("utf-8")
+        zinfo_ver = zipfile.ZipInfo(filename=".version", date_time=(2026, 1, 1, 0, 0, 0))
+        zinfo_ver.compress_type = zipfile.ZIP_DEFLATED
+        zinfo_ver.external_attr = 0o644 << 16
+        zf.writestr(zinfo_ver, version_bytes)
+        total_orig += len(version_bytes)
+        total_mini += len(version_bytes)
+        if verbose:
+            print(f"  [VERSION] .version: {version_str.strip()}")
+
     if verbose:
         print(f"[PACK_WEB] Total assets size: {total_orig} -> {total_mini} bytes")
     return buf.getvalue()

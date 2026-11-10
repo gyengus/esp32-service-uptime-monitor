@@ -330,7 +330,9 @@ void Api::registerConfigEndpoints() {
 
         bool success = WebArchiveExtractor::extractZipArchive("/web_update_tmp.zip", WEB_UI_PATH);
         if (success) {
-            storage.writeFile(String(WEB_UI_PATH) + "/.version", String(FIRMWARE_VERSION) + "-" + String(COMMIT_HASH));
+            if (!storage.fileExists(String(WEB_UI_PATH) + "/.version")) {
+                storage.writeFile(String(WEB_UI_PATH) + "/.version", String(FIRMWARE_VERSION) + "-" + String(COMMIT_HASH));
+            }
         }
 
         storage.deleteFile("/web_update_tmp.zip");
