@@ -75,9 +75,16 @@ fs::FS& Storage::getFS() {
 
 bool Storage::init() {
 #ifdef USE_LITTLEFS
-    if (!LittleFS.begin(true)) {
-        Logger.critical(MAINLOG, "LittleFS Mount Failed");
-        return false;
+    if (!LittleFS.begin(false)) {
+        Logger.warning(MAINLOG, "LittleFS Mount Failed, formatting flash partition...");
+        disableLoopWDT();
+        bool formatted = LittleFS.format();
+        enableLoopWDT();
+        if (!formatted || !LittleFS.begin(false)) {
+            Logger.critical(MAINLOG, "LittleFS Format or Mount Failed");
+            return false;
+        }
+        Logger.info(MAINLOG, "LittleFS formatted and mounted successfully");
     }
     Logger.info(MAINLOG, "LittleFS Mounted (Total: %u KB, Used: %u KB)",
                 (unsigned int)(LittleFS.totalBytes() / 1024),
@@ -101,7 +108,7 @@ bool Storage::init() {
 
 bool Storage::mount() {
 #ifdef USE_LITTLEFS
-    return LittleFS.begin(true);
+    return LittleFS.begin(false);
 #else
     if (!SD_MMC.begin("/sdcard", true)) {
         Logger.critical(MAINLOG, "SD Card Mount Failed");
