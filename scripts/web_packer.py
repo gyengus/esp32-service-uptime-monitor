@@ -185,6 +185,11 @@ def ensure_embedded_web_archive(project_dir):
     zip_bytes = create_web_zip_bytes(web_dir, project_dir, verbose=False)
     md5 = hashlib.md5(zip_bytes).hexdigest()
 
+    # Always ensure standalone web.zip matches the embedded archive byte-for-byte
+    out_zip = os.path.join(project_dir, "web.zip")
+    with open(out_zip, "wb") as f:
+        f.write(zip_bytes)
+
     # Check if existing source file has the same hash
     if os.path.isfile(source_path) and os.path.isfile(header_path):
         with open(source_path, "r", encoding="utf-8") as f:

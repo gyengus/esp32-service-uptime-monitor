@@ -74,6 +74,12 @@ def export_env_dist(env, pioenv):
     dist_dir = os.path.join(project_dir, "dist")
     os.makedirs(dist_dir, exist_ok=True)
 
+    # Ensure standalone web.zip is exported to dist/ for releases
+    project_web_zip = os.path.join(project_dir, "web.zip")
+    dist_web_zip = os.path.join(dist_dir, "web.zip")
+    if os.path.isfile(project_web_zip):
+        shutil.copy2(project_web_zip, dist_web_zip)
+
     firmware_bin = os.path.join(build_dir, "firmware.bin")
     bootloader_bin = os.path.join(build_dir, "bootloader.bin")
     partitions_bin = os.path.join(build_dir, "partitions.bin")
