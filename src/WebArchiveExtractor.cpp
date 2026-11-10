@@ -47,51 +47,6 @@ static int32_t zipSeekFileCallback(void *p, int32_t position, int iType) {
     }
 }
 
-struct MemZipContext {
-    const uint8_t *data;
-    int32_t size;
-    int32_t pos;
-};
-
-static MemZipContext s_memZip;
-
-static void* zipOpenMemCallback(const char *filename, int32_t *size) {
-    (void)filename;
-    s_memZip.pos = 0;
-    *size = s_memZip.size;
-    return (void *)&s_memZip;
-}
-
-static void zipCloseMemCallback(void *p) {
-    (void)p;
-}
-
-static int32_t zipReadMemCallback(void *p, uint8_t *buffer, int32_t length) {
-    MemZipContext *ctx = (MemZipContext *)p;
-    if (!ctx || !ctx->data) return 0;
-    int32_t available = ctx->size - ctx->pos;
-    if (available <= 0) return 0;
-    int32_t toRead = (length < available) ? length : available;
-    memcpy(buffer, ctx->data + ctx->pos, toRead);
-    ctx->pos += toRead;
-    return toRead;
-}
-
-static int32_t zipSeekMemCallback(void *p, int32_t position, int iType) {
-    MemZipContext *ctx = (MemZipContext *)p;
-    if (!ctx) return 0;
-    if (iType == SEEK_SET) {
-        ctx->pos = position;
-    } else if (iType == SEEK_END) {
-        ctx->pos = ctx->size + position;
-    } else { // SEEK_CUR
-        ctx->pos += position;
-    }
-    if (ctx->pos < 0) ctx->pos = 0;
-    if (ctx->pos > ctx->size) ctx->pos = ctx->size;
-    return ctx->pos;
-}
-
 bool WebArchiveExtractor::ensureDirExists(const String& dirPath) {
     if (storage.getFS().exists(dirPath)) {
         return true;
@@ -228,11 +183,7 @@ bool WebArchiveExtractor::extractZipFromBuffer(const uint8_t* buffer, size_t siz
     }
     memset(pZip, 0, sizeof(UNZIP));
 
-    s_memZip.data = buffer;
-    s_memZip.size = (int32_t)size;
-    s_memZip.pos = 0;
-
-    int rc = pZip->openZIP("memory.zip", zipOpenMemCallback, zipCloseMemCallback, zipReadMemCallback, zipSeekMemCallback);
+    int rc = pZip->openZIP(const_cast<uint8_t*>(buffer), static_cast<int>(size));
     if (rc != UNZ_OK) {
         Logger.error(MAINLOG, "Failed to open in-memory ZIP archive, rc: %d", rc);
         free(pZip);

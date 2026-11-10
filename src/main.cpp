@@ -146,8 +146,8 @@ void setup() {
         errorMode();
     }
 
-    if (!storage.fileExists(String(WEB_UI_PATH) + "/index.html")) {
-        Logger.info(MAINLOG, "Web UI not found on storage, extracting embedded web archive...");
+    if (!storage.fileExists(String(WEB_UI_PATH) + "/index.html") || !storage.fileExists(String(WEB_UI_PATH) + "/config.html")) {
+        Logger.info(MAINLOG, "Web UI assets missing from storage, extracting embedded web archive...");
         if (WebArchiveExtractor::extractEmbeddedArchive(WEB_UI_PATH)) {
             Logger.info(MAINLOG, "Embedded Web UI successfully extracted to %s", WEB_UI_PATH);
         } else {
@@ -223,7 +223,13 @@ void configurationMode() {
 
     // start web server for configuration
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(storage.getFS(), (String(WEB_UI_PATH) + "/config.html"), "text/html");
+        String path = String(WEB_UI_PATH) + "/config.html";
+        if (!storage.fileExists(path)) {
+            Logger.error(MAINLOG, "Web UI missing from storage: %s", path.c_str());
+            request->send(500, "text/plain", "Web UI missing from storage. Please re-flash or upload web.zip.");
+            return;
+        }
+        request->send(storage.getFS(), path, "text/html");
     });
 
 #ifdef HAS_RGB_LED
@@ -249,14 +255,26 @@ void initNormalMode() {
 
     // web server settings
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(storage.getFS(), (String(WEB_UI_PATH) + "/index.html"), "text/html");
+        String path = String(WEB_UI_PATH) + "/index.html";
+        if (!storage.fileExists(path)) {
+            Logger.error(MAINLOG, "Web UI missing from storage: %s", path.c_str());
+            request->send(500, "text/plain", "Web UI missing from storage. Please re-flash or upload web.zip.");
+            return;
+        }
+        request->send(storage.getFS(), path, "text/html");
     });
     server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
             return;
         }
-        request->send(storage.getFS(), (String(WEB_UI_PATH) + "/config.html"), "text/html");
+        String path = String(WEB_UI_PATH) + "/config.html";
+        if (!storage.fileExists(path)) {
+            Logger.error(MAINLOG, "Web UI missing from storage: %s", path.c_str());
+            request->send(500, "text/plain", "Web UI missing from storage. Please re-flash or upload web.zip.");
+            return;
+        }
+        request->send(storage.getFS(), path, "text/html");
     });
 
     // mDNS
