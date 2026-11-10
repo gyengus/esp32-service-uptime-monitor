@@ -67,9 +67,20 @@ void setup() {
     #else
         Serial.begin(115200);
     #endif //MONITOR_SPEED
+
+#if defined(ARDUINO_USB_CDC_ON_BOOT) && ARDUINO_USB_CDC_ON_BOOT
+    #ifdef MONITOR_SPEED
+        Serial0.begin(MONITOR_SPEED);
+    #else
+        Serial0.begin(115200);
+    #endif
+#endif
     delay(5000);
 
     Logger.registerSerial(MAINLOG, MIN_LOG_LEVEL, "LOG", Serial);
+#if defined(ARDUINO_USB_CDC_ON_BOOT) && ARDUINO_USB_CDC_ON_BOOT
+    Logger.registerSerial(MAINLOG, MIN_LOG_LEVEL, "LOG", Serial0);
+#endif
     Logger.registerSerial(MAINLOG, MIN_LOG_LEVEL, "LOG", wsLogStream);
 
     networkContext.setLogger([](const char* level, const char* msg) {
@@ -246,6 +257,9 @@ void configurationMode() {
 
 void initNormalMode() {
     Logger.setSerialLogLevel(MAINLOG, config.getConfig().logLevel, Serial);
+#if defined(ARDUINO_USB_CDC_ON_BOOT) && ARDUINO_USB_CDC_ON_BOOT
+    Logger.setSerialLogLevel(MAINLOG, config.getConfig().logLevel, Serial0);
+#endif
     Logger.setSerialLogLevel(MAINLOG, config.getConfig().logLevel, wsLogStream);
     Logger.info(MAINLOG, "Config file found, loading...");
     if (!config.loadConfig()) {
