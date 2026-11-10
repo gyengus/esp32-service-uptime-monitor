@@ -159,13 +159,39 @@ void setup() {
         errorMode();
     }
 
-    if (!storage.fileExists(String(WEB_UI_PATH) + "/index.html") || !storage.fileExists(String(WEB_UI_PATH) + "/config.html")) {
-        Logger.info(MAINLOG, "Web UI assets missing from storage, extracting embedded web archive...");
+    const String versionFilePath = String(WEB_UI_PATH) + "/.version";
+    const String currentVersion = String(FIRMWARE_VERSION) + "-" + String(COMMIT_HASH);
+    bool shouldExtractWeb = false;
+    String storedVersion = "";
+
+    if (!storage.fileExists(String(WEB_UI_PATH) + "/index.html") || 
+        !storage.fileExists(String(WEB_UI_PATH) + "/config.html") ||
+        !storage.fileExists(versionFilePath)) {
+        shouldExtractWeb = true;
+    } else {
+        storedVersion = storage.readFile(versionFilePath);
+        storedVersion.trim();
+        if (storedVersion != currentVersion) {
+            shouldExtractWeb = true;
+        }
+    }
+
+    if (shouldExtractWeb) {
+        if (storedVersion.length() > 0 && storedVersion != currentVersion) {
+            Logger.info(MAINLOG, "Web UI version mismatch (installed: %s, firmware: %s), updating web assets...",
+                        storedVersion.c_str(), currentVersion.c_str());
+        } else {
+            Logger.info(MAINLOG, "Web UI assets missing from storage, extracting embedded web archive...");
+        }
+
         if (WebArchiveExtractor::extractEmbeddedArchive(WEB_UI_PATH)) {
-            Logger.info(MAINLOG, "Embedded Web UI successfully extracted to %s", WEB_UI_PATH);
+            storage.writeFile(versionFilePath, currentVersion);
+            Logger.info(MAINLOG, "Embedded Web UI successfully extracted to %s (version: %s)", WEB_UI_PATH, currentVersion.c_str());
         } else {
             Logger.error(MAINLOG, "Failed to extract embedded Web UI archive");
         }
+    } else {
+        Logger.info(MAINLOG, "Web UI up to date (version: %s)", currentVersion.c_str());
     }
 
     if (!storage.fileExists(CONFIG_FILE_PATH)) {

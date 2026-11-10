@@ -69,7 +69,7 @@ All core subsystems follow singleton or repository patterns with controlled life
 
 ### Boot Sequence
 1. Filesystem initialization via `storage.init()` (`SD_MMC` or `LittleFS`, auto-formatting LittleFS if uninitialized).
-2. Embedded Web UI check: if `/web/index.html` is missing, automatically unpacks the embedded `web.zip` from PROGMEM via `WebArchiveExtractor::extractEmbeddedArchive()`.
+2. Embedded Web UI check: if `/web/index.html` or `/web/.version` is missing, or the stored version does not match the running firmware version (`FIRMWARE_VERSION-COMMIT_HASH`), automatically extracts the embedded `web.zip` from PROGMEM via `WebArchiveExtractor::extractEmbeddedArchive()` and updates `/web/.version`.
 3. Cancel OTA rollback via `esp_ota_mark_app_valid_cancel_rollback()` once storage is confirmed healthy.
 4. Check `/config.json`:
    - If missing: enters `configurationMode()` (starts AP, captive portal DNS, launches AP LED task).
