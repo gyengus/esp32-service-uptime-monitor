@@ -1,6 +1,7 @@
 #include "WebArchiveExtractor.h"
 #include <Elog.h>
 #include "Config.h"
+#include "EmbeddedWebArchive.h"
 
 #ifndef UNIT_TEST
 #include <unzipLIB.h>
@@ -8,7 +9,7 @@
 
 static File s_zipFile;
 
-static void* zipOpenCallback(const char *filename, int32_t *size) {
+static void* zipOpenFileCallback(const char *filename, int32_t *size) {
     s_zipFile = storage.getFS().open(filename, FILE_READ);
     if (!s_zipFile) {
         return nullptr;
@@ -17,7 +18,7 @@ static void* zipOpenCallback(const char *filename, int32_t *size) {
     return (void *)&s_zipFile;
 }
 
-static void zipCloseCallback(void *p) {
+static void zipCloseFileCallback(void *p) {
     ZIPFILE *pzf = (ZIPFILE *)p;
     File *f = (File *)pzf->fHandle;
     if (f && *f) {
@@ -25,14 +26,14 @@ static void zipCloseCallback(void *p) {
     }
 }
 
-static int32_t zipReadCallback(void *p, uint8_t *buffer, int32_t length) {
+static int32_t zipReadFileCallback(void *p, uint8_t *buffer, int32_t length) {
     ZIPFILE *pzf = (ZIPFILE *)p;
     File *f = (File *)pzf->fHandle;
     if (!f || !(*f)) return 0;
     return f->read(buffer, length);
 }
 
-static int32_t zipSeekCallback(void *p, int32_t position, int iType) {
+static int32_t zipSeekFileCallback(void *p, int32_t position, int iType) {
     ZIPFILE *pzf = (ZIPFILE *)p;
     File *f = (File *)pzf->fHandle;
     if (!f || !(*f)) return 0;
@@ -44,6 +45,51 @@ static int32_t zipSeekCallback(void *p, int32_t position, int iType) {
         long curPos = f->position();
         return f->seek(curPos + position);
     }
+}
+
+struct MemZipContext {
+    const uint8_t *data;
+    int32_t size;
+    int32_t pos;
+};
+
+static MemZipContext s_memZip;
+
+static void* zipOpenMemCallback(const char *filename, int32_t *size) {
+    (void)filename;
+    s_memZip.pos = 0;
+    *size = s_memZip.size;
+    return (void *)&s_memZip;
+}
+
+static void zipCloseMemCallback(void *p) {
+    (void)p;
+}
+
+static int32_t zipReadMemCallback(void *p, uint8_t *buffer, int32_t length) {
+    MemZipContext *ctx = (MemZipContext *)p;
+    if (!ctx || !ctx->data) return 0;
+    int32_t available = ctx->size - ctx->pos;
+    if (available <= 0) return 0;
+    int32_t toRead = (length < available) ? length : available;
+    memcpy(buffer, ctx->data + ctx->pos, toRead);
+    ctx->pos += toRead;
+    return toRead;
+}
+
+static int32_t zipSeekMemCallback(void *p, int32_t position, int iType) {
+    MemZipContext *ctx = (MemZipContext *)p;
+    if (!ctx) return 0;
+    if (iType == SEEK_SET) {
+        ctx->pos = position;
+    } else if (iType == SEEK_END) {
+        ctx->pos = ctx->size + position;
+    } else { // SEEK_CUR
+        ctx->pos += position;
+    }
+    if (ctx->pos < 0) ctx->pos = 0;
+    if (ctx->pos > ctx->size) ctx->pos = ctx->size;
+    return ctx->pos;
 }
 
 bool WebArchiveExtractor::ensureDirExists(const String& dirPath) {
@@ -65,34 +111,12 @@ bool WebArchiveExtractor::ensureDirExists(const String& dirPath) {
     return true;
 }
 
-bool WebArchiveExtractor::extractZipArchive(const String& zipFilePath, const String& targetDir) {
-    UNZIP* pZip = nullptr;
-    if (psramFound()) {
-        pZip = (UNZIP*)ps_malloc(sizeof(UNZIP));
-    }
-    if (!pZip) {
-        pZip = (UNZIP*)malloc(sizeof(UNZIP));
-    }
-    if (!pZip) {
-        Logger.error(MAINLOG, "Failed to allocate memory for UNZIP (41KB)");
-        return false;
-    }
-    memset(pZip, 0, sizeof(UNZIP));
+static bool extractZipEntries(UNZIP* pZip, const String& targetDir) {
+    WebArchiveExtractor::ensureDirExists(targetDir);
 
-    int rc = pZip->openZIP(zipFilePath.c_str(), zipOpenCallback, zipCloseCallback, zipReadCallback, zipSeekCallback);
-    if (rc != UNZ_OK) {
-        Logger.error(MAINLOG, "Failed to open ZIP archive: %s, rc: %d", zipFilePath.c_str(), rc);
-        free(pZip);
-        return false;
-    }
-
-    ensureDirExists(targetDir);
-
-    rc = pZip->gotoFirstFile();
+    int rc = pZip->gotoFirstFile();
     if (rc != UNZ_OK) {
         Logger.error(MAINLOG, "No files found in ZIP archive or invalid archive.");
-        pZip->closeZIP();
-        free(pZip);
         return false;
     }
 
@@ -103,8 +127,6 @@ bool WebArchiveExtractor::extractZipArchive(const String& zipFilePath, const Str
     uint8_t* chunkBuf = (uint8_t*)malloc(CHUNK_SIZE);
     if (!chunkBuf) {
         Logger.error(MAINLOG, "Failed to allocate chunk buffer");
-        pZip->closeZIP();
-        free(pZip);
         return false;
     }
 
@@ -121,11 +143,11 @@ bool WebArchiveExtractor::extractZipArchive(const String& zipFilePath, const Str
                     String targetPath = targetDir + "/" + rawName;
 
                     if (rawName.endsWith("/")) {
-                        ensureDirExists(targetPath);
+                        WebArchiveExtractor::ensureDirExists(targetPath);
                     } else {
                         int lastSlash = targetPath.lastIndexOf('/');
                         if (lastSlash > 0) {
-                            ensureDirExists(targetPath.substring(0, lastSlash));
+                            WebArchiveExtractor::ensureDirExists(targetPath.substring(0, lastSlash));
                         }
 
                         if (pZip->openCurrentFile() == UNZ_OK) {
@@ -156,10 +178,75 @@ bool WebArchiveExtractor::extractZipArchive(const String& zipFilePath, const Str
     }
 
     free(chunkBuf);
-    pZip->closeZIP();
-    free(pZip);
     Logger.info(MAINLOG, "Extraction finished: %u files updated", extractedCount);
     return extractedCount > 0;
+}
+
+bool WebArchiveExtractor::extractZipArchive(const String& zipFilePath, const String& targetDir) {
+    UNZIP* pZip = nullptr;
+    if (psramFound()) {
+        pZip = (UNZIP*)ps_malloc(sizeof(UNZIP));
+    }
+    if (!pZip) {
+        pZip = (UNZIP*)malloc(sizeof(UNZIP));
+    }
+    if (!pZip) {
+        Logger.error(MAINLOG, "Failed to allocate memory for UNZIP (41KB)");
+        return false;
+    }
+    memset(pZip, 0, sizeof(UNZIP));
+
+    int rc = pZip->openZIP(zipFilePath.c_str(), zipOpenFileCallback, zipCloseFileCallback, zipReadFileCallback, zipSeekFileCallback);
+    if (rc != UNZ_OK) {
+        Logger.error(MAINLOG, "Failed to open ZIP archive: %s, rc: %d", zipFilePath.c_str(), rc);
+        free(pZip);
+        return false;
+    }
+
+    bool success = extractZipEntries(pZip, targetDir);
+    pZip->closeZIP();
+    free(pZip);
+    return success;
+}
+
+bool WebArchiveExtractor::extractZipFromBuffer(const uint8_t* buffer, size_t size, const String& targetDir) {
+    if (!buffer || size == 0) {
+        Logger.error(MAINLOG, "Invalid buffer passed to extractZipFromBuffer");
+        return false;
+    }
+
+    UNZIP* pZip = nullptr;
+    if (psramFound()) {
+        pZip = (UNZIP*)ps_malloc(sizeof(UNZIP));
+    }
+    if (!pZip) {
+        pZip = (UNZIP*)malloc(sizeof(UNZIP));
+    }
+    if (!pZip) {
+        Logger.error(MAINLOG, "Failed to allocate memory for UNZIP (41KB)");
+        return false;
+    }
+    memset(pZip, 0, sizeof(UNZIP));
+
+    s_memZip.data = buffer;
+    s_memZip.size = (int32_t)size;
+    s_memZip.pos = 0;
+
+    int rc = pZip->openZIP("memory.zip", zipOpenMemCallback, zipCloseMemCallback, zipReadMemCallback, zipSeekMemCallback);
+    if (rc != UNZ_OK) {
+        Logger.error(MAINLOG, "Failed to open in-memory ZIP archive, rc: %d", rc);
+        free(pZip);
+        return false;
+    }
+
+    bool success = extractZipEntries(pZip, targetDir);
+    pZip->closeZIP();
+    free(pZip);
+    return success;
+}
+
+bool WebArchiveExtractor::extractEmbeddedArchive(const String& targetDir) {
+    return extractZipFromBuffer(embedded_web_zip, embedded_web_zip_len, targetDir);
 }
 
 #else
@@ -171,6 +258,18 @@ bool WebArchiveExtractor::ensureDirExists(const String& dirPath) {
 
 bool WebArchiveExtractor::extractZipArchive(const String& zipFilePath, const String& targetDir) {
     (void)zipFilePath;
+    (void)targetDir;
+    return true;
+}
+
+bool WebArchiveExtractor::extractZipFromBuffer(const uint8_t* buffer, size_t size, const String& targetDir) {
+    (void)buffer;
+    (void)size;
+    (void)targetDir;
+    return true;
+}
+
+bool WebArchiveExtractor::extractEmbeddedArchive(const String& targetDir) {
     (void)targetDir;
     return true;
 }

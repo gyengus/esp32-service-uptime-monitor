@@ -1,143 +1,19 @@
 Import("env")
 import os
+import sys
 import io
-import re
-import subprocess
-import zipfile
 import urllib.request
 import urllib.error
 
-def minify_html(text):
-    text = re.sub(r'<!--(?!\s*\[if).*?-->', '', text, flags=re.DOTALL)
-    text = re.sub(r'>\s+<', '><', text)
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
+project_dir = env.get("PROJECT_DIR", ".")
+scripts_dir = os.path.join(project_dir, "scripts")
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
 
-def minify_css(text):
-    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
-    text = re.sub(r'\s+', ' ', text)
-    text = re.sub(r'\s*([:;{}])\s*', r'\1', text)
-    text = re.sub(r';}', '}', text)
-    return text.strip()
-
-def minify_js_fallback(text):
-    token_spec = [
-        ('STRING1', r'\"([^\\\n]|(\\.))*?\"'),
-        ('STRING2', r'\'([^\\\n]|(\\.))*?\''),
-        ('TEMPLATE', r'\`([^\\\`]|(\\.))*?\`'),
-        ('BLOCK_COMMENT', r'/\*[\s\S]*?\*/'),
-        ('LINE_COMMENT', r'//[^\n]*'),
-        ('SPACE', r'\s+'),
-        ('OTHER', r'[^\"\'\`/\s]+|/(?![/*])'),
-    ]
-    tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_spec)
-    tokens = []
-    for mo in re.finditer(tok_regex, text):
-        kind = mo.lastgroup
-        val = mo.group()
-        if kind in ('BLOCK_COMMENT', 'LINE_COMMENT'):
-            continue
-        tokens.append((kind, val))
-    
-    out = []
-    for i, (kind, val) in enumerate(tokens):
-        if kind == 'SPACE':
-            prev_tok = tokens[i-1] if i > 0 else (None, '')
-            next_tok = tokens[i+1] if i + 1 < len(tokens) else (None, '')
-            if prev_tok[1] and next_tok[1]:
-                p = prev_tok[1][-1]
-                n = next_tok[1][0]
-                if (p.isalnum() or p in '_$') and (n.isalnum() or n in '_$'):
-                    out.append(' ')
-                elif (p in '+-' and p == n):
-                    out.append(' ')
-        else:
-            out.append(val)
-    return ''.join(out)
-
-def minify_js(text, project_dir):
-    candidates = [
-        os.path.join(project_dir, "web", "node_modules", ".bin", "terser"),
-        "terser",
-    ]
-    for cmd in candidates:
-        if cmd == "terser" or os.path.isfile(cmd):
-            try:
-                proc = subprocess.run(
-                    [cmd, "--compress", "toplevel=true", "--mangle", "toplevel=true"],
-                    input=text.encode("utf-8"),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    check=True,
-                )
-                res = proc.stdout.decode("utf-8")
-                if res.strip():
-                    return res
-            except Exception:
-                pass
-    return minify_js_fallback(text)
-
-def process_file_content(full_path, rel_path, project_dir):
-    with open(full_path, "rb") as f:
-        raw_bytes = f.read()
-
-    lower = rel_path.lower()
-    if lower.endswith(".html"):
-        try:
-            minified = minify_html(raw_bytes.decode("utf-8"))
-            return minified.encode("utf-8")
-        except Exception:
-            return raw_bytes
-    elif lower.endswith(".css") and not lower.endswith(".min.css"):
-        try:
-            minified = minify_css(raw_bytes.decode("utf-8"))
-            return minified.encode("utf-8")
-        except Exception:
-            return raw_bytes
-    elif lower.endswith(".js") and not lower.endswith(".min.js"):
-        try:
-            minified = minify_js(raw_bytes.decode("utf-8"), project_dir)
-            return minified.encode("utf-8")
-        except Exception:
-            return raw_bytes
-    return raw_bytes
-
-def get_web_files(web_dir):
-    skip_dirs = {"node_modules", "tests", "coverage", ".git", ".vite"}
-    skip_exts = {".map", ".test.js"}
-    skip_files = {"package.json", "package-lock.json", "vitest.config.js"}
-    
-    file_list = []
-    for root, dirs, files in os.walk(web_dir):
-        dirs[:] = [d for d in dirs if d not in skip_dirs]
-        for f in files:
-            if f in skip_files:
-                continue
-            if any(f.endswith(ext) for ext in skip_exts):
-                continue
-            full_path = os.path.join(root, f)
-            rel_path = os.path.relpath(full_path, web_dir)
-            file_list.append((full_path, rel_path))
-    return file_list
+import web_packer
 
 def create_web_zip_bytes(web_dir, project_dir):
-    buf = io.BytesIO()
-    total_orig = 0
-    total_mini = 0
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for full_path, rel_path in get_web_files(web_dir):
-            orig_size = os.path.getsize(full_path)
-            content = process_file_content(full_path, rel_path, project_dir)
-            zf.writestr(rel_path, content)
-            total_orig += orig_size
-            total_mini += len(content)
-            if orig_size != len(content):
-                pct = 100 - (len(content) * 100 // orig_size)
-                print(f"  [MINIFY] {rel_path}: {orig_size} -> {len(content)} bytes (-{pct}%)")
-            else:
-                print(f"  [ASSET]  {rel_path}: {orig_size} bytes")
-    print(f"[PACK_WEB] Total assets size: {total_orig} -> {total_mini} bytes")
-    return buf.getvalue()
+    return web_packer.create_web_zip_bytes(web_dir, project_dir, verbose=True)
 
 def pack_web_action(source, target, env):
     project_dir = env.get("PROJECT_DIR", ".")

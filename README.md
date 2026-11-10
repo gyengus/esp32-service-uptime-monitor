@@ -91,12 +91,12 @@ pio run --target packweb
 
 ### Initial Setup
 
-1. **Power on the device**: If no configuration exists, the device boots into Access Point (AP) mode.
+1. **Power on the device**: If no configuration exists, the device boots into Access Point (AP) mode. On first boot (or if `/web/index.html` is missing), the firmware automatically unpacks its embedded web UI archive into storage (`/web/`), so no manual file uploading is required.
 2. **Connect to AP**:
    - **SSID**: `ESP32-Service-Uptime-Monitor`
    - **Password**: `29965225`
    - **Captive Portal IP**: `192.168.4.1`
-3. **Open browser**: Navigate to `http://192.168.4.1/`
+3. **Open browser**: Navigate to `http://192.168.4.1/` (most devices trigger the captive portal automatically).
 4. **Configure Wi-Fi**: Enter your network credentials and click **Save**.
 5. **Configure Discord** (optional): Add your Discord webhook URL to receive notifications.
 6. **Device reboots**: Reconnects to your Wi-Fi network and starts monitoring.

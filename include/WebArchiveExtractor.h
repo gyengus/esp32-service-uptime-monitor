@@ -6,6 +6,8 @@
 class WebArchiveExtractor {
 public:
     static bool extractZipArchive(const String& zipFilePath, const String& targetDir);
+    static bool extractZipFromBuffer(const uint8_t* buffer, size_t size, const String& targetDir);
+    static bool extractEmbeddedArchive(const String& targetDir);
     static bool ensureDirExists(const String& dirPath);
 };
 

@@ -1,6 +1,7 @@
 #include <unity.h>
 #include <Arduino.h>
 #include "Storage.h"
+#include "WebArchiveExtractor.h"
 #include "../mocks/MockGlobals.cpp"
 
 void setUp(void) {
@@ -114,6 +115,12 @@ void test_storage_clear(void) {
     TEST_ASSERT_FALSE(storage.fileExists("/f2.txt"));
 }
 
+void test_web_archive_extractor_embedded(void) {
+    TEST_ASSERT_TRUE(WebArchiveExtractor::extractEmbeddedArchive("/web"));
+    TEST_ASSERT_TRUE(WebArchiveExtractor::extractZipArchive("/web.zip", "/web"));
+    TEST_ASSERT_TRUE(WebArchiveExtractor::ensureDirExists("/web"));
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_storage_init_mount_unmount_available);
@@ -126,5 +133,6 @@ int main(int argc, char **argv) {
     RUN_TEST(test_storage_get_file_write_stream);
     RUN_TEST(test_storage_get_file_nonexistent_read_returns_false);
     RUN_TEST(test_storage_clear);
+    RUN_TEST(test_web_archive_extractor_embedded);
     return UNITY_END();
 }

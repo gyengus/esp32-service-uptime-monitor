@@ -22,6 +22,7 @@
 #include "LedService.h"
 
 #include "FileManager.h"
+#include "WebArchiveExtractor.h"
 #include "MonitoringService.h"
 #include "MonitoredEntityRepository.h"
 #include "WsService.h"
@@ -143,6 +144,15 @@ void setup() {
 
     if (!storage.init()) {
         errorMode();
+    }
+
+    if (!storage.fileExists(String(WEB_UI_PATH) + "/index.html")) {
+        Logger.info(MAINLOG, "Web UI not found on storage, extracting embedded web archive...");
+        if (WebArchiveExtractor::extractEmbeddedArchive(WEB_UI_PATH)) {
+            Logger.info(MAINLOG, "Embedded Web UI successfully extracted to %s", WEB_UI_PATH);
+        } else {
+            Logger.error(MAINLOG, "Failed to extract embedded Web UI archive");
+        }
     }
 
     if (!storage.fileExists(CONFIG_FILE_PATH)) {
