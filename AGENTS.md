@@ -1,115 +1,132 @@
 # AGENTS.md
 
-This file provides guidance to AI agents when working with code in this repository.
+This document provides internal architectural guidance, design patterns, and coding conventions for AI agents working in this repository.
 
-## Build & Deploy
+> For project overview, hardware pinouts, build/deploy commands, initial setup, and public HTTP/WebSocket API specifications, see **[README.md](README.md)**.
 
-```bash
-pio run                                           # Build default firmware (esp32-s3-cam)
-pio run -e esp32-s3                               # Build firmware without SD (LittleFS)
-pio run --target upload                           # Upload firmware via USB
-pio run -e esp32-s3-cam-ota --target upload       # Upload CAM firmware via OTA (ESP_IP=x.x.x.x)
-pio run -e esp32-s3-ota --target upload           # Upload S3 firmware via OTA (ESP_IP=x.x.x.x)
-pio run --target packweb                          # Pack & minify Web UI into web.zip
-pio run --target uploadweb                        # Pack, minify & upload Web UI to device storage
-pio device monitor                                # Serial monitor (115200 8N1)
-pio run --target clean                            # Clean build artifacts
-pio check                                         # Lint (cppcheck)
-pio test -e native                                # Run native unit tests
-```
+---
 
-Build flags: `MIN_LOG_LEVEL=ELOG_LEVEL_DEBUG`, PSRAM enable, `CONFIG_ASYNC_TCP_RUNNING_CORE=1`, `ELEGANTOTA_USE_ASYNC_WEBSERVER=1`
-Partition table: `partitions_16MB.csv` (dual 6.5MB OTA app partitions `app0`/`app1`, NVS, otadata, coredump)
+## Build Environments Quick Reference
 
-## Architecture
+| Environment | Target Board | Storage Backend | Features & Defines |
+|---|---|---|---|
+| `esp32-s3-cam` *(default)* | ESP32-S3-CAM | MicroSD (`SD_MMC`) | `BOARD_ESP32_S3_CAM`, `HAS_SD_CARD`, `HAS_STATUS_LED`, `HAS_RGB_LED` |
+| `esp32-s3` | ESP32-S3 DevKit | Internal Flash (`LittleFS`) | `BOARD_ESP32_S3`, `USE_LITTLEFS`, `HAS_RGB_LED` |
+| `esp32-s3-cam-ota` | ESP32-S3-CAM | MicroSD (`SD_MMC`) | OTA wireless flash target for CAM board |
+| `esp32-s3-ota` | ESP32-S3 DevKit | Internal Flash (`LittleFS`) | OTA wireless flash target for S3 board |
+| `native` | Host PC | Mocked memory | Unit testing suite (Unity + ArduinoFake) |
 
-**Singleton services & helpers** (getInstance() + deleted copy constructor where applicable):
+*Full build, test, and upload command reference is documented in [README.md - Installation & Build](README.md#installation--build).*
 
-| Service / Module | Responsibility |
-|------------------|----------------|
-| `MonitoringService` | HEAD/PING checks, Discord notification after 3 failures |
-| `NotificationService` | HTTP POST to Discord webhook (WiFiClientSecure) |
-| `NetworkContext` | Wi-Fi management (STA/AP), connection, SSID persistence |
-| `Config` | Load/save `/config.json` from SD |
-| `MonitoredEntityRepository` | Thread-safe entity management (semaphore), `/monitored_entities.json` |
-| `Storage` | Storage interface (SD_MMC or LittleFS based on profile) |
-| `WebArchiveExtractor` | Extracts uploaded Web UI ZIP archive directly onto storage with PSRAM buffers |
-| `ElegantOTA` | Web/HTTP firmware update handler integrated with AsyncWebServer |
+---
 
-**Globals** (`globals.h`): `isConfigFunctionsEnabled`, `isAPMode`, `shouldRestart`, `MonitoringTaskHandle`, `temp_sensor`
+## Architecture & Services
 
-## Processes
+All core subsystems follow singleton or repository patterns with controlled lifecycle management:
 
-**Boot sequence**:
-1. SD initialization → `storage.init()`
-2. Cancel OTA rollback if booted fine → `esp_ota_mark_app_valid_cancel_rollback()`
-3. `/config.json` exists? → Yes: `initNormalMode()`, No: `configurationMode()` (AP)
-4. Normal mode: Wi-Fi connect → mDNS (http://hostname.local) → SNTP time sync → `setupOTA()` → `MonitoringService::init()`
-5. `xTaskCreatePinnedToCore(monitoringTaskLoop, ..., 0)` - runs on Core 0 (WiFi on Core 1)
+| Service / Module | Header / Source | Responsibility & Concurrency Notes |
+|---|---|---|
+| `MonitoringService` | `include/MonitoringService.h` | Periodic HTTP HEAD checks on Core 0; manages failure counters and Discord alert triggers |
+| `NotificationService`| `include/NotificationService.h` | HTTPS POST requests to Discord webhooks via `WiFiClientSecure` |
+| `NetworkContext` | `lib/NetworkContext/` | Standalone Wi-Fi manager (STA & AP mode, non-blocking scan, auto-reconnect watchdog) |
+| `FileManager` | `lib/FileManager/` | Generic AsyncWebServer file manager supporting any `fs::FS` (SD_MMC, LittleFS) |
+| `Config` | `include/Config.h` | Manages `/config.json` serialization and deserialization |
+| `MonitoredEntityRepository` | `include/MonitoredEntityRepository.h` | Thread-safe entity storage protected by FreeRTOS mutex semaphore; manages `/monitored_entities.json` |
+| `Storage` | `include/Storage.h` | Unified filesystem abstraction returning `storage.getFS()` (`SD_MMC` or `LittleFS`) |
+| `WebArchiveExtractor` | `include/WebArchiveExtractor.h` | Unpacks uploaded `web.zip` archive into storage using `unzipLIB` and PSRAM buffers |
+| `LedService` | `include/LedService.h` | Non-blocking WS2812B RGB LED animation and state pulsing |
+| `WsService` & `WsLogStream` | `include/WsService.h` | WebSocket server broadcasting live state updates and intercepting system log messages |
+| `ElegantOTA` | Library dependency | Web-based firmware update handler integrated with AsyncWebServer |
 
-**Monitoring task** (Core 0, 5 sec initial delay):
-- Periodic `checkAll()` based on config interval
-- HTTP HEAD request check for each entity
-- Status change to OFFLINE after 3 consecutive failures
-- Discord notification on status change (if `notification=true`)
-- Auto-save via `MonitoredEntityRepository::save()`
+**Shared Globals (`include/globals.h`)**:
+- `volatile bool isConfigFunctionsEnabled`: Unlocks settings and management routes via boot button toggle.
+- `bool isAPMode`: Active when operating as a captive portal setup AP.
+- `volatile bool shouldRestart`: Flag for scheduled reboots.
+- `TaskHandle_t MonitoringTaskHandle`: Task handle for FreeRTOS task running on Core 0.
+- `temperature_sensor_handle_t temp_sensor`: ESP32-S3 on-chip temperature sensor driver handle.
 
-**OTA & Web UI updates**:
-- ElegantOTA handles firmware `.bin` uploads on `/update`. On OTA start: monitoring task is suspended and SD card is unmounted to prevent bus contention or SPI collisions.
-- Web UI update accepts `.zip` at `/api/web/upload-archive`. Extracted safely to SD card using `WebArchiveExtractor` (`unzipLIB`).
-- PlatformIO script `scripts/pio_ota_targets.py` provides `packweb` and `uploadweb` with in-memory minification (HTML/CSS/JS) before ZIP creation without touching source files on disk.
+---
 
-**Web UI**:
-- `/` - main page (index.html), `/config` - settings page (includes OTA firmware & web asset update forms)
-- `/update` - ElegantOTA firmware update endpoint
-- `/api/web/upload-archive` - Web UI archive upload endpoint
-- `/api/wifiscan` - scan networks (in AP mode)
-- `/api/config` - load/save configuration
-- `/api/monitoredentities` - list entities (GET)
-- `/api/monitoredentity` - create (POST), update (PUT), delete (DELETE)
-- `/api/summary` - summary (total/online/offline)
-- `/api/sysinfo` - system info (heap, rssi, uptime, temperature, version)
+## Concurrency & Process Flows
 
-**Configuration mode (AP)**:
-- SSID: `ESP32-Service-Uptime-Monitor`, password: none
-- IP: `192.168.4.1`, captive portal
-- Boot button (`BOOT_BTN_PIN=0`) toggles `isConfigFunctionsEnabled`
+### Core Pinning & Tasks
+- **Core 1**: Arduino `loop()`, Wi-Fi networking stack, and `AsyncWebServer` callbacks.
+- **Core 0**: `monitoringTaskLoop` runs pinned to Core 0 with priority 5 and an 8192-byte stack to ensure HTTPS TLS handshakes do not block network or UI responsiveness.
+- **RGB LED Task**: Separate FreeRTOS task running smooth sine-wave pulses without blocking monitoring or networking.
 
-## MonitoredEntity
+### Boot Sequence
+1. Filesystem initialization via `storage.init()` (`SD_MMC` or `LittleFS`).
+2. Cancel OTA rollback via `esp_ota_mark_app_valid_cancel_rollback()` once storage is confirmed healthy.
+3. Check `/config.json`:
+   - If missing: enters `configurationMode()` (starts AP, captive portal DNS, launches AP LED task).
+   - If present: enters `initNormalMode()` (connects to Wi-Fi STA, starts mDNS, syncs SNTP, initializes `MonitoringService`, and starts Core 0 monitoring task).
+4. Web server starts on port 80 with endpoints registered from `Api`, `FileManager`, and `ElegantOTA`.
 
+### Monitoring & State Transition Logic
+- Runs periodically based on `config.getConfig().checkInterval` (default 60s).
+- Checks each active entity via HTTP HEAD request.
+- Entities transition to `OFFLINE` only after 3 consecutive failures (`HTTP_REQUEST_RETRIES`).
+- `mustSave` flag in `MonitoringService::checkAll()` is set **only when an entity's status actually transitions** (`ONLINE` $\leftrightarrow$ `OFFLINE`). Steady-state checks perform **zero writes** to storage, protecting Flash/SD from unnecessary wear.
+- Status changes broadcast immediately over WebSocket and send Discord notifications if enabled.
+
+### OTA & Web Asset Update Protection
+When an OTA update begins (firmware `.bin` or `web.zip` archive upload):
+1. `MonitoringTaskHandle` is suspended via `vTaskSuspend()`.
+2. `monitoredEntityRepository.getMutex()` semaphore is acquired to prevent concurrent file access.
+3. Active WebSocket connections are closed.
+4. Storage bus is unmounted (`storage.unmount()`) during firmware flashing to avoid SPI/DMA bus collisions.
+
+---
+
+## Data Model: MonitoredEntity
+
+Internal representation in `MonitoredEntity.h`:
 ```cpp
-struct {
-  String name;           // identifier (hostname-like)
-  String address;        // HTTP(S) URL or address
-  String icon;           // UI icon
-  bool notification;     // enable notifications
-  bool disabled;         // disabled flag
-  time_t lastChanged;    // last status change timestamp
-  uint8_t failCount;     // failure counter (reset on success)
-}
+class MonitoredEntity {
+    String _name;           // Unique identifier (hostname-compatible)
+    String _address;        // HTTP or HTTPS target address
+    String _icon;           // Material Design Icons CSS class
+    bool _notification;     // Discord alert enabled
+    bool _disabled;         // Skip from active monitoring
+    time_t _lastChanged;    // Unix timestamp of last online/offline transition
+    uint8_t _failCount;     // Failure counter (0 to 3, reset on success)
+    bool _isOnline;         // Current operational state
+};
 ```
 
-## Key Settings
+---
 
-| Setting | Value |
-|---------|-------|
-| Board | `esp32-s3-devkitc-1` |
-| PSRAM | `opi` (8MB), `qio_opi` memory type |
-| Stack | `8192` bytes (for HTTPS requests) |
-| Task priority | `5` (webserver on Core 1, monitoring on Core 0) |
-| HTTP timeout | `5000` ms |
-| Retry | `3` attempts |
-| Check interval | configurable (default: 60s) |
-| SNTP sync | every 15 minutes |
+## Agent Coding Rules & Conventions
 
-## Development Notes
+1. **Board Configuration**:
+   - Hardware pins and capability flags (`HAS_SD_CARD`, `HAS_STATUS_LED`, `HAS_RGB_LED`) must strictly reside in `include/devices.h`.
+   - Never hardcode GPIO pin numbers directly in service classes.
+   - Use `#ifdef HAS_STATUS_LED` and `#ifdef HAS_RGB_LED` guards around hardware-specific logic so targets compile cleanly without dead code.
 
-- **Hot-reload**: Full rebuild & upload required
-- **Logging**: `Logger.info(WARNING/ERROR/DEBUG)(MAINLOG, format, ...)`
-- **Thread safety**: `xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY)`
-- **PSRAM**: Use `PSRAMAllocator` for `JsonDocument`
-- **Hostname**: `cleanHostname()` - alphanumeric, `_`, `-` only
+2. **Storage Access**:
+   - Always access files through `storage.getFS()` or `storage.readFile()` / `storage.writeFile()`. Never hardcode `SD_MMC` in business logic or handlers.
 
-## Compact instructions
+3. **Thread Safety**:
+   - Any read/write operation affecting the entity collection must acquire the repository mutex:
+     ```cpp
+     xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY);
+     // critical section
+     xSemaphoreGive(monitoredEntityRepository.getMutex());
+     ```
 
-When you are using compact, please focus onn code changes.
+4. **Logging**:
+   - Use `Logger.info(MAINLOG, ...)`, `Logger.warning(...)`, `Logger.error(...)`, or `Logger.debug(...)`.
+   - In standalone libraries (`lib/`), use the injected `LogHandler` callback pattern.
+
+5. **Memory & Allocations**:
+   - Use `PSRAMAllocator` when creating large `JsonDocument` instances in PSRAM-enabled targets.
+
+6. **Git Commits**:
+   - Write clear, descriptive English commit messages without Conventional Commits prefixes (no `feat:`, `fix:`, etc.) and without sign-off lines.
+   - All commits must be signed using `git commit -S`.
+
+---
+
+## Compact Instructions
+
+When using the `/compact` command, focus strictly on code changes and architectural modifications.

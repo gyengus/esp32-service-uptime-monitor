@@ -1,179 +1,185 @@
 # ESP32 Service Uptime Monitor
 
-An ESP32-S3 based monitoring device that periodically checks the availability of services (via HTTP HEAD) and sends Discord notifications when status changes occur.
+An ESP32-S3 based monitoring device that periodically checks the availability of HTTP/HTTPS services and sends Discord notifications when status changes occur. It features a responsive Web UI, WebSocket live updates, OTA firmware and web asset flashing, and support for both MicroSD and internal Flash (LittleFS) storage.
 
 ## Features
 
-- **WiFi AP/STA mode**: Easy configuration via built-in access point or connect to existing WiFi
-- **OTA Firmware updates**: Update firmware over-the-air via Web UI or PlatformIO (`esp32-s3-ota` environment)
-- **Over-the-Air Web UI updates**: Update web assets (.zip) directly onto the SD card with automatic in-memory minification
-- **Web UI**: Bootstrap-based interface for monitoring and configuration
-- **Discord integration**: Send notifications to Discord channels on status changes
-- **SD card storage**: Persistent configuration and entity storage
-- **mDNS support**: Access via esp32_service_uptime_monitor.local
-- **SNTP time sync**: Automatic time synchronization
-- **LED status indicator**: Visual feedback on monitoring status
-- **Temperature monitoring**: ESP32 internal temperature monitoring
+- **Multi-board support**: Native configurations for `esp32-s3-cam` (with MicroSD slot) and `esp32-s3` (internal Flash with LittleFS) via `devices.h`
+- **WiFi AP/STA mode**: Easy configuration via built-in captive portal access point or connection to existing WiFi
+- **Dual storage backends**: Supports FAT32 MicroSD (1-bit SD_MMC) or internal SPI Flash with wear-leveling (LittleFS)
+- **OTA Firmware updates**: Wireless updates via Web UI or PlatformIO (`esp32-s3-cam-ota` and `esp32-s3-ota`)
+- **Over-the-Air Web UI updates**: Update web assets (.zip) over the network with automatic in-memory minification (`uploadweb`)
+- **Modern Web UI**: Responsive Bootstrap 5 interface with dark mode, live status filtering, and entity management
+- **WebSocket live stream**: Real-time log streaming and instant UI updates without polling
+- **Discord notifications**: Rich embed notifications sent to a configured Discord webhook on status change
+- **Config backup & restore**: Export and import configuration and monitored entity snapshots in JSON format
+- **File Manager**: Built-in web file manager for browsing, uploading, downloading, and managing files
+- **mDNS & SNTP**: Access via `http://<hostname>.local/` and automatic NTP time synchronization
+- **LED indicators**: Visual feedback via addressable RGB LED (WS2812B) and optional status LED
 
-## Hardware
+## Hardware & Board Profiles
 
-- **Microcontroller**: ESP32-S3 (e.g., `esp32-s3-devkitc-1`)
-- **Storage**: MicroSD card (SPI mode, 1-bit, up to 8GB recommended)
-- **LED**: RGB LED on GPIO 48, status LED on GPIO 2
-- **Button**: Boot button (GPIO 0) for configuration mode toggle
+The project uses `include/devices.h` to define board pins and available hardware features (`HAS_SD_CARD`, `HAS_STATUS_LED`, `HAS_RGB_LED`) based on the active PlatformIO build environment:
 
-### Pinout
+| Feature / Pin | `esp32-s3-cam` (Default) | `esp32-s3` |
+|---|---|---|
+| **Target Board** | ESP32-S3 CAM Dev Board | ESP32-S3 DevKitC-1 / WROOM-1 |
+| **Storage Backend** | MicroSD Card (`SD_MMC`, 1-bit) | Internal SPI Flash (`LittleFS`) |
+| **Status LED** | GPIO 2 (`HAS_STATUS_LED`) | None |
+| **RGB LED (WS2812B)** | GPIO 48 (`HAS_RGB_LED`) | GPIO 48 (`HAS_RGB_LED`) |
+| **Boot Button** | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 0 (`BOOT_BTN_PIN`) |
+| **SD CMD / DATA / CLK** | GPIO 38 / 40 / 39 | N/A |
 
-| Pin | Function |
-|-----|----------|
-| GPIO 2 | Status LED |
-| GPIO 48 | RGB LED |
-| GPIO 0 | Boot button (configuration toggle) |
-| GPIO 38 | SD Card CMD |
-| GPIO 40 | SD Card DATA |
-| GPIO 39 | SD Card CLK |
-
-## Installation
+## Installation & Build
 
 ### Prerequisites
 
-- PlatformIO CLI installed
-- MicroSD card (formatted as FAT32)
+- [PlatformIO Core (CLI)](https://platformio.org/install/cli) or PlatformIO IDE
+- Node.js & npm (for Web UI development and testing)
+- MicroSD card (FAT32 formatted, only needed for `esp32-s3-cam`)
 
-### Build & Upload
+### Build & Upload Commands
 
-#### USB Upload
+#### Firmware Build & Upload
 
 ```bash
-# Build firmware
-pio run
+# Build default firmware (ESP32-S3 CAM with SD card support)
+pio run -e esp32-s3-cam
 
-# Upload to ESP32 via USB
-pio run --target upload
+# Build firmware for standard ESP32-S3 (internal Flash via LittleFS)
+pio run -e esp32-s3
 
-# Monitor serial output
+# Upload firmware via USB
+pio run -e esp32-s3-cam --target upload
+# or for standard S3:
+pio run -e esp32-s3 --target upload
+
+# Monitor serial output (115200 8N1)
 pio device monitor
 ```
 
 #### OTA Firmware Upload
 
-You can update the firmware wirelessly via PlatformIO or through the web interface:
+Wirelessly update the firmware of an already deployed device:
 
 ```bash
-# Upload via OTA using default hostname (esp32_service_uptime_monitor.local)
+# Upload to CAM board over OTA (default hostname: esp32_service_uptime_monitor.local)
+pio run -e esp32-s3-cam-ota --target upload
+
+# Upload to S3 board over OTA
 pio run -e esp32-s3-ota --target upload
 
-# Upload via OTA using a specific IP address
-ESP_IP=192.168.0.118 pio run -e esp32-s3-ota --target upload
+# Specify a custom IP address for OTA upload
+ESP_IP=192.168.0.118 pio run -e esp32-s3-cam-ota --target upload
 ```
 
-#### Web UI Asset Upload
+#### Web UI Asset Packaging & Upload
 
-Web UI assets (HTML, JS, CSS) reside on the FAT32 microSD card. You can package, minify, and upload them over the network:
+Web UI assets (HTML, JS, CSS, icons) reside in the storage filesystem (`/web`). You can build, minify, and upload them over the network without taking out the SD card or using serial:
 
 ```bash
-# Package, minify in-memory, and upload directly to the device's SD card
+# Package, minify in-memory, and upload directly to device storage
 pio run --target uploadweb
 
-# Or specify a custom device host/IP
+# Upload to a custom IP or hostname
 ESP_IP=192.168.0.118 pio run --target uploadweb
 
-# Create the minified archive locally without uploading (.pio/build/web_assets.zip)
+# Create the minified production archive locally without uploading (web.zip)
 pio run --target packweb
 ```
 
 ### Initial Setup
 
-1. **Power on the device** - The device will boot into configuration mode (AP) if no config file is found
-2. **Connect to AP**: SSID `ESP32-Service-Uptime-Monitor`, password `29965225`
+1. **Power on the device**: If no configuration exists, the device boots into Access Point (AP) mode.
+2. **Connect to AP**:
+   - **SSID**: `ESP32-Service-Uptime-Monitor`
+   - **Password**: `29965225`
+   - **Captive Portal IP**: `192.168.4.1`
 3. **Open browser**: Navigate to `http://192.168.4.1/`
-4. **Configure WiFi**: Enter your network credentials and click Save
-5. **Configure Discord** (optional): Enter your Discord webhook URL to enable notifications
-6. **Device restarts** and connects to your WiFi
+4. **Configure Wi-Fi**: Enter your network credentials and click **Save**.
+5. **Configure Discord** (optional): Add your Discord webhook URL to receive notifications.
+6. **Device reboots**: Reconnects to your Wi-Fi network and starts monitoring.
 
 ## Usage
 
 ### Web Interface
 
-Access the device at `http://<hostname>.local/` or `http://<IP>/`
+Access the dashboard at `http://<hostname>.local/` or `http://<device-ip>/`.
 
-#### Main Page (`/`)
+- **Main Dashboard (`/`)**: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature).
+- **Configuration Page (`/config`)**: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.
+- **File Manager (`/fileManager`)**: Browse directories, upload files, download files, delete items, and create folders.
 
-- View all monitored entities with status (online/offline)
-- Filter by status (ALL/ONLINE/OFFLINE)
-- Add new entities
-- Edit or delete existing entities
-- Real-time system stats in footer (uptime, RSSI, heap, temperature)
+### Configuration Protection Toggle
 
-#### Configuration Page (`/config`)
-
-- WiFi SSID and password
-- SNTP server (default: `pool.ntp.org`)
-- Timezone offset (hours)
-- Check interval (seconds, default: 60)
-- Discord webhook URL
-- Device hostname
-- **Firmware Update**: Upload `.bin` binary over HTTP with live progress indicator and auto-reboot
-- **Web UI Update**: Upload `.zip` archive containing updated web assets directly onto the SD card
-
-### Adding a Monitored Entity
-
-1. Click the `+` button (FAB - Floating Action Button)
-2. Fill in:
-   - **Name**: Unique identifier for the entity
-   - **Address**: IP address, hostname, or URL to monitor
-   - **Notifications**: Enable Discord notifications on status change
-   - **Disabled**: Skip this entity from monitoring
-   - **Icon**: Material Design Icons class (default: `mdi-server`)
-3. Click Save
-
-### Configuration Toggle
-
-Press the boot button to toggle configuration mode:
-- **Enabled**: Configuration UI accessible, config button visible in main UI
-- **Disabled**: Configuration UI protected, config button hidden
+Press the hardware Boot button (GPIO 0) at any time to toggle configuration access:
+- **Enabled**: Settings button visible in the web header; `/config` and management endpoints unlocked.
+- **Disabled**: Configuration protected; sensitive endpoints return 403 Forbidden.
 
 ## API Endpoints
 
-### System
+### System & Health
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check (returns `{"status":"UP"}`) |
-| GET | `/api/sysinfo` | System info (heap, temperature, version, commit hash) |
-| GET | `/api/summary` | Entity summary (total, online, offline counts) |
+|---|---|---|
+| `GET` | `/api/health` | Health check (`{"status":"UP"}`) |
+| `GET` | `/api/sysinfo` | System stats (heap, temperature, uptime, version, RSSI) |
+| `GET` | `/api/summary` | Monitoring summary (total, online, offline counts) |
+| `WS` | `/ws` | WebSocket connection for real-time state and log stream |
 
 ### Configuration
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/config` | Get current configuration |
-| POST | `/api/config` | Update configuration |
-| POST | `/api/config/factoryReset` | Reset to factory defaults |
-| GET | `/api/wifiscan` | Scan for WiFi networks (AP mode only) |
-| POST | `/api/testDiscord` | Test Discord webhook integration |
+|---|---|---|
+| `GET` | `/api/config` | Retrieve current configuration |
+| `POST` | `/api/config` | Update configuration parameters |
+| `GET` | `/api/config/backup` | Download complete configuration and entity backup JSON |
+| `POST` | `/api/config/restore` | Restore configuration and entities from backup JSON |
+| `POST` | `/api/config/factoryReset` | Reset settings to factory defaults |
+| `POST` | `/api/config/test-led` | Preview RGB LED brightness (cyan pulse for 3 seconds) |
+| `GET` | `/api/wifiscan` | Scan available Wi-Fi networks (AP mode only) |
+| `POST` | `/api/testDiscord` | Send a test notification to the configured Discord webhook |
 
-### Updates & OTA
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/update` | Firmware binary upload (handled by ElegantOTA) |
-| POST | `/api/web/upload-archive` | Web assets ZIP upload and extraction to SD card |
-
-### Entities
+### Entity Management
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/monitoredentities` | List all monitored entities |
-| GET | `/api/monitoredentity/{name}` | Get entity details |
-| POST | `/api/monitoredentity` | Create new entity |
-| PUT | `/api/monitoredentity/{name}` | Update entity |
-| DELETE | `/api/monitoredentity/{name}` | Delete entity |
+|---|---|---|
+| `GET` | `/api/monitoredentities` | List all monitored entities |
+| `GET` | `/api/monitoredentity/{name}` | Retrieve details for a specific entity |
+| `POST` | `/api/monitoredentity` | Add a new monitored entity |
+| `PUT` | `/api/monitoredentity/{name}` | Update an existing entity |
+| `DELETE` | `/api/monitoredentity/{name}` | Delete an entity |
 
-## Configuration File
+### Updates & Storage
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/update` | Firmware binary upload handled by ElegantOTA |
+| `POST` | `/api/web/upload-archive` | Upload and unpack `web.zip` archive into `/web` |
+| `GET` | `/fileManager` | File Manager HTML interface |
+| `GET` | `/list` | List files and directories in storage |
+| `POST` | `/upload` | Upload a file to storage |
+| `GET` | `/download` | Download a file from storage |
+| `DELETE` | `/delete` | Delete a file or directory |
+| `POST` | `/mkdir` | Create a new directory |
+
+## Status Indicators
+
+### RGB LED (GPIO 48)
+- **Off**: All services online (steady state)
+- **Pulsing Burgundy / Magenta**: One or more services are offline
+- **Pulsing Amber**: Access Point (configuration) mode active
+- **Pulsing Red**: System error (storage or critical fault)
+- **Cyan**: LED brightness test active
+
+### Status LED (GPIO 2, CAM board only)
+- **Blink**: Active network check cycle executing
+
+## Configuration Files
+
+The device stores its persistent state in JSON format in the root of the filesystem:
 
 ### `/config.json`
-
 ```json
 {
   "wifiSSID": "YourNetworkSSID",
@@ -181,67 +187,42 @@ Press the boot button to toggle configuration mode:
   "sntpServer": "pool.ntp.org",
   "offsetHours": 1,
   "checkInterval": 60,
+  "ledBrightness": 50,
   "discordWebhookURL": "https://discord.com/api/webhooks/...",
-  "hostname": "esp32_service_uptime_monitor"
+  "hostname": "esp32_service_uptime_monitor",
+  "logLevel": "DEBUG"
 }
 ```
 
 ### `/monitored_entities.json`
-
 ```json
 [
   {
-    "name": "WebServer",
-    "address": "https://example.com",
-    "icon": "mdi-web",
+    "name": "Router",
+    "address": "http://192.168.0.1/",
+    "icon": "mdi-router-wireless",
     "notification": true,
     "disabled": false,
-    "lastChanged": 1700000000
+    "lastChanged": 1700000000,
+    "failCount": 0
   }
 ]
 ```
 
-## Status Indicators
-
-- **LED (GPIO 2)**: Blinking during monitoring cycle
-- **RGB LED (GPIO 48)**:
-  - **Normal mode, no offline entities**: Off
-  - **Normal mode, offline entities**: Pulsing burgundy color
-  - **AP mode**: Pulsing amber color (configuration mode)
-  - **Error mode**: Pulsing red (SD card or configuration error)
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| No WiFi connection | Check SSID/password, verify AP mode first |
-| Config not saved | Check SD card is properly inserted and writable |
-| Discord notifications not working | Test webhook URL via `/config` page |
-| Device not connecting to WiFi | Check hostname format (alphanumeric, `_`, `-` only) |
-
-## Development & Testing
+## Testing & Quality Assurance
 
 ```bash
-# Clean build artifacts
-pio run --target clean
-
-# Linting
-pio check
-
-# Run C++ unit tests (native)
+# Run native C++ unit tests (Unity framework)
 pio test -e native
 
-# Run Web UI unit tests (Jest)
-cd web && npm test
+# Run Web UI frontend unit tests (Vitest)
+npm --prefix web test
 
-# Build and minify web assets
-pio run --target packweb
+# Run static analysis
+pio check
 
-# Upload web assets over network
-pio run --target uploadweb
-
-# Upload firmware via OTA
-pio run -e esp32-s3-ota --target upload
+# Clean build artifacts
+pio run --target clean
 ```
 
 ## License
@@ -250,9 +231,6 @@ MIT
 
 ## Donations
 
-If you find this project useful and would like to support its development, you can make a donation:
-
-- **Bitcoin**: bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn
-- **EVM**: 0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8
-
-Thank you for your support!
+If you find this project useful and would like to support its development:
+- **Bitcoin**: `bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn`
+- **EVM**: `0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8`
