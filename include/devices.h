@@ -81,6 +81,21 @@
     #define HAS_RGB_LED
     #define RGB_LED_PIN 8
 
+#elif defined(BOARD_ESP32_C5)
+
+    #define BOARD_NAME "ESP32-C5"
+    // Boot strapping pin on ESP32-C5 is GPIO 28
+    #define BOOT_BTN_PIN 28
+
+    // Internal Flash via LittleFS
+    #ifndef USE_LITTLEFS
+    #define USE_LITTLEFS
+    #endif
+
+    // Onboard addressable RGB LED (WS2812 on GPIO 27)
+    #define HAS_RGB_LED
+    #define RGB_LED_PIN 27
+
 #else
 
     // Default fallback configuration (ESP32-S3-CAM)
