@@ -38,6 +38,7 @@ CLAUDE.md
 node_modules/
 coverage/
 *.zip
+dist/
 
 # Python cache
 __pycache__/

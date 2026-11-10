@@ -66,7 +66,16 @@ pio run -e esp32-c5 --target upload
 
 # Monitor serial output (115200 8N1)
 pio device monitor
+
+# Export firmware & merged ESP Web Tools binaries to dist/
+pio run -t dist
 ```
+
+> **Web Flasher (ESP Web Tools) & Binary Distribution:**
+> When building with `pio run` or `pio run -t dist`, binaries are automatically generated in the `dist/` directory (ignored by git):
+> - `dist/firmware-<env>.bin`: Standalone application binary for OTA updates.
+> - `dist/factory-<env>.bin`: Merged single binary (bootloader + partitions + boot_app0 + firmware) flashable at offset `0x0000` via [ESP Web Tools](https://esphome.github.io/esp-web-tools/) or WebSerial in one click.
+> - `dist/manifest.json`: Auto-generated manifest for ESP Web Tools hosting.
 
 #### OTA Firmware Upload
 
