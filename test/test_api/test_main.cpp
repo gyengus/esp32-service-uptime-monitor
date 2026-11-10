@@ -103,7 +103,7 @@ void test_api_config_get(void) {
 }
 
 void test_api_config_post_success(void) {
-    String payload = "{\"hostname\":\"new_host\",\"sntpServer\":\"pool.ntp.org\",\"offsetHours\":2,\"checkInterval\":30,\"discordWebhookURL\":\"https://discord.com/api/webhooks/123/xyz\",\"wifiSSID\":\"\",\"wifiPassword\":\"\"}";
+    String payload = "{\"hostname\":\"new-host\",\"sntpServer\":\"pool.ntp.org\",\"offsetHours\":2,\"checkInterval\":30,\"discordWebhookURL\":\"https://discord.com/api/webhooks/123/xyz\",\"wifiSSID\":\"\",\"wifiPassword\":\"\"}";
 
     AsyncWebServerRequest req;
     bool handled = testServer->dispatch("/api/config", HTTP_POST, &req, payload);
@@ -113,7 +113,7 @@ void test_api_config_post_success(void) {
     TEST_ASSERT_TRUE(storage.fileExists(CONFIG_FILE_PATH));
     config.loadConfig();
     config_t cfg = config.getConfig();
-    TEST_ASSERT_EQUAL_STRING("new_host", cfg.hostname.c_str());
+    TEST_ASSERT_EQUAL_STRING("new-host", cfg.hostname.c_str());
     TEST_ASSERT_EQUAL_UINT8(30, cfg.checkInterval);
 }
 
@@ -121,7 +121,7 @@ void test_api_config_post_forbidden(void) {
     isConfigFunctionsEnabled = false;
     isAPMode = false;
 
-    String payload = "{\"hostname\":\"new_host\"}";
+    String payload = "{\"hostname\":\"new-host\"}";
     AsyncWebServerRequest req;
     testServer->dispatch("/api/config", HTTP_POST, &req, payload);
     TEST_ASSERT_EQUAL_INT(403, req.lastCode);

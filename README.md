@@ -73,15 +73,26 @@ pio device monitor
 Wirelessly update the firmware of an already deployed device:
 
 ```bash
-# Upload to CAM board over OTA (default hostname: esp32_service_uptime_monitor.local)
+# Upload over OTA (default hostname: esp32-service-uptime-monitor.local)
 pio run -e esp32-s3-cam-ota --target upload
 
 # Upload to S3 board over OTA
 pio run -e esp32-s3-ota --target upload
 
-# Specify a custom IP address for OTA upload
+# Specify a custom IP or hostname via environment variable:
 ESP_IP=192.168.0.118 pio run -e esp32-s3-cam-ota --target upload
+# or:
+ESP_HOST=my-device.local pio run -e esp32-s3-cam-ota --target upload
+
+# Or via PlatformIO upload-port flag:
+pio run -e esp32-s3-ota --target upload --upload-port 192.168.0.118
 ```
+
+> **Target Resolution:** The OTA and web asset upload scripts dynamically resolve the destination address in this order:
+> 1. `ESP_HOST` / `ESP_IP` environment variables
+> 2. `upload_port` in `platformio.ini` (or `--upload-port` CLI flag)
+> 3. `hostname` read from local `config.json` (if present)
+> 4. Default fallback: `esp32-service-uptime-monitor.local`
 
 #### Web UI Asset Packaging & Upload
 
@@ -93,6 +104,8 @@ pio run --target uploadweb
 
 # Upload to a custom IP or hostname
 ESP_IP=192.168.0.118 pio run --target uploadweb
+# or:
+ESP_HOST=my-device.local pio run --target uploadweb
 
 # Create the minified production archive locally without uploading (web.zip)
 pio run --target packweb
@@ -199,7 +212,7 @@ The device stores its persistent state in JSON format in the root of the filesys
   "checkInterval": 60,
   "ledBrightness": 50,
   "discordWebhookURL": "https://discord.com/api/webhooks/...",
-  "hostname": "esp32_service_uptime_monitor",
+  "hostname": "esp32-service-uptime-monitor",
   "logLevel": "DEBUG"
 }
 ```

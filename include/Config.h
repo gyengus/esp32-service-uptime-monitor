@@ -6,7 +6,7 @@
 
 #define WIFI_AP_SSID "ESP32-Service-Uptime-Monitor"
 #define WIFI_AP_PASSWORD "29965225"
-#define DEFAULT_HOSTNAME "esp32_service_uptime_monitor"
+#define DEFAULT_HOSTNAME "esp32-service-uptime-monitor"
 #define DEFAULT_SNTP_SERVER "pool.ntp.org"
 #define DEFAULT_TIMEZONE_OFFSET_HOURS 1
 #define DEFAULT_CHECK_INTERVAL_SECONDS 60

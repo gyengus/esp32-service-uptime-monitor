@@ -33,31 +33,31 @@ String HostnameUtils::cleanHostname(const String &rawInput) {
             c = c + ('a' - 'A');
         }
 
-        // Allowed chars: a-z, 0-9, '-', '_'
-        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+        // Allowed chars: a-z, 0-9, '-'
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
             output += (char)c;
-        } else if (c == ' ' || c == '.' || c == '/') {
-            // Avoid consecutive underscores
-            if (output.length() > 0 && output[output.length() - 1] != '_' && output[output.length() - 1] != '-') {
-                output += '_';
+        } else if (c == ' ' || c == '.' || c == '/' || c == '_') {
+            // Convert separators and underscores to hyphens, avoid consecutive hyphens
+            if (output.length() > 0 && output[output.length() - 1] != '-') {
+                output += '-';
             }
         }
     }
 
-    // Trim leading '_' and '-'
-    while (output.length() > 0 && (output.startsWith("_") || output.startsWith("-"))) {
+    // Trim leading '-'
+    while (output.length() > 0 && output.startsWith("-")) {
         output.remove(0, 1);
     }
 
-    // Trim trailing '_' and '-'
-    while (output.length() > 0 && (output.endsWith("_") || output.endsWith("-"))) {
+    // Trim trailing '-'
+    while (output.length() > 0 && output.endsWith("-")) {
         output.remove(output.length() - 1);
     }
 
     // Enforce max DNS label length (63 characters)
     if (output.length() > 63) {
         output = output.substring(0, 63);
-        while (output.length() > 0 && (output.endsWith("_") || output.endsWith("-"))) {
+        while (output.length() > 0 && output.endsWith("-")) {
             output.remove(output.length() - 1);
         }
     }

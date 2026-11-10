@@ -28,12 +28,17 @@ void test_clean_hostname_hungarian_accents_uppercase(void) {
 
 void test_clean_hostname_spaces_and_slashes(void) {
     String res = HostnameUtils::cleanHostname("my device / room . 1");
-    TEST_ASSERT_EQUAL_STRING("my_device_room_1", res.c_str());
+    TEST_ASSERT_EQUAL_STRING("my-device-room-1", res.c_str());
+}
+
+void test_clean_hostname_underscores_converted_to_hyphens(void) {
+    String res = HostnameUtils::cleanHostname("my_custom_device_name");
+    TEST_ASSERT_EQUAL_STRING("my-custom-device-name", res.c_str());
 }
 
 void test_clean_hostname_collapse_consecutive_separators(void) {
     String res = HostnameUtils::cleanHostname("my    device");
-    TEST_ASSERT_EQUAL_STRING("my_device", res.c_str());
+    TEST_ASSERT_EQUAL_STRING("my-device", res.c_str());
 }
 
 void test_clean_hostname_trim_leading_trailing_delimiters(void) {
@@ -48,7 +53,7 @@ void test_clean_hostname_special_chars_stripped(void) {
 
 void test_clean_hostname_empty_fallback(void) {
     String res = HostnameUtils::cleanHostname("!@#$%^&*()");
-    TEST_ASSERT_EQUAL_STRING("esp32_service_uptime_monitor", res.c_str());
+    TEST_ASSERT_EQUAL_STRING("esp32-service-uptime-monitor", res.c_str());
 }
 
 void test_clean_hostname_long_string_truncated_to_63(void) {
@@ -56,7 +61,6 @@ void test_clean_hostname_long_string_truncated_to_63(void) {
     String res = HostnameUtils::cleanHostname(longName);
     TEST_ASSERT_LESS_OR_EQUAL_INT(63, res.length());
     TEST_ASSERT_FALSE(res.endsWith("-"));
-    TEST_ASSERT_FALSE(res.endsWith("_"));
 }
 
 int main(int argc, char **argv) {
@@ -66,6 +70,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_clean_hostname_hungarian_accents_lowercase);
     RUN_TEST(test_clean_hostname_hungarian_accents_uppercase);
     RUN_TEST(test_clean_hostname_spaces_and_slashes);
+    RUN_TEST(test_clean_hostname_underscores_converted_to_hyphens);
     RUN_TEST(test_clean_hostname_collapse_consecutive_separators);
     RUN_TEST(test_clean_hostname_trim_leading_trailing_delimiters);
     RUN_TEST(test_clean_hostname_special_chars_stripped);
