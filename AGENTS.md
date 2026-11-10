@@ -139,6 +139,11 @@ class MonitoredEntity {
    - Write clear, descriptive English commit messages without Conventional Commits prefixes (no `feat:`, `fix:`, etc.) and without sign-off lines.
    - All commits must be signed using `git commit -S`.
 
+7. **Hostname & mDNS Standards**:
+   - Device hostnames must adhere to RFC 1123 DNS syntax (letters, digits, and hyphens only).
+   - Never use underscores (`_`) in default hostnames or URLs intended for mDNS; Windows native mDNS (`dnscache`) strictly discards queries containing underscores.
+   - Always sanitize user-provided hostnames via `HostnameUtils::cleanHostname()`.
+
 ---
 
 ## Compact Instructions

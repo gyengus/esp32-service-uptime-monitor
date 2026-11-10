@@ -121,13 +121,16 @@ pio run --target packweb
 3. **Open browser**: Navigate to `http://192.168.4.1/` (most devices trigger the captive portal automatically).
 4. **Configure Wi-Fi**: Enter your network credentials and click **Save**.
 5. **Configure Discord** (optional): Add your Discord webhook URL to receive notifications.
-6. **Device reboots**: Reconnects to your Wi-Fi network and starts monitoring.
+6. **Device reboots**: Reconnects to your Wi-Fi network and starts monitoring. The web dashboard will be available at `http://esp32-service-uptime-monitor.local/` (or your configured hostname) or via its assigned DHCP IP address.
 
 ## Usage
 
 ### Web Interface
 
-Access the dashboard at `http://<hostname>.local/` or `http://<device-ip>/`.
+Access the dashboard at `http://<hostname>.local/` (default: `http://esp32-service-uptime-monitor.local/`) or `http://<device-ip>/`.
+
+> [!TIP]
+> **Hostname & mDNS Compatibility:** In accordance with RFC 1123, device hostnames only allow lowercase ASCII letters (`a-z`), digits (`0-9`), and hyphens (`-`). Any spaces, dots, or underscores entered via the web interface are automatically sanitized to hyphens to ensure seamless mDNS resolution across all operating systems, including Windows, macOS, iOS, Android, and Linux.
 
 - **Main Dashboard (`/`)**: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature).
 - **Configuration Page (`/config`)**: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.
