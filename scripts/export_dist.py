@@ -49,11 +49,12 @@ def update_web_flasher_manifest(dist_dir, pioenv, chip_family):
         except Exception:
             pass
 
-    builds = [b for b in manifest.get("builds", []) if b.get("parts", [{}])[0].get("path") != f"factory-{pioenv}.bin"]
+    bin_name = f"{pioenv}.bin"
+    builds = [b for b in manifest.get("builds", []) if b.get("parts", [{}])[0].get("path") != bin_name]
     builds.append({
         "chipFamily": chip_family,
         "parts": [
-            { "path": f"factory-{pioenv}.bin", "offset": 0 }
+            { "path": bin_name, "offset": 0 }
         ]
     })
     manifest["builds"] = builds
@@ -71,8 +72,7 @@ def export_env_dist(env, pioenv):
     project_dir = env.get("PROJECT_DIR", ".")
     build_dir = env.subst("$BUILD_DIR")
     dist_dir = os.path.join(project_dir, "dist")
-    target_dist_dir = os.path.join(dist_dir, pioenv)
-    os.makedirs(target_dist_dir, exist_ok=True)
+    os.makedirs(dist_dir, exist_ok=True)
 
     firmware_bin = os.path.join(build_dir, "firmware.bin")
     bootloader_bin = os.path.join(build_dir, "bootloader.bin")
@@ -81,17 +81,7 @@ def export_env_dist(env, pioenv):
     if not os.path.isfile(firmware_bin):
         return
 
-    # Export standalone firmware binary
-    dest_firmware = os.path.join(dist_dir, f"firmware-{pioenv}.bin")
-    shutil.copy2(firmware_bin, dest_firmware)
-    shutil.copy2(firmware_bin, os.path.join(target_dist_dir, "firmware.bin"))
-    print(f"\n[DIST] Exported firmware: {dest_firmware}")
-
-    # Copy bootloader & partitions if present
-    if os.path.isfile(bootloader_bin):
-        shutil.copy2(bootloader_bin, os.path.join(target_dist_dir, "bootloader.bin"))
-    if os.path.isfile(partitions_bin):
-        shutil.copy2(partitions_bin, os.path.join(target_dist_dir, "partitions.bin"))
+    dest_bin = os.path.join(dist_dir, f"{pioenv}.bin")
 
     # Locate boot_app0.bin
     boot_app0_bin = None
@@ -109,9 +99,6 @@ def export_env_dist(env, pioenv):
         cand = os.path.join(home, ".platformio", "packages", "framework-arduinoespressif32", "tools", "partitions", "boot_app0.bin")
         if os.path.isfile(cand):
             boot_app0_bin = cand
-
-    if boot_app0_bin:
-        shutil.copy2(boot_app0_bin, os.path.join(target_dist_dir, "boot_app0.bin"))
 
     esptool_chip, chip_family, bootloader_offset = get_chip_info(env)
     partitions_offset = "0x8000"
@@ -132,17 +119,14 @@ def export_env_dist(env, pioenv):
     except Exception:
         pass
 
-    # Create merged factory image for ESP Web Tools
+    # Create merged flashable image for Web Flasher
     if os.path.isfile(bootloader_bin) and os.path.isfile(partitions_bin) and boot_app0_bin:
-        dest_factory = os.path.join(dist_dir, f"factory-{pioenv}.bin")
-        target_factory = os.path.join(target_dist_dir, "factory.bin")
         python_exe = env.subst("$PYTHONEXE")
-
         merge_cmd = [
             python_exe, "-m", "esptool",
             "--chip", esptool_chip,
             "merge-bin",
-            "-o", dest_factory,
+            "-o", dest_bin,
             "--flash-mode", str(flash_mode).lower(),
             "--flash-freq", flash_freq,
             "--flash-size", str(flash_size),
@@ -154,12 +138,17 @@ def export_env_dist(env, pioenv):
 
         try:
             subprocess.run(merge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-            shutil.copy2(dest_factory, target_factory)
-            print(f"[DIST] Created Web Flasher factory image (merged @ 0x0): {dest_factory}")
+            print(f"\n[DIST] Created Web Flasher image: {dest_bin}")
             update_web_flasher_manifest(dist_dir, pioenv, chip_family)
-            print(f"[DIST] Updated ESP Web Tools manifest: {os.path.join(dist_dir, 'manifest.json')}\n")
+            print(f"[DIST] Updated manifest.json for {pioenv}\n")
+            return
         except Exception as e:
-            print(f"[DIST] Warning: Could not create merged factory image: {e}")
+            print(f"[DIST] Warning: Could not merge binary: {e}")
+
+    # Fallback to copy firmware.bin directly
+    shutil.copy2(firmware_bin, dest_bin)
+    print(f"\n[DIST] Exported firmware: {dest_bin}\n")
+    update_web_flasher_manifest(dist_dir, pioenv, chip_family)
 
 def export_dist_action(source, target, env):
     pioenv = env.get("PIOENV", "")
@@ -172,5 +161,5 @@ env.AddCustomTarget(
     dependencies=["$BUILD_DIR/${PROGNAME}.bin"],
     actions=[export_dist_action],
     title="Export dist binaries",
-    description="Export firmware.bin and merged factory.bin for Web Flasher to dist/"
+    description="Export merged Web Flasher binaries to dist/<env>.bin"
 )
