@@ -274,11 +274,12 @@ void WsService::broadcastSysinfo() {
     doc["type"] = "sysinfo";
     JsonObject data = doc["data"].to<JsonObject>();
 
+#ifdef HAS_TEMPERATURE_SENSOR
     float tsens_out = 0.0;
-    esp_err_t error = temperature_sensor_get_celsius(temp_sensor, &tsens_out);
-    if (error == ESP_OK) {
+    if (temp_sensor != NULL && temperature_sensor_get_celsius(temp_sensor, &tsens_out) == ESP_OK) {
         data["temperature"] = tsens_out;
     }
+#endif
     data["freeHeap"] = ESP.getFreeHeap();
     data["rssi"] = WiFi.RSSI();
     data["uptime"] = millis() / 1000;
@@ -322,11 +323,12 @@ void WsService::sendInitState(AsyncWebSocketClient* client) {
     sum["offline"] = offline;
 
     JsonObject sys = doc["sysinfo"].to<JsonObject>();
+#ifdef HAS_TEMPERATURE_SENSOR
     float tsens_out = 0.0;
-    esp_err_t error = temperature_sensor_get_celsius(temp_sensor, &tsens_out);
-    if (error == ESP_OK) {
+    if (temp_sensor != NULL && temperature_sensor_get_celsius(temp_sensor, &tsens_out) == ESP_OK) {
         sys["temperature"] = tsens_out;
     }
+#endif
     sys["freeHeap"] = ESP.getFreeHeap();
     sys["rssi"] = WiFi.RSSI();
     sys["uptime"] = millis() / 1000;

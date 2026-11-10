@@ -28,12 +28,43 @@
     #define BOOT_BTN_PIN 0
 
     // Internal Flash via LittleFS (no SD card slot)
+    #ifndef USE_LITTLEFS
     #define USE_LITTLEFS
+    #endif
 
     // No status LED on this board
     // Onboard addressable RGB LED (WS2812)
     #define HAS_RGB_LED
     #define RGB_LED_PIN 48
+
+#elif defined(BOARD_ESP32_WROOM)
+
+    #define BOARD_NAME "ESP32-WROOM"
+    #define BOOT_BTN_PIN 0
+
+    // Internal Flash via LittleFS (no SD card slot)
+    #ifndef USE_LITTLEFS
+    #define USE_LITTLEFS
+    #endif
+
+    // Standard onboard status LED (GPIO 2 on DevKitC / NodeMCU-32S)
+    #define HAS_STATUS_LED
+    #define LED_PIN 2
+
+#elif defined(BOARD_ESP32_C3)
+
+    #define BOARD_NAME "ESP32-C3"
+    // Boot strapping pin on ESP32-C3 is GPIO 9
+    #define BOOT_BTN_PIN 9
+
+    // Internal Flash via LittleFS
+    #ifndef USE_LITTLEFS
+    #define USE_LITTLEFS
+    #endif
+
+    // Status LED (GPIO 8 on ESP32-C3 SuperMini)
+    #define HAS_STATUS_LED
+    #define LED_PIN 8
 
 #else
 

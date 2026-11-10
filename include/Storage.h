@@ -2,6 +2,7 @@
 #define _STORAGE_H_
 #include <Arduino.h>
 #include <FS.h>
+#include "devices.h"
 
 #ifdef UNIT_TEST
 #include <map>

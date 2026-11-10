@@ -4,10 +4,10 @@ An ESP32-S3 based monitoring device that periodically checks the availability of
 
 ## Features
 
-- **Multi-board support**: Native configurations for `esp32-s3-cam` (with MicroSD slot) and `esp32-s3` (internal Flash with LittleFS) via `devices.h`
+- **Multi-board support**: Native configurations for `esp32-s3-cam` (MicroSD slot), `esp32-s3` (LittleFS), `esp32` (classic dual-core ESP32-WROOM-32), and `esp32-c3` (single-core RISC-V) via `devices.h`
 - **WiFi AP/STA mode**: Easy configuration via built-in captive portal access point or connection to existing WiFi
 - **Dual storage backends**: Supports FAT32 MicroSD (1-bit SD_MMC) or internal SPI Flash with wear-leveling (LittleFS)
-- **OTA Firmware updates**: Wireless updates via Web UI or PlatformIO (`esp32-s3-cam-ota` and `esp32-s3-ota`)
+- **OTA Firmware updates**: Wireless updates via Web UI or PlatformIO (`esp32-s3-cam-ota`, `esp32-s3-ota`, `esp32-ota`, `esp32-c3-ota`)
 - **Over-the-Air Web UI updates**: Update web assets (.zip) over the network with automatic in-memory minification (`uploadweb`)
 - **Modern Web UI**: Responsive Bootstrap 5 interface with dark mode, live status filtering, and entity management
 - **WebSocket live stream**: Real-time log streaming and instant UI updates without polling
@@ -21,14 +21,15 @@ An ESP32-S3 based monitoring device that periodically checks the availability of
 
 The project uses `include/devices.h` to define board pins and available hardware features (`HAS_SD_CARD`, `HAS_STATUS_LED`, `HAS_RGB_LED`) based on the active PlatformIO build environment:
 
-| Feature / Pin | `esp32-s3-cam` (Default) | `esp32-s3` |
-|---|---|---|
-| **Target Board** | ESP32-S3 CAM Dev Board | ESP32-S3 DevKitC-1 / WROOM-1 |
-| **Storage Backend** | MicroSD Card (`SD_MMC`, 1-bit) | Internal SPI Flash (`LittleFS`) |
-| **Status LED** | GPIO 2 (`HAS_STATUS_LED`) | None |
-| **RGB LED (WS2812B)** | GPIO 48 (`HAS_RGB_LED`) | GPIO 48 (`HAS_RGB_LED`) |
-| **Boot Button** | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 0 (`BOOT_BTN_PIN`) |
-| **SD CMD / DATA / CLK** | GPIO 38 / 40 / 39 | N/A |
+| Feature / Pin | `esp32-s3-cam` | `esp32-s3` | `esp32` | `esp32-c3` |
+|---|---|---|---|---|
+| **Target Board** | ESP32-S3 CAM Dev Board | ESP32-S3 DevKitC-1 / WROOM-1 | ESP32-WROOM-32 / NodeMCU-32S | ESP32-C3 SuperMini / DevKitM-1 |
+| **Architecture** | Dual-core Xtensa LX7 | Dual-core Xtensa LX7 | Dual-core Xtensa LX6 | Single-core RISC-V |
+| **Storage Backend** | MicroSD Card (`SD_MMC`, 1-bit) | Internal Flash (`LittleFS`, 16MB) | Internal Flash (`LittleFS`, 4MB) | Internal Flash (`LittleFS`, 4MB) |
+| **Status LED** | GPIO 2 (`HAS_STATUS_LED`) | None | GPIO 2 (`HAS_STATUS_LED`) | GPIO 8 (`HAS_STATUS_LED`) |
+| **RGB LED (WS2812B)** | GPIO 48 (`HAS_RGB_LED`) | GPIO 48 (`HAS_RGB_LED`) | None | None |
+| **Boot Button** | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 9 (`BOOT_BTN_PIN`) |
+| **SD CMD / DATA / CLK** | GPIO 38 / 40 / 39 | N/A | N/A | N/A |
 
 ## Installation & Build
 
@@ -43,17 +44,21 @@ The project uses `include/devices.h` to define board pins and available hardware
 #### Firmware Build & Upload
 
 ```bash
-# Build firmware for both default boards (ESP32-S3 CAM & standard ESP32-S3)
+# Build firmware for all default boards
 pio run
 
 # Or build for a specific target board:
 pio run -e esp32-s3-cam   # ESP32-S3-CAM (MicroSD)
-pio run -e esp32-s3       # ESP32-S3 DevKit (LittleFS Flash)
+pio run -e esp32-s3       # ESP32-S3 DevKit (LittleFS Flash, 16MB)
+pio run -e esp32          # Classic ESP32-WROOM-32 (LittleFS Flash, 4MB)
+pio run -e esp32-c3       # ESP32-C3 SuperMini / RISC-V (LittleFS Flash, 4MB)
 
 # Upload firmware via USB
 pio run -e esp32-s3-cam --target upload
-# or for standard S3:
+# or for standard S3 / classic ESP32 / C3:
 pio run -e esp32-s3 --target upload
+pio run -e esp32 --target upload
+pio run -e esp32-c3 --target upload
 
 # Monitor serial output (115200 8N1)
 pio device monitor

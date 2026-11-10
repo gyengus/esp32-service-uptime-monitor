@@ -136,22 +136,24 @@ void setup() {
     esp_read_mac(sta_mac, ESP_MAC_WIFI_STA); 
     Logger.info(MAINLOG, "Mac: %02X:%02X:%02X:%02X:%02X:%02X", sta_mac[0], sta_mac[1], sta_mac[2], sta_mac[3], sta_mac[4], sta_mac[5]);
 
+#ifdef HAS_TEMPERATURE_SENSOR
     temperature_sensor_config_t temp_sensor_config = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 50);
     esp_err_t error = temperature_sensor_install(&temp_sensor_config, &temp_sensor);
     if (error == ESP_OK) {
         temperature_sensor_enable(temp_sensor);
         Logger.info(MAINLOG, "Temperature sensor initialized");
+        float tsens_out = 0.0;
+        if (temperature_sensor_get_celsius(temp_sensor, &tsens_out) == ESP_OK) {
+            Logger.info(MAINLOG, "Current temperature: %.2f °C", tsens_out);
+        }
     } else {
-        Logger.error(MAINLOG, "Failed to initialize temperature sensor: %s", esp_err_to_name(error));
+        temp_sensor = NULL;
+        Logger.info(MAINLOG, "Internal temperature sensor not supported on this chip/board");
     }
-
-    float tsens_out = 0.0;
-    error = temperature_sensor_get_celsius(temp_sensor, &tsens_out);
-    if (error == ESP_OK) {
-        Logger.info(MAINLOG, "Current temperature: %.2f °C", tsens_out);
-    } else {
-        Logger.error(MAINLOG, "Failed to read temperature sensor: %s", esp_err_to_name(error));
-    }
+#else
+    temp_sensor = NULL;
+    Logger.info(MAINLOG, "Internal temperature sensor not supported on this chip");
+#endif
 
     if (!storage.init()) {
         errorMode();
@@ -325,6 +327,16 @@ void initNormalMode() {
     );
 #endif
 
+#if CONFIG_FREERTOS_UNICORE
+    xTaskCreate(
+        monitoringTaskLoop,
+        "MonitoringTask",
+        8192,
+        NULL,
+        5,
+        &MonitoringTaskHandle
+    );
+#else
     xTaskCreatePinnedToCore(
         monitoringTaskLoop,
         "MonitoringTask",
@@ -334,6 +346,7 @@ void initNormalMode() {
         &MonitoringTaskHandle,
         0
     );
+#endif
 }
 
 void setupOTA() {

@@ -8,6 +8,10 @@
 #include <Ticker.h>
 #include "driver/temperature_sensor.h"
 
+#if defined(TEMPERATURE_SENSOR_CLK_SRC_DEFAULT) || defined(UNIT_TEST)
+#define HAS_TEMPERATURE_SENSOR 1
+#endif
+
 extern volatile bool isConfigFunctionsEnabled;
 extern bool isAPMode;
 extern volatile bool shouldRestart;

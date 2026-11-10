@@ -520,12 +520,11 @@ void Api::registerSystemInformationEndpoints() {
         AsyncJsonResponse *response = new AsyncJsonResponse(false);
         JsonObject doc = response->getRoot().to<JsonObject>();
         float tsens_out = 0.0;
-        esp_err_t error = temperature_sensor_get_celsius(temp_sensor, &tsens_out);
-        if (error == ESP_OK) {
+#ifdef HAS_TEMPERATURE_SENSOR
+        if (temp_sensor != NULL && temperature_sensor_get_celsius(temp_sensor, &tsens_out) == ESP_OK) {
             doc["temperature"] = tsens_out;
-        } else {
-            Logger.error(MAINLOG, "Failed to read temperature sensor: %s", esp_err_to_name(error));
         }
+#endif
         doc["freeHeap"] = ESP.getFreeHeap();
         doc["rssi"] = WiFi.RSSI();
         doc["uptime"] = millis() / 1000;

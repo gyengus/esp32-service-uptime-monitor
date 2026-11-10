@@ -11,4 +11,4 @@ volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;
 volatile bool shouldRestart = false;
 TaskHandle_t MonitoringTaskHandle = nullptr;
-temperature_sensor_handle_t temp_sensor = nullptr;
+temperature_sensor_handle_t temp_sensor = (temperature_sensor_handle_t)0x1;

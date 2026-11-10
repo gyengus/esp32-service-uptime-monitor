@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#define TEMPERATURE_SENSOR_CLK_SRC_DEFAULT 1
+
 typedef void* temperature_sensor_handle_t;
 typedef int esp_err_t;
 #define ESP_OK 0
