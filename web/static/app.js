@@ -1,3 +1,4 @@
+(function() {
 let allEntities = [];
 let currentFilter = 'ALL';
 let entityToDelete = "";
@@ -11,12 +12,116 @@ const MAX_TERMINAL_LOGS = 300;
 let lastDetailedSysinfo = null;
 let sysinfoRefreshTimer = null;
 const SYSINFO_DETAILS_REFRESH_MS = 30000;
+const DASHBOARD_ICONS_CDN = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons';
+const DASHBOARD_ICONS_TREE_URL = `${DASHBOARD_ICONS_CDN}/tree.json`;
+const MDI_CSS_URL = 'https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css';
+const ICON_SUGGESTIONS_LIMIT = 48;
+let dashboardIconsCatalog = null;
+let dashboardIconsLoading = false;
+let mdiIconsCatalog = null;
+let mdiIconsLoading = false;
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function resolveIconConfig(rawIcon) {
+    const trimmed = (rawIcon || '').trim();
+    if (!trimmed) {
+        return { type: 'mdi', className: 'mdi-server' };
+    }
+
+    if (trimmed.toLowerCase().startsWith('di:')) {
+        const slugPart = trimmed.slice(3).replace(/^\/+/, '');
+        if (!/^[a-zA-Z0-9._-]+$/.test(slugPart)) {
+            return { type: 'mdi', className: 'mdi-server' };
+        }
+
+        const extMatch = slugPart.match(/\.(svg|webp|png)$/i);
+        if (extMatch) {
+            const ext = extMatch[1].toLowerCase();
+            return {
+                type: 'image',
+                url: `${DASHBOARD_ICONS_CDN}/${ext}/${slugPart}`,
+                fallbackUrls: []
+            };
+        }
+
+        return {
+            type: 'image',
+            url: `${DASHBOARD_ICONS_CDN}/svg/${slugPart}.svg`,
+            fallbackUrls: [
+                `${DASHBOARD_ICONS_CDN}/webp/${slugPart}.webp`,
+                `${DASHBOARD_ICONS_CDN}/png/${slugPart}.png`
+            ]
+        };
+    }
+
+    if (/^https?:\/\//i.test(trimmed)) {
+        return {
+            type: 'image',
+            url: trimmed,
+            fallbackUrls: []
+        };
+    }
+
+    const safeClass = /^[a-zA-Z0-9_-]+$/.test(trimmed) ? trimmed : 'mdi-server';
+    return { type: 'mdi', className: safeClass };
+}
+
+function renderIconHtml(rawIcon, extraClass = 'me-2 entityIcon') {
+    const resolved = resolveIconConfig(rawIcon);
+    const clsSuffix = extraClass ? ` ${extraClass}` : '';
+    if (resolved.type === 'image') {
+        const fallbacks = resolved.fallbackUrls.length
+            ? ` data-fallbacks="${escapeHtml(resolved.fallbackUrls.join('|'))}"`
+            : '';
+        return `<img src="${escapeHtml(resolved.url)}" alt="" class="entity-img-icon${clsSuffix}" loading="lazy"${fallbacks} />`;
+    }
+    return `<span class="mdi ${escapeHtml(resolved.className)}${clsSuffix}"></span>`;
+}
+
+function handleEntityIconError(event) {
+    const img = event.target;
+    if (!img || img.tagName !== 'IMG' || !img.classList || !img.classList.contains('entity-img-icon')) {
+        return;
+    }
+
+    const rawFallbacks = img.dataset ? (img.dataset.fallbacks || '') : '';
+    const queue = rawFallbacks.split('|').filter(Boolean);
+    if (queue.length > 0) {
+        const nextUrl = queue.shift();
+        img.dataset.fallbacks = queue.join('|');
+        img.src = nextUrl;
+        return;
+    }
+
+    // Replace broken image with default MDI server icon while keeping spacing/animation classes
+    const fallbackSpan = document.createElement('span');
+    fallbackSpan.className = 'mdi mdi-server';
+    if (img.classList.contains('me-2')) fallbackSpan.classList.add('me-2');
+    if (img.classList.contains('entityIcon')) fallbackSpan.classList.add('entityIcon');
+    if (img.parentNode) {
+        img.parentNode.replaceChild(fallbackSpan, img);
+    }
+}
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('error', handleEntityIconError, true);
+}
 
 $(document).ready(function() {
     initWebSocket();
     loadEntities();
     loadSystemStats();
     loadSummary();
+    updateIconPreview();
 });
 
 function setWsStatus(connected) {
@@ -49,7 +154,6 @@ function initWebSocket() {
     }
 
     ws.onopen = function() {
-        console.log('[WS] Connected to ' + wsUrl);
         wsReconnectDelay = 1000;
         setWsStatus(true);
     };
@@ -57,7 +161,6 @@ function initWebSocket() {
     ws.onmessage = function(event) {
         try {
             const msg = JSON.parse(event.data);
-            console.log('[WS Received]', msg);
             handleWsMessage(msg);
         } catch (e) {
             console.error('[WS] Invalid message:', e, event.data);
@@ -251,12 +354,15 @@ function renderEntities() {
 
     displayList.forEach(entity => {
         let cardBgClass = entity.disabled ? "text-bg-secondary" : entity.lastChanged ? (entity.isOnline ? "text-bg-success" : "text-bg-danger") : "text-bg-light";
-        let icon = entity.icon || "mdi-server";
+        let iconHtml = renderIconHtml(entity.icon || "mdi-server");
         let notifyIcon = entity.notification ? '<span class="mdi mdi-bell-outline ms-2" title="Notifications ON"></span>' : '';
         let addressUrl = (entity.address.startsWith("http://") || entity.address.startsWith("https://")) 
             ? entity.address 
             : "http://" + entity.address;
-        let address = `<a href="${addressUrl}" target="_blank" class="link-light text-truncate" style="max-width:150px">${entity.address}</a>`;
+        const safeName = escapeHtml(entity.name);
+        const safeAddress = escapeHtml(entity.address);
+        const safeAddressUrl = escapeHtml(addressUrl);
+        let address = `<a href="${safeAddressUrl}" target="_blank" class="link-light text-truncate" style="max-width:150px">${safeAddress}</a>`;
 
         const lastChanged = new Date(entity.lastChanged * 1000);
         const formatter = new Intl.DateTimeFormat('hu-HU', {
@@ -267,20 +373,20 @@ function renderEntities() {
 
         let cardHtml = `
             <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 shadow monitoredEntity ${cardBgClass}" data-entity-name="${entity.name}">
+                <div class="card h-100 shadow monitoredEntity ${cardBgClass}" data-entity-name="${safeName}">
                     <div class="card-body position-relative">
                         <div class="position-absolute top-0 end-0 p-2 buttons">
-                            <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-edit p-1" data-name="${entity.name}" title="Edit">
+                            <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-edit p-1" data-name="${safeName}" title="Edit">
                                 <span class="mdi mdi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-delete p-1" data-name="${entity.name}" title="Delete">
+                            <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-delete p-1" data-name="${safeName}" title="Delete">
                                 <span class="mdi mdi-delete"></span>
                             </button>
                         </div>
 
                         <h5 class="card-title d-flex align-items-center pe-5">
-                            <span class="mdi ${icon} me-2 entityIcon"></span>
-                            <span class="text-truncate">${entity.name}</span>
+                            ${iconHtml}
+                            <span class="text-truncate">${safeName}</span>
                             ${notifyIcon}
                         </h5>
                         <p class="card-text small mb-0">
@@ -297,7 +403,282 @@ function renderEntities() {
     });
 }
 
+function updateIconPreview() {
+    const preview = $('#iconPreview');
+    if (!preview.length) return;
+    preview.html(renderIconHtml($('#icon').val() || 'mdi-server', ''));
+}
+
+function buildDashboardIconsCatalog(treeData) {
+    if (!treeData || typeof treeData !== 'object') return [];
+    const formats = ['svg', 'webp', 'png'];
+    const bySlug = new Map();
+
+    formats.forEach((fmt) => {
+        const list = Array.isArray(treeData[fmt]) ? treeData[fmt] : [];
+        list.forEach((filename) => {
+            if (typeof filename !== 'string') return;
+            const slug = filename.replace(/\.(svg|webp|png)$/i, '');
+            if (!slug || bySlug.has(slug)) return;
+            const iconValue = fmt === 'svg' ? `di:${slug}` : `di:${slug}.${fmt}`;
+            bySlug.set(slug, {
+                source: 'DI',
+                slug,
+                iconValue,
+                previewHtml: `<img src="${escapeHtml(`${DASHBOARD_ICONS_CDN}/${fmt}/${filename}`)}" alt="" loading="lazy" />`
+            });
+        });
+    });
+
+    return Array.from(bySlug.values()).sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+function parseMdiCssText(cssText) {
+    if (typeof cssText !== 'string' || !cssText) return [];
+    const seen = new Set();
+    const regex = /\.mdi-([a-z0-9-]+)(?:::?before)/g;
+    let match;
+    while ((match = regex.exec(cssText)) !== null) {
+        const slug = match[1];
+        if (slug && !seen.has(slug)) {
+            seen.add(slug);
+        }
+    }
+    return Array.from(seen).sort().map((slug) => ({
+        source: 'MDI',
+        slug,
+        iconValue: `mdi-${slug}`,
+        previewHtml: `<span class="mdi mdi-${escapeHtml(slug)}"></span>`
+    }));
+}
+
+function extractMdiIconsFromStylesheets() {
+    if (typeof document === 'undefined' || !document.styleSheets) return [];
+    const seen = new Set();
+    for (const sheet of Array.from(document.styleSheets)) {
+        try {
+            if (sheet.href && !sheet.href.includes('materialdesignicons')) continue;
+            const rules = sheet.cssRules || [];
+            for (const rule of Array.from(rules)) {
+                const sel = rule.selectorText;
+                if (!sel || !sel.includes('.mdi-')) continue;
+                const matches = sel.matchAll(/\.mdi-([a-z0-9-]+)(?:::?before)/g);
+                for (const m of matches) {
+                    if (m[1]) seen.add(m[1]);
+                }
+            }
+        } catch (e) {
+            // Ignore cross-origin stylesheets if CORS headers are absent
+        }
+    }
+    return Array.from(seen).sort().map((slug) => ({
+        source: 'MDI',
+        slug,
+        iconValue: `mdi-${slug}`,
+        previewHtml: `<span class="mdi mdi-${escapeHtml(slug)}"></span>`
+    }));
+}
+
+function filterCatalogItems(catalog, query) {
+    if (!Array.isArray(catalog) || catalog.length === 0) return [];
+    if (!query) return catalog;
+
+    const exact = [];
+    const prefix = [];
+    const sub = [];
+    for (const item of catalog) {
+        const lower = item.slug.toLowerCase();
+        if (lower === query) {
+            exact.push(item);
+        } else if (lower.startsWith(query)) {
+            prefix.push(item);
+        } else if (lower.includes(query)) {
+            sub.push(item);
+        }
+    }
+    return exact.concat(prefix, sub);
+}
+
+function searchIconCatalogs(rawInput) {
+    const trimmed = (rawInput || '').trim().toLowerCase();
+    if (/^https?:\/\//i.test(trimmed)) {
+        return { items: [], totalMatches: 0, isUrl: true };
+    }
+
+    let searchDi = true;
+    let searchMdi = true;
+    let query = trimmed;
+
+    if (trimmed.startsWith('di:')) {
+        searchMdi = false;
+        query = trimmed.slice(3).replace(/^\/+/, '').replace(/\.(svg|webp|png)$/i, '');
+    } else if (trimmed.startsWith('mdi-')) {
+        searchDi = false;
+        query = trimmed.slice(4);
+    } else if (trimmed.startsWith('mdi:')) {
+        searchDi = false;
+        query = trimmed.slice(4);
+    }
+
+    const diMatches = searchDi ? filterCatalogItems(dashboardIconsCatalog, query) : [];
+    const mdiMatches = searchMdi ? filterCatalogItems(mdiIconsCatalog, query) : [];
+    const totalMatches = diMatches.length + mdiMatches.length;
+
+    let combined;
+    if (searchDi && searchMdi) {
+        // Interleave DI and MDI matches so both icon sets appear near the top
+        combined = [];
+        const maxLen = Math.max(diMatches.length, mdiMatches.length);
+        for (let i = 0; i < maxLen && combined.length < ICON_SUGGESTIONS_LIMIT; i++) {
+            if (i < diMatches.length) combined.push(diMatches[i]);
+            if (combined.length < ICON_SUGGESTIONS_LIMIT && i < mdiMatches.length) combined.push(mdiMatches[i]);
+        }
+    } else {
+        combined = (searchDi ? diMatches : mdiMatches).slice(0, ICON_SUGGESTIONS_LIMIT);
+    }
+
+    return { items: combined, totalMatches, isUrl: false };
+}
+
+function renderIconSuggestions(rawInput) {
+    const panel = $('#iconSuggestions');
+    const grid = $('#iconSuggestionsGrid');
+    const status = $('#iconSuggestionsStatus');
+    if (!panel.length || !grid.length) return;
+
+    const val = rawInput !== undefined ? rawInput : $('#icon').val();
+    const { items, totalMatches, isUrl } = searchIconCatalogs(val);
+
+    if (isUrl) {
+        panel.addClass('d-none');
+        grid.empty();
+        return;
+    }
+
+    if (dashboardIconsLoading || mdiIconsLoading) {
+        if (items.length === 0) {
+            status.text('Loading icon catalogs...');
+            grid.empty();
+            return;
+        }
+    }
+
+    if (!Array.isArray(dashboardIconsCatalog) && !Array.isArray(mdiIconsCatalog)) {
+        status.text('Icon catalogs unavailable (offline or CDN unreachable). You can still type mdi-* or di:* manually.');
+        grid.empty();
+        return;
+    }
+
+    if (items.length === 0) {
+        status.text('No matching icons found.');
+        grid.empty();
+        return;
+    }
+
+    status.text(
+        totalMatches > items.length
+            ? `Showing ${items.length} of ${totalMatches} icons — keep typing to filter (use mdi- or di: to narrow).`
+            : `${totalMatches} icon${totalMatches === 1 ? '' : 's'} found.`
+    );
+
+    const html = items.map((item) => `
+        <button type="button" class="icon-suggestion-item" data-icon-value="${escapeHtml(item.iconValue)}" title="${escapeHtml(item.iconValue)}">
+            <span class="icon-source-badge">${escapeHtml(item.source)}</span>
+            ${item.previewHtml}
+            <span class="icon-suggestion-label">${escapeHtml(item.slug)}</span>
+        </button>`).join('');
+    grid.html(html);
+}
+
+async function loadDashboardIconsCatalog() {
+    if (Array.isArray(dashboardIconsCatalog) || dashboardIconsLoading) return;
+    dashboardIconsLoading = true;
+    try {
+        const response = await fetch(DASHBOARD_ICONS_TREE_URL);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const treeData = await response.json();
+        dashboardIconsCatalog = buildDashboardIconsCatalog(treeData);
+    } catch (err) {
+        console.warn('[DashboardIcons] Failed to load catalog:', err);
+    } finally {
+        dashboardIconsLoading = false;
+    }
+}
+
+async function loadMdiIconsCatalog() {
+    if (Array.isArray(mdiIconsCatalog) || mdiIconsLoading) return;
+    const fromSheets = extractMdiIconsFromStylesheets();
+    if (fromSheets.length > 0) {
+        mdiIconsCatalog = fromSheets;
+        return;
+    }
+
+    mdiIconsLoading = true;
+    try {
+        const response = await fetch(MDI_CSS_URL);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const cssText = await response.text();
+        mdiIconsCatalog = parseMdiCssText(cssText);
+    } catch (err) {
+        console.warn('[MDI] Failed to load catalog:', err);
+    } finally {
+        mdiIconsLoading = false;
+    }
+}
+
+async function loadIconCatalogs() {
+    await Promise.all([loadDashboardIconsCatalog(), loadMdiIconsCatalog()]);
+    if (!$('#iconSuggestions').hasClass('d-none')) {
+        renderIconSuggestions($('#icon').val());
+    }
+}
+
+function openIconSuggestions() {
+    const val = $('#icon').val();
+    if (/^https?:\/\//i.test((val || '').trim())) {
+        $('#iconSuggestions').addClass('d-none');
+        return;
+    }
+    $('#iconSuggestions').removeClass('d-none');
+    loadIconCatalogs();
+    renderIconSuggestions(val);
+}
+
+$('#icon').on('focus', function() {
+    openIconSuggestions();
+});
+
+$('#icon').on('input', function() {
+    updateIconPreview();
+    openIconSuggestions();
+});
+
+$('#icon').on('keydown', function(e) {
+    if (e.key === 'Escape') {
+        $('#iconSuggestions').addClass('d-none');
+    }
+});
+
+$(document).on('click', '.icon-suggestion-item', function() {
+    const iconVal = $(this).data('icon-value');
+    $('#icon').val(iconVal);
+    updateIconPreview();
+    $('#iconSuggestions').addClass('d-none');
+});
+
+$(document).on('click', function(e) {
+    const wrapper = $('#iconFieldWrapper');
+    if (wrapper.length && !wrapper[0].contains(e.target)) {
+        $('#iconSuggestions').addClass('d-none');
+    }
+});
+
 $('#entityModal').on('shown.bs.modal', function () {
+    updateIconPreview();
     $("#name").trigger("focus");
 });
 
@@ -307,6 +688,8 @@ $('#entityModal').on('hidden.bs.modal', function () {
     $('#disabledEnabled').prop('checked', false);
     $("#saveButton").prop('disabled', false);
     $('#id').val("");
+    $('#iconSuggestions').addClass('d-none');
+    updateIconPreview();
 });
 
 $('#deleteConfirmModal').on('hidden.bs.modal', function () {
@@ -314,6 +697,7 @@ $('#deleteConfirmModal').on('hidden.bs.modal', function () {
 });
 
 $('#addButton').click(function() {
+    updateIconPreview();
     $('#entityModal').modal('show');
 });
 
@@ -323,6 +707,7 @@ $(document).on('click', '.btn-edit', function() {
         $('#name').val(entity.name);
         $('#address').val(entity.address);
         $('#icon').val(entity.icon);
+        updateIconPreview();
         $('#notificationsEnabled').prop('checked', entity.notification);
         $('#disabledEnabled').prop('checked', entity.disabled);
         $('#id').val(entity.name);
@@ -937,4 +1322,19 @@ if (typeof window !== 'undefined') {
     window.set_currentFilter = (v) => { currentFilter = v; };
     window.get_entityToDelete = () => entityToDelete;
     window.set_entityToDelete = (v) => { entityToDelete = v; };
+    window.resolveIconConfig = resolveIconConfig;
+    window.renderIconHtml = renderIconHtml;
+    window.updateIconPreview = updateIconPreview;
+    window.buildDashboardIconsCatalog = buildDashboardIconsCatalog;
+    window.parseMdiCssText = parseMdiCssText;
+    window.searchIconCatalogs = searchIconCatalogs;
+    window.renderIconSuggestions = renderIconSuggestions;
+    window.loadDashboardIconsCatalog = loadDashboardIconsCatalog;
+    window.loadMdiIconsCatalog = loadMdiIconsCatalog;
+    window.loadIconCatalogs = loadIconCatalogs;
+    window.get_dashboardIconsCatalog = () => dashboardIconsCatalog;
+    window.set_dashboardIconsCatalog = (v) => { dashboardIconsCatalog = v; };
+    window.get_mdiIconsCatalog = () => mdiIconsCatalog;
+    window.set_mdiIconsCatalog = (v) => { mdiIconsCatalog = v; };
 }
+})();

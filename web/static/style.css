@@ -342,3 +342,83 @@ div#mainContainer {
     font-size: 0.75rem;
 }
 
+/* Entity Image & Unified Icon Picker */
+.entity-img-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+    vertical-align: middle;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.icon-preview-box {
+    min-width: 42px;
+    justify-content: center;
+}
+
+.icon-preview-box .entity-img-icon {
+    width: 22px;
+    height: 22px;
+    filter: none;
+}
+
+.icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 6px;
+    max-height: 210px;
+    overflow-y: auto;
+}
+
+.icon-suggestion-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px 6px;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 6px;
+    background-color: var(--bs-body-bg, #ffffff);
+    color: var(--bs-body-color, #212529);
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.icon-suggestion-item:hover {
+    border-color: var(--bs-primary, #0d6efd);
+    background-color: rgba(13, 110, 253, 0.08);
+}
+
+.icon-suggestion-item img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+}
+
+.icon-suggestion-item .mdi {
+    font-size: 24px;
+    line-height: 26px;
+}
+
+.icon-suggestion-label {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.icon-source-badge {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+    font-size: 0.55rem;
+    font-weight: 600;
+    opacity: 0.55;
+    letter-spacing: 0.02em;
+}
+

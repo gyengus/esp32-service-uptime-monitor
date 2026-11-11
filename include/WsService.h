@@ -25,7 +25,7 @@ struct WsQueueItem {
     WsEventType type;
     char name[64];
     char address[128];
-    char icon[48];
+    char icon[128];
     bool isOnline;
     bool notification;
     bool disabled;

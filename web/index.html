@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ESP32 Service Uptime Monitor</title>
     <link href="static/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" crossorigin="anonymous">
     <link href="static/style.css" rel="stylesheet" />
   </head>
   <body>
@@ -151,9 +151,21 @@
                         </div>
 
                         <div class="mb-3 row">
-                            <label class="col-sm-4 col-form-label" for="icon">Icon (MDI class)</label>
-                            <div class="col-sm-8">
-                                <input type="text" class="form-control" id="icon" placeholder="mdi-server" />
+                            <label class="col-sm-4 col-form-label" for="icon">Icon</label>
+                            <div class="col-sm-8" id="iconFieldWrapper">
+                                <div class="input-group">
+                                    <span class="input-group-text icon-preview-box" id="iconPreview" title="Icon preview">
+                                        <span class="mdi mdi-server"></span>
+                                    </span>
+                                    <input type="text" class="form-control" id="icon" placeholder="Search (e.g. proxmox, mdi-server) or paste URL" autocomplete="off" />
+                                </div>
+                                <div class="form-text">
+                                    Start typing to search <strong>MDI</strong> &amp; <strong>Dashboard Icons</strong> (<code>di:name</code>), or paste an image URL.
+                                </div>
+                                <div id="iconSuggestions" class="border rounded p-2 mt-2 d-none bg-body-tertiary">
+                                    <div id="iconSuggestionsStatus" class="small text-muted mb-2"></div>
+                                    <div id="iconSuggestionsGrid" class="icon-picker-grid"></div>
+                                </div>
                             </div>
                         </div>
                         <input type="hidden" id="id" value="" />

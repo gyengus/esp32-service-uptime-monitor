@@ -44,7 +44,7 @@ web/
 ### 2. Configuration (`config.html` & `app.config.js`)
 - **Access Protection**: Configuration routes (`/config`) require physical BOOT button authorization on the ESP32.
 - **Wi-Fi Management**: Interactive non-blocking Wi-Fi scan and network selection.
-- **Monitored Entities CRUD**: Add, edit, test, reorder, and remove HTTP/HTTPS endpoints with custom Material Design icons and notification flags.
+- **Monitored Entities CRUD**: Add, edit, test, reorder, and remove HTTP/HTTPS endpoints with unified live icon search across Material Design Icons (`mdi-*`) and Dashboard Icons (`di:*`), image URLs, and notification flags.
 - **Discord Alerts**: Configure webhook URL and test notifications directly from the browser.
 - **Backup & Restore**: Export and import full configuration and monitored entity snapshots as JSON.
 - **Web UI Archive Upload**: Upload new `web.zip` packages over HTTP to update frontend assets without flashing firmware.

@@ -654,4 +654,160 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#sysPsramBar').hasClass('bg-danger')).toBe(true);
     });
   });
+
+  describe('Unified Icon Search, Dashboard Icons & MDI Icons', () => {
+    beforeEach(() => {
+      window.set_dashboardIconsCatalog(null);
+      window.set_mdiIconsCatalog(null);
+      $('#iconSuggestions').addClass('d-none');
+      $('#iconSuggestionsGrid').empty();
+      $('#iconSuggestionsStatus').text('');
+      globalThis.fetch = vi.fn().mockRejectedValue(new Error('No fetch mock configured'));
+    });
+
+    it('resolves mdi-*, di:*, di:*.png, and https:// icon formats correctly', () => {
+      expect(window.resolveIconConfig('mdi-database')).toEqual({ type: 'mdi', className: 'mdi-database' });
+
+      expect(window.resolveIconConfig('di:proxmox')).toEqual({
+        type: 'image',
+        url: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg',
+        fallbackUrls: [
+          'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/proxmox.webp',
+          'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/proxmox.png'
+        ]
+      });
+
+      expect(window.resolveIconConfig('di:1panel.png')).toEqual({
+        type: 'image',
+        url: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/1panel.png',
+        fallbackUrls: []
+      });
+
+      expect(window.resolveIconConfig('https://example.com/logo.png')).toEqual({
+        type: 'image',
+        url: 'https://example.com/logo.png',
+        fallbackUrls: []
+      });
+    });
+
+    it('sanitizes invalid or malicious icon strings to default mdi-server', () => {
+      expect(window.resolveIconConfig('di:../etc/passwd')).toEqual({ type: 'mdi', className: 'mdi-server' });
+      expect(window.resolveIconConfig('javascript:alert(1)')).toEqual({ type: 'mdi', className: 'mdi-server' });
+      expect(window.resolveIconConfig('"><script>alert(1)</script>')).toEqual({ type: 'mdi', className: 'mdi-server' });
+    });
+
+    it('parses MDI icon names from CSS text', () => {
+      const parsed = window.parseMdiCssText('.mdi-server::before{content:"\\F048B"}.mdi-router-wireless::before{content:"\\F0469"}.mdi-server::before{content:"dup"}');
+      expect(parsed.map((i) => i.iconValue)).toEqual(['mdi-router-wireless', 'mdi-server']);
+      expect(parsed[0].source).toBe('MDI');
+    });
+
+    it('renders Dashboard Icons as <img> on entity cards and falls back on image load errors', () => {
+      window.set_allEntities([
+        { name: 'Proxmox', address: 'https://pve.local', icon: 'di:proxmox', isOnline: true, notification: false, disabled: false, lastChanged: 1700000000 },
+        { name: 'Router', address: 'http://router.local', icon: 'mdi-router-wireless', isOnline: true, notification: false, disabled: false, lastChanged: 1700000000 }
+      ]);
+      window.renderEntities();
+
+      const pveCard = $('.monitoredEntity[data-entity-name="Proxmox"]');
+      const img = pveCard.find('img.entity-img-icon');
+      expect(img.length).toBe(1);
+      expect(img.attr('src')).toBe('https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg');
+
+      // First error falls back to webp
+      img[0].dispatchEvent(new Event('error'));
+      expect(pveCard.find('img.entity-img-icon').attr('src')).toBe('https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/proxmox.webp');
+
+      // Second error falls back to png
+      pveCard.find('img.entity-img-icon')[0].dispatchEvent(new Event('error'));
+      expect(pveCard.find('img.entity-img-icon').attr('src')).toBe('https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/proxmox.png');
+
+      // Third error replaces broken img with mdi-server span
+      pveCard.find('img.entity-img-icon')[0].dispatchEvent(new Event('error'));
+      expect(pveCard.find('img.entity-img-icon').length).toBe(0);
+      expect(pveCard.find('span.mdi.mdi-server.entityIcon').length).toBe(1);
+
+      // Regular MDI entity keeps span rendering
+      const routerCard = $('.monitoredEntity[data-entity-name="Router"]');
+      expect(routerCard.find('span.mdi.mdi-router-wireless.entityIcon').length).toBe(1);
+    });
+
+    it('updates live icon preview when #icon input changes', () => {
+      $('#icon').val('di:home-assistant').trigger('input');
+      const previewImg = $('#iconPreview img.entity-img-icon');
+      expect(previewImg.length).toBe(1);
+      expect(previewImg.attr('src')).toBe('https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg');
+
+      $('#icon').val('mdi-nas').trigger('input');
+      expect($('#iconPreview span.mdi.mdi-nas').length).toBe(1);
+    });
+
+    it('loads both DI and MDI catalogs on focus/input, filters unified & prefixed queries, and selects an icon', async () => {
+      globalThis.fetch = vi.fn().mockImplementation(async (url) => {
+        if (String(url).includes('tree.json')) {
+          return {
+            ok: true,
+            json: async () => ({
+              svg: ['proxmox.svg', 'home-assistant.svg'],
+              webp: ['proxmox.webp', 'only-webp.webp'],
+              png: ['proxmox.png', 'only-png.png']
+            })
+          };
+        }
+        return {
+          ok: true,
+          text: async () => '.mdi-home::before{content:"a"}.mdi-server::before{content:"b"}.mdi-proxmox-fake::before{content:"c"}'
+        };
+      });
+
+      // Focusing #icon opens suggestions and loads both catalogs
+      $('#icon').trigger('focus');
+      expect($('#iconSuggestions').hasClass('d-none')).toBe(false);
+
+      await vi.waitFor(() => {
+        expect($('#iconSuggestionsGrid .icon-suggestion-item').length).toBe(7);
+      });
+
+      // Plain query "home" returns both DI (home-assistant) and MDI (mdi-home)
+      $('#icon').val('home').trigger('input');
+      const homeValues = $('#iconSuggestionsGrid .icon-suggestion-item')
+        .map((_, el) => $(el).attr('data-icon-value'))
+        .get();
+      expect(homeValues).toContain('di:home-assistant');
+      expect(homeValues).toContain('mdi-home');
+
+      // Prefix "mdi-" narrows exclusively to MDI
+      $('#icon').val('mdi-serv').trigger('input');
+      const mdiValues = $('#iconSuggestionsGrid .icon-suggestion-item')
+        .map((_, el) => $(el).attr('data-icon-value'))
+        .get();
+      expect(mdiValues).toEqual(['mdi-server']);
+
+      // Prefix "di:" narrows exclusively to Dashboard Icons
+      $('#icon').val('di:only').trigger('input');
+      const diValues = $('#iconSuggestionsGrid .icon-suggestion-item')
+        .map((_, el) => $(el).attr('data-icon-value'))
+        .get();
+      expect(diValues).toEqual(['di:only-png.png', 'di:only-webp.webp']);
+
+      // Clicking a suggestion populates #icon, updates preview, and closes suggestions
+      $('#iconSuggestionsGrid .icon-suggestion-item[data-icon-value="di:only-png.png"]').trigger('click');
+      expect($('#icon').val()).toBe('di:only-png.png');
+      expect($('#iconSuggestions').hasClass('d-none')).toBe(true);
+      expect($('#iconPreview img.entity-img-icon').attr('src')).toBe('https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/only-png.png');
+
+      // Typing a direct URL hides the suggestion panel
+      $('#icon').val('https://example.com/icon.svg').trigger('input');
+      expect($('#iconSuggestions').hasClass('d-none')).toBe(true);
+    });
+
+    it('shows helpful fallback message when both icon catalogs fail to load', async () => {
+      globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+      $('#icon').val('proxmox').trigger('focus');
+      await vi.waitFor(() => {
+        expect($('#iconSuggestionsStatus').text()).toContain('Icon catalogs unavailable');
+      });
+    });
+  });
 });
