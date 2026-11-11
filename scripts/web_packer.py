@@ -159,12 +159,13 @@ def create_web_zip_bytes(web_dir, project_dir, verbose=False):
                 else:
                     print(f"  [ASSET]  {rel_path}: {orig_size} bytes")
 
-        # Inject Swagger UI and OpenAPI spec from docs/api/ when present
-        api_assets = [
+        # Inject Swagger UI, OpenAPI spec, and LICENSE into root of archive when present
+        extra_assets = [
             (os.path.join(project_dir, "docs", "api", "index.html"), "api-docs.html"),
             (os.path.join(project_dir, "docs", "api", "openapi.yaml"), "openapi.yaml"),
+            (os.path.join(project_dir, "LICENSE"), "LICENSE"),
         ]
-        for src_path, archive_name in api_assets:
+        for src_path, archive_name in extra_assets:
             if not os.path.isfile(src_path):
                 continue
             orig_size = os.path.getsize(src_path)

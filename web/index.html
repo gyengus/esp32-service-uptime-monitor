@@ -35,13 +35,74 @@
                 </div>
             </div>
 
-            <div class="d-flex align-items-center flex-shrink-0">
-                <a href="/config" id="configButton" class="btn btn-sm btn-outline-light border-0 p-1" title="Settings" style="display: none;">
-                    <span class="mdi mdi-cog mdi-24px"></span>
-                </a>
+            <div class="d-flex align-items-center flex-shrink-0 gap-1">
                 <button id="refreshButton" class="btn btn-sm btn-outline-light border-0 p-1" title="Refresh">
                     <span id="refreshIcon" class="mdi mdi-refresh mdi-24px"></span>
                 </button>
+                <div id="headerMenuWrapper" class="dropdown position-relative">
+                    <button type="button" id="headerMenuButton" class="btn btn-sm btn-outline-light border-0 p-1 position-relative" title="Menu" aria-expanded="false" aria-haspopup="true">
+                        <span class="mdi mdi-menu mdi-24px"></span>
+                        <span id="headerConfigBadge" class="header-config-badge bg-warning d-none" title="Configuration unlocked"></span>
+                    </button>
+                    <ul id="headerMenuDropdown" class="dropdown-menu dropdown-menu-end shadow" data-bs-theme="dark" aria-labelledby="headerMenuButton">
+                        <li>
+                            <a href="/config" id="configButton" class="dropdown-item" style="display: none;">
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <span class="mdi mdi-cog-outline"></span>
+                                    <span>Settings</span>
+                                </span>
+                            </a>
+                        </li>
+                        <li>
+                            <button type="button" id="menuSysinfoButton" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#sysinfoModal">
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <span class="mdi mdi-chart-box-outline"></span>
+                                    <span>System Metrics</span>
+                                </span>
+                            </button>
+                        </li>
+                        <li>
+                            <a href="/api/docs" target="_blank" rel="noopener noreferrer" id="menuApiDocsLink" class="dropdown-item">
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <span class="mdi mdi-api"></span>
+                                    <span>API Docs</span>
+                                </span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a href="/license" target="_blank" rel="noopener noreferrer" id="menuLicenseLink" class="dropdown-item">
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <span class="mdi mdi-scale-balance"></span>
+                                    <span>License</span>
+                                </span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener noreferrer" id="menuGithubRepoLink" class="dropdown-item">
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <span class="mdi mdi-github"></span>
+                                    <span>GitHub Repository</span>
+                                </span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://gyengus.github.io/esp32-service-uptime-monitor/" target="_blank" rel="noopener noreferrer" id="menuGithubPagesLink" class="dropdown-item">
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <span class="mdi mdi-book-open-variant-outline"></span>
+                                    <span>Documentation</span>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="d-md-none"><hr class="dropdown-divider"></li>
+                        <li class="d-md-none">
+                            <div class="dropdown-item-text small text-secondary d-flex gap-3 align-items-center text-nowrap">
+                                <span>v<b id="menuVersionVal" class="text-light">--</b></span>
+                                <span>Hash: <code id="menuCommitVal" class="text-info">--</code></span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
             </div>
 
         </div>
@@ -484,18 +545,12 @@
                 <span id="tempContainer" style="display: none;">
                     <span class="mdi mdi-thermometer me-1"></span><span id="tempVal">--</span>
                 </span>
-                <button type="button" id="btnSysinfoModal" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center py-0 px-1" title="System Metrics" data-bs-toggle="modal" data-bs-target="#sysinfoModal">
-                    <span class="mdi mdi-information-outline"></span>
-                </button>
             </div>
 
             <div class="d-none d-md-flex align-items-center justify-content-center gap-2">
                 <button type="button" id="btnToggleTerminal" class="btn btn-sm btn-outline-secondary d-flex align-items-center" title="Toggle Device Logs">
                     <span class="mdi mdi-console"></span>
                 </button>
-                <a href="/api/docs" target="_blank" id="btnApiDocs" class="btn btn-sm btn-outline-secondary d-flex align-items-center" title="API Documentation (Swagger)">
-                    <span class="mdi mdi-api"></span>
-                </a>
             </div>
             
             <div class="small text-secondary text-end d-none d-md-flex gap-3 align-items-center">

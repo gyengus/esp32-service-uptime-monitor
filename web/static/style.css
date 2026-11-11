@@ -150,9 +150,27 @@ div#mainContainer {
     animation: spin 0.8s linear infinite;
 }
 
-#refreshButton:hover, #configButton:hover {
+#refreshButton:hover, #headerMenuButton:hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
+}
+
+#headerMenuDropdown {
+    right: 0;
+    left: auto;
+    top: 100%;
+    margin-top: 0.35rem;
+    min-width: 215px;
+    z-index: 1040;
+}
+
+.header-config-badge {
+    position: absolute;
+    top: 4px;
+    right: 3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
 }
 
 #navStats {

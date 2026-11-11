@@ -12,6 +12,7 @@
 #include "LedService.h"
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
+#include "Update.h"
 
 using namespace fakeit;
 
@@ -23,12 +24,14 @@ static Api* testApi = nullptr;
 void setUp(void) {
     storage.clear();
     MockWiFiClass::resetMock();
+    Update.resetMock();
     When(Method(ArduinoFake(), delay)).AlwaysReturn();
     When(Method(ArduinoFake(), millis)).AlwaysReturn(123456);
 
     isConfigFunctionsEnabled = true;
     isAPMode = false;
     shouldRestart = false;
+    isOtaUpdating = false;
 
     // Reset repo
     auto entities = monitoredEntityRepository.getEntitiesSnapshot();
@@ -374,6 +377,78 @@ void test_api_config_test_led_empty_body(void) {
     TEST_ASSERT_TRUE(ledService.isTestActive());
 }
 
+void test_api_ota_start_forbidden_and_authorized(void) {
+    isConfigFunctionsEnabled = false;
+    isAPMode = false;
+
+    AsyncWebServerRequest forbiddenReq;
+    TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &forbiddenReq));
+    TEST_ASSERT_EQUAL_INT(403, forbiddenReq.lastCode);
+
+    AsyncWebServerRequest pioReq;
+    pioReq.setHeader("X-PlatformIO-Upload", "1");
+    pioReq.setParam("mode", "fr");
+    pioReq.setParam("hash", "D41D8CD98F00B204E9800998ECF8427E");
+    TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &pioReq));
+    TEST_ASSERT_EQUAL_INT(200, pioReq.lastCode);
+
+    AsyncWebServerRequest badModeReq;
+    badModeReq.setHeader("X-PlatformIO-Upload", "1");
+    badModeReq.setParam("mode", "invalid");
+    TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &badModeReq));
+    TEST_ASSERT_EQUAL_INT(400, badModeReq.lastCode);
+
+    AsyncWebServerRequest badHashReq;
+    badHashReq.setHeader("X-PlatformIO-Upload", "1");
+    badHashReq.setParam("hash", "not-an-md5");
+    TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &badHashReq));
+    TEST_ASSERT_EQUAL_INT(400, badHashReq.lastCode);
+}
+
+void test_api_ota_upload_forbidden(void) {
+    isConfigFunctionsEnabled = false;
+    isAPMode = false;
+    AsyncWebServerRequest req;
+    TEST_ASSERT_TRUE(testServer->dispatchUpload("/ota/upload", HTTP_POST, &req, "firmware.bin", "BINDATA"));
+    TEST_ASSERT_EQUAL_INT(403, req.lastCode);
+    TEST_ASSERT_FALSE(shouldRestart);
+    TEST_ASSERT_FALSE(isOtaUpdating);
+}
+
+void test_api_ota_upload_success_with_md5(void) {
+    isConfigFunctionsEnabled = true;
+    isAPMode = false;
+
+    AsyncWebServerRequest startReq;
+    startReq.setParam("mode", "fr");
+    startReq.setParam("hash", "0123456789ABCDEF0123456789ABCDEF");
+    TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &startReq));
+    TEST_ASSERT_EQUAL_INT(200, startReq.lastCode);
+
+    AsyncWebServerRequest uploadReq;
+    const String firmwarePayload = "ESP32_FIRMWARE_BINARY_DATA";
+    TEST_ASSERT_TRUE(testServer->dispatchUpload("/ota/upload", HTTP_POST, &uploadReq, "firmware.bin", firmwarePayload));
+    TEST_ASSERT_EQUAL_INT(200, uploadReq.lastCode);
+    TEST_ASSERT_TRUE(shouldRestart);
+    TEST_ASSERT_TRUE(isOtaUpdating);
+    TEST_ASSERT_EQUAL_STRING("0123456789abcdef0123456789abcdef", Update.expectedMd5.c_str());
+    TEST_ASSERT_EQUAL_UINT32(firmwarePayload.length(), Update.writtenBytes.size());
+}
+
+void test_api_ota_upload_failure_restores_state(void) {
+    isConfigFunctionsEnabled = true;
+    isAPMode = false;
+    Update.nextBeginResult = false;
+    Update.nextErrorString = "Partition Could Not be Found";
+
+    AsyncWebServerRequest uploadReq;
+    TEST_ASSERT_TRUE(testServer->dispatchUpload("/ota/upload", HTTP_POST, &uploadReq, "firmware.bin", "BINDATA"));
+    TEST_ASSERT_EQUAL_INT(500, uploadReq.lastCode);
+    TEST_ASSERT_FALSE(shouldRestart);
+    TEST_ASSERT_FALSE(isOtaUpdating);
+    TEST_ASSERT_TRUE(uploadReq.lastBody.indexOf("Partition Could Not be Found") >= 0);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_api_health);
@@ -390,6 +465,10 @@ int main(int argc, char **argv) {
     RUN_TEST(test_api_config_test_led_forbidden);
     RUN_TEST(test_api_config_test_led_success);
     RUN_TEST(test_api_config_test_led_empty_body);
+    RUN_TEST(test_api_ota_start_forbidden_and_authorized);
+    RUN_TEST(test_api_ota_upload_forbidden);
+    RUN_TEST(test_api_ota_upload_success_with_md5);
+    RUN_TEST(test_api_ota_upload_failure_restores_state);
     RUN_TEST(test_api_summary);
     RUN_TEST(test_api_monitoredentities_get_all);
     RUN_TEST(test_api_monitoredentity_crud);

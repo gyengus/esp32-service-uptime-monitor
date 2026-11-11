@@ -72,7 +72,7 @@ pio run -e esp32-s3-ota --target upload --upload-port 192.168.0.118
 
 ## Web UI Asset Pipeline
 
-Web UI sources live in `web/` and are minified and packed into `web.zip` and `src/EmbeddedWebArchive.cpp` (PROGMEM) automatically before firmware compilation (`pre:scripts/generate_web_embed.py`). The archive also embeds `docs/api/index.html` (`api-docs.html`) and `docs/api/openapi.yaml` (`openapi.yaml`).
+Web UI sources live in `web/` and are minified and packed into `web.zip` and `src/EmbeddedWebArchive.cpp` (PROGMEM) automatically before firmware compilation (`pre:scripts/generate_web_embed.py`). The archive also embeds `docs/api/index.html` (`api-docs.html`), `docs/api/openapi.yaml` (`openapi.yaml`), and `LICENSE`.
 
 ```bash
 # Package, minify, and upload Web UI directly to a running device over HTTP

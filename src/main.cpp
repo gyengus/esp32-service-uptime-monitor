@@ -27,7 +27,6 @@
 #include "MonitoredEntityRepository.h"
 #include "WsService.h"
 #include "WsLogStream.h"
-#include <ElegantOTA.h>
 #include "esp_ota_ops.h"
 
 Ticker sntpSyncTicker;
@@ -212,12 +211,26 @@ void setup() {
 }
 
 void loop() {
-    ElegantOTA.loop();
     if (buttonEventPending) {
         buttonEventPending = false;
         Logger.debug(MAINLOG, "BOOT button pressed, configuration functions %s", isConfigFunctionsEnabled ? "enabled" : "disabled");
         wsService.broadcastSysinfo();
     }
+
+    if (shouldRestart) {
+        static bool restartScheduled = false;
+        if (!restartScheduled) {
+            restartScheduled = true;
+            if (!isOtaUpdating) {
+                storage.unmount();
+            }
+            restartTicker.once_ms(1500, []() {
+                ESP.restart();
+            });
+        }
+        return;
+    }
+
     if (isAPMode) {
         dnsServer.processNextRequest();
     } else if (!isOtaUpdating) {
@@ -245,14 +258,7 @@ void loop() {
             Logger.debug(MAINLOG, buffer);
         }
 #endif
-        if (shouldRestart) {
-            storage.unmount();
-            restartTicker.once_ms(2000, []() {
-                ESP.restart();
-            });
-        } else if (!isOtaUpdating) {
-            networkContext.checkConnection();
-        }
+        networkContext.checkConnection();
     }
 }
 
@@ -377,22 +383,6 @@ void initNormalMode() {
 #endif
 }
 
-void setupOTA() {
-    ElegantOTA.begin(&server);
-
-    ElegantOTA.onStart([]() {
-        isOtaUpdating = true;
-    });
-
-    ElegantOTA.onEnd([](bool success) {
-        if (success) {
-            storage.unmount();
-        } else {
-            isOtaUpdating = false;
-        }
-    });
-}
-
 void commonWebServerSettings() {
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -420,8 +410,15 @@ void commonWebServerSettings() {
         }
         request->send(storage.getFS(), path, "text/yaml; charset=utf-8");
     });
+    server.on("/license", HTTP_GET, [](AsyncWebServerRequest *request){
+        String path = String(WEB_UI_PATH) + "/LICENSE";
+        if (!storage.fileExists(path)) {
+            request->send(404, "text/plain", "License file not found in storage");
+            return;
+        }
+        request->send(storage.getFS(), path, "text/plain; charset=utf-8");
+    });
     server.serveStatic("/static", storage.getFS(), (String(WEB_UI_PATH) + "/static").c_str());
-    setupOTA();
     api.registerEndpoints();
     server.onNotFound([](AsyncWebServerRequest *request){
         if (request->method() == HTTP_OPTIONS) {

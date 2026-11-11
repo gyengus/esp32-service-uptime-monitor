@@ -1,0 +1,87 @@
+ESP32 Service Uptime Monitor — Dual License (Personal & Commercial)
+Copyright (c) 2025-2026 gyengus (https://github.com/gyengus/esp32-service-uptime-monitor)
+
+This software (including source code, firmware binaries, web UI assets,
+documentation, and associated files, collectively the "Software") is made
+available under a dual-licensing model:
+
+  1. Personal / Home Use License (Free of Charge) — Section 1 below
+  2. Commercial & Organizational License (Paid) — Section 3 below
+
+--------------------------------------------------------------------------------
+1. PERSONAL AND NON-COMMERCIAL LICENSE GRANT
+--------------------------------------------------------------------------------
+
+Subject to your full compliance with the terms of this License, the copyright
+holder ("Author") hereby grants you, as an individual natural person, a
+worldwide, non-exclusive, non-transferable, revocable, royalty-free license to:
+
+  a) Download, copy, compile, install, and execute the Software solely for your
+     own private, personal, home, or hobby use (for example, monitoring your
+     own personal homelab, home network, or non-commercial personal services).
+  b) Modify the Software and compile derivative builds solely for your own
+     personal, non-commercial use as permitted under Section 1(a).
+  c) Share or redistribute unmodified or modified source code solely for
+     non-commercial personal use by other individuals, free of any fee or
+     compensation, provided that:
+       i.   You retain all copyright notices, attribution, and a complete copy
+            of this LICENSE file in all copies or substantial portions of the
+            Software;
+       ii.  If you distribute modified versions, you must prominently state
+            that you changed the files and when, and you must not use the
+            Author's name or project branding to endorse your modifications;
+       iii. Any redistribution is licensed strictly under these same terms.
+
+--------------------------------------------------------------------------------
+2. PROHIBITED USES WITHOUT A COMMERCIAL LICENSE
+--------------------------------------------------------------------------------
+
+Without a separate, executed Commercial License from the Author, you may NOT
+use, copy, modify, compile, deploy, distribute, or operate the Software (in
+source or binary form, modified or unmodified):
+
+  a) On behalf of, or for the internal or external operations of, any company,
+     corporation, partnership, sole proprietorship (for business activities),
+     government body, municipality, public institution, school/university,
+     non-profit entity, association, or other organization ("Organization").
+  b) To monitor commercial, revenue-generating, client, or organizational
+     services, servers, or infrastructure.
+  c) As part of any commercial product, managed service, SaaS offering,
+     consulting engagement, or hardware bundle (including pre-flashing the
+     Software onto ESP32 hardware sold or provided to third parties).
+  d) For any direct or indirect commercial advantage or monetary compensation.
+
+--------------------------------------------------------------------------------
+3. COMMERCIAL AND ORGANIZATIONAL LICENSING
+--------------------------------------------------------------------------------
+
+If you are an Organization, or if you wish to use, deploy, bundle, or
+distribute the Software in any manner not permitted by Section 1, you must
+obtain a Commercial License prior to such use.
+
+To inquire about commercial or organizational licensing, please contact the
+Author via the project repository:
+  https://github.com/gyengus/esp32-service-uptime-monitor
+
+--------------------------------------------------------------------------------
+4. THIRD-PARTY COMPONENTS
+--------------------------------------------------------------------------------
+
+This project links against or bundles third-party open-source libraries and
+assets. Those components remain governed by their own respective licenses,
+and nothing in this License restricts any rights granted to you under those
+third-party licenses with respect to the third-party components themselves.
+
+--------------------------------------------------------------------------------
+5. DISCLAIMER OF WARRANTY AND LIMITATION OF LIABILITY
+--------------------------------------------------------------------------------
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE, INCLUDING BUT NOT LIMITED TO HARDWARE
+DAMAGE, DATA LOSS, OR SERVICE DOWNTIME.

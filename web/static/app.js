@@ -836,15 +836,23 @@ function updateSysinfoUI(data) {
         $("#tempContainer").hide();
     }
     
-    if (data.version !== undefined) $("#versionVal").text(data.version);
-    if (data.commit !== undefined) $("#commitVal").text('#' + data.commit);
+    if (data.version !== undefined) {
+        $("#versionVal").text(data.version);
+        $("#menuVersionVal").text(data.version);
+    }
+    if (data.commit !== undefined) {
+        $("#commitVal").text('#' + data.commit);
+        $("#menuCommitVal").text('#' + data.commit);
+    }
     if (data.buildDate !== undefined) $("#buildDateVal").text(data.buildDate);
 
     if (data.configEnabled !== undefined) {
         if (data.configEnabled) {
             $('#configButton').show();
+            $('#headerConfigBadge').removeClass('d-none');
         } else {
             $('#configButton').hide();
+            $('#headerConfigBadge').addClass('d-none');
         }
     }
 
@@ -1233,6 +1241,37 @@ function scrollToTerminalBottom() {
     }
 }
 
+function toggleHeaderMenu(force) {
+    const $menu = $('#headerMenuDropdown');
+    const $btn = $('#headerMenuButton');
+    if (!$menu.length) return;
+    const isOpen = (typeof force === 'boolean') ? force : !$menu.hasClass('show');
+    $menu.toggleClass('show', isOpen);
+    $btn.attr('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+$('#headerMenuButton').on('click', function(e) {
+    e.stopPropagation();
+    toggleHeaderMenu();
+});
+
+$('#headerMenuDropdown').on('click', '.dropdown-item', function() {
+    toggleHeaderMenu(false);
+});
+
+$(document).on('click', function(e) {
+    const $wrapper = $('#headerMenuWrapper');
+    if ($wrapper.length && !$wrapper[0].contains(e.target)) {
+        toggleHeaderMenu(false);
+    }
+});
+
+$(document).on('keydown', function(e) {
+    if (e.key === 'Escape') {
+        toggleHeaderMenu(false);
+    }
+});
+
 $('#btnToggleTerminal').on('click', () => toggleTerminal());
 $('#btnTerminalClose').on('click', () => toggleTerminal(false));
 $('#btnTerminalClear').on('click', () => {
@@ -1308,6 +1347,7 @@ if (typeof window !== 'undefined') {
     window.triggerCardPulse = triggerCardPulse;
     window.setWsStatus = setWsStatus;
     window.toggleTerminal = toggleTerminal;
+    window.toggleHeaderMenu = toggleHeaderMenu;
     window.appendLogLine = appendLogLine;
     window.sendWsMessage = sendWsMessage;
     window.get_terminalOpen = () => terminalOpen;

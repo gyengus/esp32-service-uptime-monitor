@@ -25,7 +25,7 @@
  *
  *     ### Real-Time WebSocket & OTA
  *     - Live status updates and log streams are available over WebSocket at `ws://{host}/ws`.
- *     - Firmware OTA updates are served by ElegantOTA at `/update`.
+ *     - Firmware OTA updates are served natively at `/ota/start` and `/ota/upload`.
  * servers:
  *   - url: http://{host}
  *     description: ESP32 device on local network (HTTP)
@@ -298,10 +298,18 @@ public:
     }
 private:
     AsyncWebServer &server;
+    String _pendingOtaMd5;
+    String _otaUploadError;
+    size_t _otaReceivedBytes = 0;
+    bool _otaMutexHeld = false;
+    bool _otaTaskSuspended = false;
+    bool _otaStorageUnmounted = false;
     void registerConfigEndpoints();
+    void registerOtaEndpoints();
     void registerCommonEndpoints();
     void registerSystemInformationEndpoints();
     void registerServicesEndpoints();
+    void restoreOtaState();
 };
 
 #endif // _API_H_

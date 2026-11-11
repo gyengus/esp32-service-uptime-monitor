@@ -112,7 +112,8 @@ Full interactive request/response schemas and live testing are available in the 
 | `GET` | `/api/wifiscan` | Trigger/poll non-blocking Wi-Fi network scan |
 | `POST` | `/api/testDiscord` | Send a test notification to a Discord webhook URL |
 | `POST` | `/api/web/upload-archive` | Upload and unpack `web.zip` archive into `/web` |
-| `POST` | `/update` | Firmware binary upload handled by ElegantOTA |
+| `GET` | `/ota/start` | Initialize native firmware OTA session (`mode=fr`, optional `hash` MD5) |
+| `POST` | `/ota/upload` | Firmware binary upload handled natively via `Update.h` |
 
 ## Status Indicators
 
@@ -166,7 +167,10 @@ For multi-board builds, OTA targets, Web UI asset packing (`packweb` / `uploadwe
 
 ## License
 
-MIT
+This project uses a **Dual License (Personal & Commercial)** — see [`LICENSE`](LICENSE) for the full terms:
+
+- **Personal / Home Use (Free):** Individuals may use, compile, and modify the software free of charge for private, personal, non-commercial home/hobby monitoring, subject to keeping copyright notices intact.
+- **Companies, Public Institutions & Commercial Use (Paid):** Any use by companies, organizations, public/government institutions, or for commercial products/services/hardware bundles requires a separate **Commercial License**. Please reach out via the project repository (<https://github.com/gyengus/esp32-service-uptime-monitor>) for commercial licensing inquiries.
 
 ## Donations
 

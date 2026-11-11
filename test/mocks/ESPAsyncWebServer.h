@@ -98,12 +98,20 @@ public:
     std::vector<String> _pathArgs;
     std::map<String, String> _params;
     std::map<String, String> _headers;
+    std::function<void()> _onDisconnect;
 
     ~AsyncWebServerRequest() {
+        if (_onDisconnect) {
+            _onDisconnect();
+        }
         if (_tempObject) {
             delete (String*)_tempObject;
             _tempObject = nullptr;
         }
+    }
+
+    void onDisconnect(std::function<void()> fn) {
+        _onDisconnect = fn;
     }
 
     bool hasHeader(const char* name) const {

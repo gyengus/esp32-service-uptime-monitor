@@ -2,7 +2,9 @@
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include <Elog.h>
+#include <Update.h>
 #include <WiFi.h>
+#include <cctype>
 #include "driver/temperature_sensor.h"
 
 #include "version.h"
@@ -21,11 +23,28 @@
 
 static PSRAMAllocator psramAllocator;
 
+static bool isUploadAuthorized(AsyncWebServerRequest *request) {
+    return isConfigFunctionsEnabled || isAPMode || request->hasHeader("X-PlatformIO-Upload");
+}
+
+static bool isValidMd5Hex(const String &hash) {
+    if (hash.length() != 32) {
+        return false;
+    }
+    for (size_t i = 0; i < hash.length(); i++) {
+        if (!std::isxdigit(static_cast<unsigned char>(hash.charAt(i)))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 Api::Api(AsyncWebServer &server) : server(server) {}
 
 void Api::registerEndpoints() {
     registerCommonEndpoints();
     registerConfigEndpoints();
+    registerOtaEndpoints();
     if (!isAPMode) registerServicesEndpoints();
     registerSystemInformationEndpoints();
 }
@@ -542,7 +561,7 @@ void Api::registerConfigEndpoints() {
      *         description: Storage unavailable or extraction failed
      */
     server.on("/api/web/upload-archive", HTTP_POST, [](AsyncWebServerRequest *request) {
-        if (!isConfigFunctionsEnabled && !isAPMode && !request->hasHeader("X-PlatformIO-Upload")) {
+        if (!isUploadAuthorized(request)) {
             request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
             return;
         }
@@ -581,7 +600,7 @@ void Api::registerConfigEndpoints() {
             request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to extract web archive\"}");
         }
     }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-        if (!isConfigFunctionsEnabled && !isAPMode && !request->hasHeader("X-PlatformIO-Upload")) {
+        if (!isUploadAuthorized(request)) {
             return;
         }
         if (!storage.isAvailable()) {
@@ -601,6 +620,282 @@ void Api::registerConfigEndpoints() {
                 request->_tempFile.close();
                 Logger.info(MAINLOG, "Web archive received successfully.");
             }
+        }
+    });
+}
+
+void Api::restoreOtaState() {
+    if (_otaStorageUnmounted) {
+        storage.mount();
+        _otaStorageUnmounted = false;
+    }
+    if (_otaTaskSuspended && MonitoringTaskHandle != NULL) {
+        vTaskResume(MonitoringTaskHandle);
+        _otaTaskSuspended = false;
+    }
+    if (_otaMutexHeld) {
+        xSemaphoreGive(monitoredEntityRepository.getMutex());
+        _otaMutexHeld = false;
+    }
+    isOtaUpdating = false;
+}
+
+void Api::registerOtaEndpoints() {
+    /**
+     * @openapi
+     * /ota/start:
+     *   get:
+     *     tags: [Updates]
+     *     summary: Initialize a firmware OTA upload session
+     *     parameters:
+     *       - in: query
+     *         name: mode
+     *         required: false
+     *         schema:
+     *           type: string
+     *           enum: [fr]
+     *           default: fr
+     *         description: OTA target mode ('fr' for firmware flash)
+     *       - in: query
+     *         name: hash
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Optional 32-character hexadecimal MD5 checksum of the firmware binary
+     *       - in: header
+     *         name: X-PlatformIO-Upload
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Optional header used by PlatformIO OTA upload script to bypass lock
+     *     responses:
+     *       '200':
+     *         description: OTA session ready
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/StatusResponse'
+     *       '400':
+     *         description: Invalid OTA mode or MD5 checksum format
+     *       '403':
+     *         description: Configuration mode disabled
+     *       '409':
+     *         description: Another OTA update is already in progress
+     */
+    server.on("/ota/start", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        if (!isUploadAuthorized(request)) {
+            request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            return;
+        }
+
+        if (request->hasParam("mode")) {
+            String mode = request->getParam("mode")->value();
+            if (!mode.equals("fr")) {
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Unsupported OTA mode; only 'fr' is supported\"}");
+                return;
+            }
+        }
+
+        String hash = "";
+        if (request->hasParam("hash")) {
+            hash = request->getParam("hash")->value();
+            hash.trim();
+            if (hash.length() > 0) {
+                if (!isValidMd5Hex(hash)) {
+                    request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid MD5 hash format\"}");
+                    return;
+                }
+                hash.toLowerCase();
+            }
+        }
+
+        if (Update.isRunning() || isOtaUpdating) {
+            request->send(409, "application/json", "{\"status\":\"error\",\"message\":\"OTA update already in progress\"}");
+            return;
+        }
+
+        _pendingOtaMd5 = hash;
+        _otaUploadError = "";
+        _otaReceivedBytes = 0;
+
+        request->send(200, "application/json", "{\"status\":\"ready\",\"message\":\"OTA session initialized\"}");
+    });
+
+    /**
+     * @openapi
+     * /ota/upload:
+     *   post:
+     *     tags: [Updates]
+     *     summary: Upload and flash a firmware binary via native ESP32 OTA
+     *     parameters:
+     *       - in: header
+     *         name: X-PlatformIO-Upload
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Optional header used by PlatformIO OTA upload script to bypass lock
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required: [file]
+     *             properties:
+     *               MD5:
+     *                 type: string
+     *                 description: Optional 32-character hexadecimal MD5 checksum
+     *               file:
+     *                 type: string
+     *                 format: binary
+     *                 description: Compiled firmware .bin image
+     *     responses:
+     *       '200':
+     *         description: Firmware flashed successfully, device rebooting
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/StatusResponse'
+     *       '400':
+     *         description: Empty firmware image or invalid request
+     *       '403':
+     *         description: Configuration mode disabled
+     *       '500':
+     *         description: OTA flash initialization, write, or verification failed
+     */
+    server.on("/ota/upload", HTTP_POST, [this](AsyncWebServerRequest *request) {
+        if (!isUploadAuthorized(request)) {
+            request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            return;
+        }
+
+        if (_otaUploadError.length() > 0) {
+            restoreOtaState();
+            _pendingOtaMd5 = "";
+            Logger.error(MAINLOG, "OTA firmware update failed: %s", _otaUploadError.c_str());
+
+            JsonDocument doc;
+            doc["status"] = "error";
+            doc["message"] = _otaUploadError;
+            String response;
+            serializeJson(doc, response);
+            request->send(500, "application/json", response);
+            return;
+        }
+
+        if (_otaReceivedBytes == 0 || Update.hasError()) {
+            String err = Update.hasError() ? String(Update.errorString()) : String("No firmware binary received");
+            if (Update.isRunning()) {
+                Update.abort();
+            }
+            restoreOtaState();
+            _pendingOtaMd5 = "";
+
+            JsonDocument doc;
+            doc["status"] = "error";
+            doc["message"] = err;
+            String response;
+            serializeJson(doc, response);
+            request->send(_otaReceivedBytes == 0 ? 400 : 500, "application/json", response);
+            return;
+        }
+
+        Logger.info(MAINLOG, "OTA firmware update succeeded (%u bytes), scheduling reboot...", (unsigned int)_otaReceivedBytes);
+        shouldRestart = true;
+        request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Firmware updated successfully. Rebooting...\"}");
+    }, [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+        if (!isUploadAuthorized(request)) {
+            return;
+        }
+
+        if (index == 0) {
+            _otaUploadError = "";
+            _otaReceivedBytes = 0;
+
+            if (Update.isRunning() || isOtaUpdating) {
+                _otaUploadError = "OTA update already in progress";
+                return;
+            }
+
+            if (_pendingOtaMd5.length() == 0 && request->hasParam("MD5", true)) {
+                String md5Param = request->getParam("MD5", true)->value();
+                md5Param.trim();
+                if (md5Param.length() > 0) {
+                    if (!isValidMd5Hex(md5Param)) {
+                        _otaUploadError = "Invalid MD5 hash format";
+                        return;
+                    }
+                    md5Param.toLowerCase();
+                    _pendingOtaMd5 = md5Param;
+                }
+            }
+
+            isOtaUpdating = true;
+            wsService.closeAll();
+
+            xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY);
+            _otaMutexHeld = true;
+
+            if (MonitoringTaskHandle != NULL) {
+                vTaskSuspend(MonitoringTaskHandle);
+                _otaTaskSuspended = true;
+            }
+
+            if (storage.unmount()) {
+                _otaStorageUnmounted = true;
+            }
+
+            request->onDisconnect([this]() {
+                if (isOtaUpdating && !shouldRestart) {
+                    Logger.warning(MAINLOG, "OTA client disconnected mid-upload, aborting update...");
+                    if (Update.isRunning()) {
+                        Update.abort();
+                    }
+                    restoreOtaState();
+                    _pendingOtaMd5 = "";
+                }
+            });
+
+            Logger.info(MAINLOG, "Starting OTA firmware update: %s", filename.c_str());
+            if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+                _otaUploadError = String("OTA begin failed: ") + Update.errorString();
+                restoreOtaState();
+                return;
+            }
+
+            if (_pendingOtaMd5.length() > 0) {
+                Update.setMD5(_pendingOtaMd5.c_str());
+            }
+        }
+
+        if (_otaUploadError.length() > 0) {
+            return;
+        }
+
+        if (len > 0) {
+            size_t written = Update.write(data, len);
+            if (written != len) {
+                _otaUploadError = String("OTA write failed: ") + Update.errorString();
+                Update.abort();
+                restoreOtaState();
+                return;
+            }
+            _otaReceivedBytes += written;
+        }
+
+        if (final) {
+            if (_otaReceivedBytes == 0) {
+                _otaUploadError = "Empty firmware binary";
+                Update.abort();
+                restoreOtaState();
+                return;
+            }
+            if (!Update.end(true)) {
+                _otaUploadError = String("OTA finalize failed: ") + Update.errorString();
+                restoreOtaState();
+                return;
+            }
+            _pendingOtaMd5 = "";
         }
     });
 }

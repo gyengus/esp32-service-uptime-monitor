@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "SEE LICENSE IN ../LICENSE",
   "devDependencies": {
     "@vitest/coverage-istanbul": "^5.1.0",
     "@vitest/coverage-v8": "^5.1.0",

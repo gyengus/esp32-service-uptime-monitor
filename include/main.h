@@ -6,7 +6,6 @@
 void configurationMode();
 void initNormalMode();
 void commonWebServerSettings();
-void setupOTA();
 void onSntpSyncSchedule();
 void errorMode();
 void IRAM_ATTR handleButtonInterrupt();

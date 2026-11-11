@@ -123,9 +123,10 @@ def upload_firmware_ota_action(source, target, env):
         from requests_toolbelt import MultipartEncoder
         import requests
 
+    ota_headers = {"X-PlatformIO-Upload": "1"}
     start_url = f"http://{esp_host}/ota/start?mode=fr&hash={md5}"
     try:
-        resp = requests.get(start_url, timeout=15)
+        resp = requests.get(start_url, headers=ota_headers, timeout=15)
         if resp.status_code != 200:
             print(f"[OTA_UPLOAD] Handshake failed: {resp.status_code} {resp.text}")
             raise RuntimeError(f"OTA start failed: {resp.status_code}")
@@ -145,7 +146,8 @@ def upload_firmware_ota_action(source, target, env):
             })
             headers = {
                 "Content-Type": encoder.content_type,
-                "Content-Length": str(encoder.len)
+                "Content-Length": str(encoder.len),
+                "X-PlatformIO-Upload": "1"
             }
             resp = requests.post(upload_url, data=encoder, headers=headers, timeout=90)
             if resp.status_code != 200:

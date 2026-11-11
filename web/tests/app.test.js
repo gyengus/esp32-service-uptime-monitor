@@ -461,9 +461,9 @@ describe('Uptime Monitor Web UI - app.js', () => {
   });
 
   describe('System Metrics Modal', () => {
-    it('places the modal trigger button at the end of the left footer metrics', () => {
-      const $footerLeft = $('footer .container-fluid > div').first();
-      const $btn = $footerLeft.find('#btnSysinfoModal');
+    it('places the modal trigger button in the header menu and removes it from the footer', () => {
+      expect($('footer #btnSysinfoModal').length).toBe(0);
+      const $btn = $('#headerMenuDropdown #menuSysinfoButton');
       expect($btn.length).toBe(1);
       expect($btn.attr('data-bs-target')).toBe('#sysinfoModal');
     });
@@ -808,6 +808,57 @@ describe('Uptime Monitor Web UI - app.js', () => {
       await vi.waitFor(() => {
         expect($('#iconSuggestionsStatus').text()).toContain('Icon catalogs unavailable');
       });
+    });
+  });
+
+  describe('Header Dropdown Menu', () => {
+    it('toggles dropdown open/closed via menu button, outside click, item click, and Escape', () => {
+      const $menu = $('#headerMenuDropdown');
+      const $btn = $('#headerMenuButton');
+
+      expect($menu.hasClass('show')).toBe(false);
+      expect($btn.attr('aria-expanded')).toBe('false');
+
+      // Open on menu button click
+      $btn.trigger('click');
+      expect($menu.hasClass('show')).toBe(true);
+      expect($btn.attr('aria-expanded')).toBe('true');
+
+      // Close on outside click
+      $(document).trigger('click');
+      expect($menu.hasClass('show')).toBe(false);
+      expect($btn.attr('aria-expanded')).toBe('false');
+
+      // Open again and close on Escape
+      $btn.trigger('click');
+      expect($menu.hasClass('show')).toBe(true);
+      $(document).trigger($.Event('keydown', { key: 'Escape' }));
+      expect($menu.hasClass('show')).toBe(false);
+
+      // Open again and close on menu item click
+      $btn.trigger('click');
+      expect($menu.hasClass('show')).toBe(true);
+      $('#menuSysinfoButton').trigger('click');
+      expect($menu.hasClass('show')).toBe(false);
+    });
+
+    it('contains required menu links and syncs config badge and mobile version', () => {
+      expect($('#menuApiDocsLink').attr('href')).toBe('/api/docs');
+      expect($('#menuLicenseLink').attr('href')).toBe('/license');
+      expect($('#menuGithubRepoLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor');
+      expect($('#menuGithubPagesLink').attr('href')).toBe('https://gyengus.github.io/esp32-service-uptime-monitor/');
+      expect($('#menuSysinfoButton').attr('data-bs-target')).toBe('#sysinfoModal');
+      expect($('#btnToggleTerminal').length).toBe(1);
+
+      window.updateSysinfoUI({ version: '1.2.3', commit: 'abc1234', configEnabled: true });
+      expect($('#configButton').css('display')).not.toBe('none');
+      expect($('#headerConfigBadge').hasClass('d-none')).toBe(false);
+      expect($('#menuVersionVal').text()).toBe('1.2.3');
+      expect($('#menuCommitVal').text()).toBe('#abc1234');
+
+      window.updateSysinfoUI({ configEnabled: false });
+      expect($('#configButton').css('display')).toBe('none');
+      expect($('#headerConfigBadge').hasClass('d-none')).toBe(true);
     });
   });
 });
