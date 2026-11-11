@@ -408,14 +408,15 @@ $('#firmwareBinaryFile').on('change', function(event) {
                     $text.text('Rebooting...');
                     showSuccess('Firmware update successful! The device is restarting...');
 
-                    let remaining = 12;
+                    let remaining = 6;
+                    $text.text('Rebooting (' + remaining + 's)...');
                     const timer = setInterval(function() {
                         remaining--;
                         if (remaining > 0) {
-                            $text.text('Reconnecting in ' + remaining + 's...');
+                            $text.text('Rebooting (' + remaining + 's)...');
                         } else {
                             clearInterval(timer);
-                            window.location.reload();
+                            waitForDeviceAndRedirect();
                         }
                     }, 1000);
                 } else {
@@ -438,6 +439,33 @@ $('#firmwareBinaryFile').on('change', function(event) {
         }
     });
 });
+
+function waitForDeviceAndRedirect() {
+    let attempts = 0;
+    const maxAttempts = 20;
+    function checkHealth() {
+        attempts++;
+        $('#updateFirmwareText').text('Waiting for device...');
+        $.ajax({
+            type: 'GET',
+            url: '/api/health',
+            timeout: 2000,
+            cache: false,
+            success: function() {
+                $('#updateFirmwareText').text('Redirecting...');
+                window.location.href = '/';
+            },
+            error: function() {
+                if (attempts < maxAttempts) {
+                    setTimeout(checkHealth, 1500);
+                } else {
+                    window.location.href = '/';
+                }
+            }
+        });
+    }
+    checkHealth();
+}
 
 function showError(xhr, defaultMsg) {
     let response = defaultMsg;

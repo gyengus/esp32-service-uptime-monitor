@@ -309,7 +309,7 @@ void initNormalMode() {
     });
     server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
-            request->send(403, "text/plain", "Forbidden");
+            request->redirect("/");
             return;
         }
         String path = String(WEB_UI_PATH) + "/config.html";

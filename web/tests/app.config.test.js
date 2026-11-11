@@ -57,6 +57,10 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
         if (options.success) {
           options.success();
         }
+      } else if (options.url === '/api/health') {
+        if (options.success) {
+          options.success({ status: 'UP' });
+        }
       }
       return {
         fail: vi.fn().mockReturnThis(),
@@ -442,6 +446,56 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       expect(mockXHR.open).toHaveBeenCalledWith('POST', '/ota/upload', true);
       expect(mockXHR.send).toHaveBeenCalled();
       expect($('#successToast .toast-body').text()).toContain('Firmware update successful');
+
+      // Simulate reboot countdown and health polling
+      vi.advanceTimersByTime(6000);
+      const healthCall = $.ajax.mock.calls.find(c => c[0].url === '/api/health');
+      expect(healthCall).toBeDefined();
+      expect($('#updateFirmwareText').text()).toBe('Redirecting...');
+
+      globalThis.XMLHttpRequest = origXHR;
+    });
+
+    it('retries health check if device is still rebooting and redirects after recovery', () => {
+      let healthAttempts = 0;
+      const origAjax = $.ajax;
+      $.ajax = vi.fn().mockImplementation((options) => {
+        if (options.url === '/api/health') {
+          healthAttempts++;
+          if (healthAttempts < 3) {
+            if (options.error) options.error();
+          } else {
+            if (options.success) options.success({ status: 'UP' });
+          }
+          return { fail: vi.fn().mockReturnThis(), always: vi.fn().mockReturnThis() };
+        }
+        return origAjax(options);
+      });
+
+      const mockXHR = {
+        open: vi.fn(),
+        send: vi.fn().mockImplementation(function() {
+          this.status = 200;
+          if (this.onload) this.onload();
+        }),
+        upload: { onprogress: null }
+      };
+      const origXHR = globalThis.XMLHttpRequest;
+      globalThis.XMLHttpRequest = vi.fn().mockImplementation(function() { return mockXHR; });
+
+      const mockBin = new File(['firmware'], 'firmware.bin', { type: 'application/octet-stream' });
+      $('#firmwareBinaryFile').trigger($.Event('change', { target: { files: [mockBin] } }));
+
+      vi.advanceTimersByTime(6000);
+      expect(healthAttempts).toBe(1);
+      expect($('#updateFirmwareText').text()).toBe('Waiting for device...');
+
+      vi.advanceTimersByTime(1500);
+      expect(healthAttempts).toBe(2);
+
+      vi.advanceTimersByTime(1500);
+      expect(healthAttempts).toBe(3);
+      expect($('#updateFirmwareText').text()).toBe('Redirecting...');
 
       globalThis.XMLHttpRequest = origXHR;
     });
