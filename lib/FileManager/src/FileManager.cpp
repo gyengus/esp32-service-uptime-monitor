@@ -74,6 +74,23 @@ String FileManager::buildFullPath(const String &pathParam, const String &fileNam
 }
 
 void FileManager::registerHandlers(AsyncWebServer &server) {
+    /**
+     * @openapi
+     * /fileManager:
+     *   get:
+     *     x-internal: true
+     *     tags: [File Manager]
+     *     summary: Serve File Manager HTML interface
+     *     responses:
+     *       '200':
+     *         description: File Manager HTML page
+     *         content:
+     *           text/html:
+     *             schema:
+     *               type: string
+     *       '500':
+     *         description: Storage not available
+     */
     server.on("/fileManager", HTTP_GET, [this](AsyncWebServerRequest *request) {
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
@@ -84,6 +101,40 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
         request->send(*_fs, path, "text/html");
     });
 
+    /**
+     * @openapi
+     * /mkdir:
+     *   post:
+     *     x-internal: true
+     *     tags: [File Manager]
+     *     summary: Create a directory in storage
+     *     parameters:
+     *       - in: query
+     *         name: dir
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Directory name to create
+     *       - in: query
+     *         name: path
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Parent directory path relative to basePath
+     *     responses:
+     *       '200':
+     *         description: Directory created
+     *       '400':
+     *         description: Missing dir parameter
+     *       '403':
+     *         description: Invalid characters in directory name or path
+     *       '404':
+     *         description: Specified parent path does not exist
+     *       '409':
+     *         description: Directory already exists
+     *       '500':
+     *         description: Storage not available or creation failed
+     */
     server.on("/mkdir", HTTP_POST, [this](AsyncWebServerRequest *request) {
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
@@ -131,6 +182,39 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
         }
     });
 
+    /**
+     * @openapi
+     * /upload:
+     *   post:
+     *     x-internal: true
+     *     tags: [File Manager]
+     *     summary: Upload a file to storage
+     *     parameters:
+     *       - in: query
+     *         name: path
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Target directory path relative to basePath
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required: [file]
+     *             properties:
+     *               file:
+     *                 type: string
+     *                 format: binary
+     *     responses:
+     *       '200':
+     *         description: File uploaded (OK)
+     *       '403':
+     *         description: Invalid filename or path
+     *       '500':
+     *         description: Storage not available
+     */
     server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {
         request->send(200, "text/plain", "OK");
     }, [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
@@ -176,6 +260,34 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
         }
     });
 
+    /**
+     * @openapi
+     * /list:
+     *   get:
+     *     x-internal: true
+     *     tags: [File Manager]
+     *     summary: List files and subdirectories in a storage directory
+     *     parameters:
+     *       - in: query
+     *         name: path
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Directory path relative to basePath
+     *     responses:
+     *       '200':
+     *         description: Directory entries
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/FileEntry'
+     *       '403':
+     *         description: Invalid path
+     *       '500':
+     *         description: Storage not available
+     */
     server.on("/list", HTTP_GET, [this](AsyncWebServerRequest *request) {
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
@@ -222,6 +334,38 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
         request->send(200, "application/json", output);
     });
 
+    /**
+     * @openapi
+     * /delete:
+     *   delete:
+     *     x-internal: true
+     *     tags: [File Manager]
+     *     summary: Delete a file or empty directory from storage
+     *     parameters:
+     *       - in: query
+     *         name: file
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: File or directory name
+     *       - in: query
+     *         name: path
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Parent directory path relative to basePath
+     *     responses:
+     *       '200':
+     *         description: Item deleted
+     *       '400':
+     *         description: Missing file parameter
+     *       '403':
+     *         description: Invalid filename or path
+     *       '404':
+     *         description: File not found
+     *       '500':
+     *         description: Storage not available or deletion failed
+     */
     server.on("/delete", HTTP_DELETE, [this](AsyncWebServerRequest *request) {
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
@@ -272,6 +416,43 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
         }
     });
 
+    /**
+     * @openapi
+     * /download:
+     *   get:
+     *     x-internal: true
+     *     tags: [File Manager]
+     *     summary: Download a file from storage
+     *     parameters:
+     *       - in: query
+     *         name: file
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: File name to download
+     *       - in: query
+     *         name: path
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Parent directory path relative to basePath
+     *     responses:
+     *       '200':
+     *         description: Binary file stream
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       '400':
+     *         description: Missing file parameter
+     *       '403':
+     *         description: Invalid filename or path
+     *       '404':
+     *         description: File not found
+     *       '500':
+     *         description: Storage not available
+     */
     server.on("/download", HTTP_GET, [this](AsyncWebServerRequest *request) {
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");

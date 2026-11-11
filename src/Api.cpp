@@ -31,6 +31,24 @@ void Api::registerEndpoints() {
 }
 
 void Api::registerConfigEndpoints() {
+    /**
+     * @openapi
+     * /api/config/backup:
+     *   get:
+     *     tags: [Configuration]
+     *     summary: Export configuration and monitored entities backup
+     *     responses:
+     *       '200':
+     *         description: Backup JSON payload
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/BackupPayload'
+     *       '403':
+     *         description: Configuration mode disabled
+     *       '500':
+     *         description: Failed to read or parse config files
+     */
     server.on("/api/config/backup", HTTP_GET, [](AsyncWebServerRequest* request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
@@ -63,6 +81,38 @@ void Api::registerConfigEndpoints() {
         request->send(response);
     });
 
+    /**
+     * @openapi
+     * /api/config/restore:
+     *   post:
+     *     tags: [Configuration]
+     *     summary: Restore configuration and monitored entities from backup file
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required: [file]
+     *             properties:
+     *               file:
+     *                 type: string
+     *                 format: binary
+     *                 description: Backup JSON file containing config and entities
+     *     responses:
+     *       '200':
+     *         description: Restore completed and device restarting
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/StatusResponse'
+     *       '400':
+     *         description: Invalid JSON or missing config/entities keys
+     *       '403':
+     *         description: Configuration mode disabled
+     *       '500':
+     *         description: Storage unavailable or failed to write config files
+     */
     server.on("/api/config/restore", HTTP_POST, [](AsyncWebServerRequest *request) {
     }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
@@ -124,8 +174,23 @@ void Api::registerConfigEndpoints() {
         }
     });
 
-    server.on("/api/config/factoryReset", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
-        [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
+    /**
+     * @openapi
+     * /api/config/factoryReset:
+     *   post:
+     *     tags: [Configuration]
+     *     summary: Delete configuration and entity files and reboot into AP mode
+     *     responses:
+     *       '200':
+     *         description: Factory reset result
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/StatusResponse'
+     *       '403':
+     *         description: Configuration mode disabled
+     */
+    server.on("/api/config/factoryReset", HTTP_POST, [this](AsyncWebServerRequest* request) {
         if (!isConfigFunctionsEnabled) {
             request->send(403, "text/plain", "Forbidden");
             return;
@@ -150,6 +215,22 @@ void Api::registerConfigEndpoints() {
         request->send(response);
     });
 
+    /**
+     * @openapi
+     * /api/wifiscan:
+     *   get:
+     *     tags: [Configuration]
+     *     summary: Trigger or poll non-blocking Wi-Fi network scan
+     *     responses:
+     *       '200':
+     *         description: Current scan state and discovered networks
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/WifiScanResponse'
+     *       '403':
+     *         description: Configuration mode disabled
+     */
     server.on("/api/wifiscan", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
@@ -163,6 +244,33 @@ void Api::registerConfigEndpoints() {
         request->send(response);
     });
 
+    /**
+     * @openapi
+     * /api/testDiscord:
+     *   post:
+     *     tags: [Configuration]
+     *     summary: Send a test message to a Discord webhook URL
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/x-www-form-urlencoded:
+     *           schema:
+     *             type: object
+     *             required: [url]
+     *             properties:
+     *               url:
+     *                 type: string
+     *                 example: https://discord.com/api/webhooks/...
+     *     responses:
+     *       '200':
+     *         description: Notification sent successfully (OK)
+     *       '400':
+     *         description: Missing url parameter
+     *       '403':
+     *         description: Configuration mode disabled
+     *       '500':
+     *         description: Webhook request failed
+     */
     server.on("/api/testDiscord", HTTP_POST, [this](AsyncWebServerRequest* request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
@@ -184,60 +292,113 @@ void Api::registerConfigEndpoints() {
         }
     });
 
-    server.on("/api/config/test-led", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
-        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            if (!isConfigFunctionsEnabled && !isAPMode) {
-                request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
-                return;
+    /**
+     * @openapi
+     * /api/config/test-led:
+     *   post:
+     *     tags: [Configuration]
+     *     summary: Trigger a temporary cyan pulse test on the onboard RGB LED
+     *     requestBody:
+     *       required: false
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               brightness:
+     *                 type: integer
+     *                 minimum: 0
+     *                 maximum: 100
+     *                 example: 50
+     *               duration:
+     *                 type: integer
+     *                 minimum: 1
+     *                 maximum: 10000
+     *                 description: Test duration in milliseconds
+     *                 example: 3000
+     *     responses:
+     *       '200':
+     *         description: LED test started
+     *       '400':
+     *         description: RGB LED not supported on this board
+     *       '403':
+     *         description: Configuration mode disabled
+     */
+    server.on("/api/config/test-led", HTTP_POST, [this](AsyncWebServerRequest *request) {
+        String* body = (String*)request->_tempObject;
+
+        if (!isConfigFunctionsEnabled && !isAPMode) {
+            if (body) {
+                delete body;
+                request->_tempObject = nullptr;
             }
+            request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            return;
+        }
 
-            if (index == 0) request->_tempObject = new String("");
-            String* body = (String*)request->_tempObject;
-            for (size_t i = 0; i < len; i++) *body += (char)data[i];
+        uint8_t brightness = config.getConfig().ledBrightness;
+        uint32_t duration = 3000;
 
-            if (index + len == total) {
-                uint8_t brightness = config.getConfig().ledBrightness;
-                uint32_t duration = 3000;
-
-                if (body && body->length() > 0) {
-                    JsonDocument doc(&psramAllocator);
-                    DeserializationError err = deserializeJson(doc, *body);
-                    if (!err) {
-                        if (doc["brightness"].is<int>() || doc["brightness"].is<uint8_t>()) {
-                            int b = doc["brightness"].as<int>();
-                            if (b < 0) b = 0;
-                            if (b > 100) b = 100;
-                            brightness = (uint8_t)b;
-                        }
-                        if (doc["duration"].is<int>() || doc["duration"].is<uint32_t>()) {
-                            int d = doc["duration"].as<int>();
-                            if (d > 0 && d <= 10000) duration = (uint32_t)d;
-                        }
-                    }
+        if (body && body->length() > 0) {
+            JsonDocument doc(&psramAllocator);
+            DeserializationError err = deserializeJson(doc, *body);
+            if (!err) {
+                if (doc["brightness"].is<int>() || doc["brightness"].is<uint8_t>()) {
+                    int b = doc["brightness"].as<int>();
+                    if (b < 0) b = 0;
+                    if (b > 100) b = 100;
+                    brightness = (uint8_t)b;
                 }
+                if (doc["duration"].is<int>() || doc["duration"].is<uint32_t>()) {
+                    int d = doc["duration"].as<int>();
+                    if (d > 0 && d <= 10000) duration = (uint32_t)d;
+                }
+            }
+        }
+
+        if (body) {
+            delete body;
+            request->_tempObject = nullptr;
+        }
 
 #ifdef HAS_RGB_LED
-                ledService.startTest(brightness, duration);
+        ledService.startTest(brightness, duration);
 
-                AsyncJsonResponse *response = new AsyncJsonResponse(false);
-                JsonObject doc = response->getRoot().to<JsonObject>();
-                doc["status"] = "success";
-                doc["message"] = "LED test started";
-                doc["brightness"] = brightness;
-                doc["duration"] = duration;
-                response->setLength();
-                request->send(response);
+        AsyncJsonResponse *response = new AsyncJsonResponse(false);
+        JsonObject doc = response->getRoot().to<JsonObject>();
+        doc["status"] = "success";
+        doc["message"] = "LED test started";
+        doc["brightness"] = brightness;
+        doc["duration"] = duration;
+        response->setLength();
+        request->send(response);
 #else
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"RGB LED not supported on this board\"}");
+        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"RGB LED not supported on this board\"}");
 #endif
+    }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        if (index == 0) request->_tempObject = new String("");
+        String* body = (String*)request->_tempObject;
+        if (body) {
+            for (size_t i = 0; i < len; i++) *body += (char)data[i];
+        }
+    });
 
-                if (body) {
-                    delete body;
-                    request->_tempObject = nullptr;
-                }
-            }
-        });
-
+    /**
+     * @openapi
+     * /api/config:
+     *   get:
+     *     tags: [Configuration]
+     *     summary: Get current device configuration
+     *     responses:
+     *       '200':
+     *         description: Current configuration
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Config'
+     *       '403':
+     *         description: Configuration mode disabled
+     */
     server.on("/api/config", HTTP_GET, [this](AsyncWebServerRequest* request) {
         if (!isConfigFunctionsEnabled && !isAPMode) {
             request->send(403, "text/plain", "Forbidden");
@@ -250,6 +411,40 @@ void Api::registerConfigEndpoints() {
         request->send(response);
     });
 
+    /**
+     * @openapi
+     * /api/config:
+     *   post:
+     *     tags: [Configuration]
+     *     summary: Save updated device configuration
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Config'
+     *     responses:
+     *       '200':
+     *         description: Configuration saved
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: success
+     *                 message:
+     *                   type: string
+     *                 restarting:
+     *                   type: boolean
+     *       '400':
+     *         description: Wi-Fi connection failed or missing body
+     *       '403':
+     *         description: Configuration mode disabled
+     *       '500':
+     *         description: Failed to save configuration
+     */
     server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, 
         [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
 
@@ -309,6 +504,43 @@ void Api::registerConfigEndpoints() {
         }
     });
 
+    /**
+     * @openapi
+     * /api/web/upload-archive:
+     *   post:
+     *     tags: [Updates]
+     *     summary: Upload and extract a web.zip UI archive into storage
+     *     parameters:
+     *       - in: header
+     *         name: X-PlatformIO-Upload
+     *         required: false
+     *         schema:
+     *           type: string
+     *         description: Optional header used by PlatformIO uploadweb script to bypass lock
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required: [file]
+     *             properties:
+     *               file:
+     *                 type: string
+     *                 format: binary
+     *                 description: Minified web.zip archive
+     *     responses:
+     *       '200':
+     *         description: Web UI updated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/StatusResponse'
+     *       '403':
+     *         description: Configuration mode disabled
+     *       '500':
+     *         description: Storage unavailable or extraction failed
+     */
     server.on("/api/web/upload-archive", HTTP_POST, [](AsyncWebServerRequest *request) {
         if (!isConfigFunctionsEnabled && !isAPMode && !request->hasHeader("X-PlatformIO-Upload")) {
             request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
@@ -377,6 +609,20 @@ void Api::registerCommonEndpoints() {
 }
 
 void Api::registerServicesEndpoints() {
+    /**
+     * @openapi
+     * /api/summary:
+     *   get:
+     *     tags: [Monitoring]
+     *     summary: Get monitored entities count summary
+     *     responses:
+     *       '200':
+     *         description: Total, online, and offline counts
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/SummaryResponse'
+     */
     server.on("/api/summary", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(200, "application/json", monitoringService.summary());
     });
@@ -389,6 +635,22 @@ void Api::registerServicesEndpoints() {
         serializeJson(doc, *response);
         request->send(response);
     });*/
+    /**
+     * @openapi
+     * /api/monitoredentities:
+     *   get:
+     *     tags: [Monitoring]
+     *     summary: List all monitored entities
+     *     responses:
+     *       '200':
+     *         description: Array of monitored entities
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/MonitoredEntity'
+     */
     server.on("/api/monitoredentities", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         
@@ -417,6 +679,33 @@ void Api::registerServicesEndpoints() {
         request->send(response);
     });
 
+    /**
+     * @openapi
+     * /api/monitoredentity/{name}:
+     *   get:
+     *     tags: [Monitoring]
+     *     summary: Get a monitored entity by name
+     *     parameters:
+     *       - in: path
+     *         name: name
+     *         required: true
+     *         schema:
+     *           type: string
+     *         example: Router
+     *     responses:
+     *       '200':
+     *         description: Monitored entity details
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/MonitoredEntity'
+     *       '404':
+     *         description: Entity not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/ErrorResponse'
+     */
     server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
         String name = request->pathArg(0);
         MonitoredEntity entity;
@@ -432,6 +721,37 @@ void Api::registerServicesEndpoints() {
         }
     });
 
+    /**
+     * @openapi
+     * /api/monitoredentity/{name}:
+     *   delete:
+     *     tags: [Monitoring]
+     *     summary: Delete a monitored entity by name
+     *     parameters:
+     *       - in: path
+     *         name: name
+     *         required: true
+     *         schema:
+     *           type: string
+     *         example: Router
+     *     responses:
+     *       '200':
+     *         description: Entity deleted
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: deleted
+     *       '404':
+     *         description: Entity not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/ErrorResponse'
+     */
     server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_DELETE, [](AsyncWebServerRequest *request) {
         String name = request->pathArg(0);
         
@@ -444,6 +764,34 @@ void Api::registerServicesEndpoints() {
         }
     });
 
+    /**
+     * @openapi
+     * /api/monitoredentity:
+     *   post:
+     *     tags: [Monitoring]
+     *     summary: Add a new monitored entity
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/MonitoredEntityInput'
+     *     responses:
+     *       '201':
+     *         description: Entity created
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: created
+     *       '400':
+     *         description: Invalid JSON or missing required fields
+     *       '409':
+     *         description: Entity with this name already exists
+     */
     server.on("/api/monitoredentity", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (index == 0) request->_tempObject = new String("");
@@ -472,6 +820,41 @@ void Api::registerServicesEndpoints() {
         }
     });
 
+    /**
+     * @openapi
+     * /api/monitoredentity/{name}:
+     *   put:
+     *     tags: [Monitoring]
+     *     summary: Update an existing monitored entity
+     *     parameters:
+     *       - in: path
+     *         name: name
+     *         required: true
+     *         schema:
+     *           type: string
+     *         example: Router
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/MonitoredEntityInput'
+     *     responses:
+     *       '200':
+     *         description: Entity updated
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: updated
+     *       '400':
+     *         description: Invalid JSON
+     *       '404':
+     *         description: Entity not found
+     */
     server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL,
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         
@@ -517,11 +900,39 @@ void Api::registerServicesEndpoints() {
 }
 
 void Api::registerSystemInformationEndpoints() {
+    /**
+     * @openapi
+     * /api/health:
+     *   get:
+     *     tags: [System]
+     *     summary: Health check endpoint
+     *     responses:
+     *       '200':
+     *         description: Device is up and responding
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/HealthResponse'
+     */
     server.on("/api/health", HTTP_GET, [](AsyncWebServerRequest *request) {
         Logger.debug(MAINLOG, "Health check request");
         request->send(200, "application/json", "{\"status\":\"UP\"}");
     });
 
+    /**
+     * @openapi
+     * /api/sysinfo/details:
+     *   get:
+     *     tags: [System]
+     *     summary: Get detailed device, memory, storage, network, and firmware diagnostics
+     *     responses:
+     *       '200':
+     *         description: Detailed system information
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/DetailedSysinfo'
+     */
     server.on("/api/sysinfo/details", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncJsonResponse *response = new AsyncJsonResponse(false);
         JsonObject doc = response->getRoot().to<JsonObject>();
@@ -530,6 +941,20 @@ void Api::registerSystemInformationEndpoints() {
         request->send(response);
     });
 
+    /**
+     * @openapi
+     * /api/sysinfo:
+     *   get:
+     *     tags: [System]
+     *     summary: Get basic system metrics (heap, RSSI, uptime, temperature, version)
+     *     responses:
+     *       '200':
+     *         description: Basic system information
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/BasicSysinfo'
+     */
     server.on("/api/sysinfo", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncJsonResponse *response = new AsyncJsonResponse(false);
         JsonObject doc = response->getRoot().to<JsonObject>();

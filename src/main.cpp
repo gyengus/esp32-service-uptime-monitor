@@ -395,16 +395,44 @@ void setupOTA() {
 
 void commonWebServerSettings() {
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type, X-PlatformIO-Upload");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Private-Network", "true");
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(storage.getFS(), (String(WEB_UI_PATH) + "/static/favicon.ico"), "image/x-icon");
+    });
+    server.on("/api/docs", HTTP_GET, [](AsyncWebServerRequest *request){
+        String path = String(WEB_UI_PATH) + "/api-docs.html";
+        if (!storage.fileExists(path)) {
+            request->send(404, "text/plain", "API documentation not found in storage");
+            return;
+        }
+        request->send(storage.getFS(), path, "text/html");
+    });
+    server.on("/swagger", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->redirect("/api/docs");
+    });
+    server.on("/api/openapi.yaml", HTTP_GET, [](AsyncWebServerRequest *request){
+        String path = String(WEB_UI_PATH) + "/openapi.yaml";
+        if (!storage.fileExists(path)) {
+            request->send(404, "text/plain", "OpenAPI specification not found in storage");
+            return;
+        }
+        request->send(storage.getFS(), path, "text/yaml; charset=utf-8");
     });
     server.serveStatic("/static", storage.getFS(), (String(WEB_UI_PATH) + "/static").c_str());
     setupOTA();
     api.registerEndpoints();
-        server.onNotFound([](AsyncWebServerRequest *request){
+    server.onNotFound([](AsyncWebServerRequest *request){
+        if (request->method() == HTTP_OPTIONS) {
+            request->send(204);
+            return;
+        }
+
         String host = request->host();
         String clientIP = request->client() ? request->client()->remoteIP().toString() : "unknown";
-        Logger.warning(MAINLOG, "404 Not Found: %s%s (Client: %s)", host.c_str(), request->url().c_str(), clientIP.c_str());
+        Logger.warning(MAINLOG, "404 Not Found: %s %s%s (Client: %s)",
+            request->methodToString(), host.c_str(), request->url().c_str(), clientIP.c_str());
 
         if (isAPMode && !host.equals(networkContext.getIP())) {
             Logger.info(MAINLOG, "Redirecting to captive portal");

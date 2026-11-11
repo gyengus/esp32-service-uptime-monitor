@@ -40,8 +40,9 @@ coverage/
 *.zip
 dist/
 
-# Auto-generated embedded web assets
+# Auto-generated embedded web assets & API specification
 src/EmbeddedWebArchive.cpp
+docs/api/openapi.yaml
 
 # Python cache
 __pycache__/

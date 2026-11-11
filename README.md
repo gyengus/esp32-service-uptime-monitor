@@ -1,25 +1,25 @@
 # ESP32 Service Uptime Monitor
 
-An ESP32-S3 based monitoring device that periodically checks the availability of HTTP/HTTPS services and sends Discord notifications when status changes occur. It features a responsive Web UI, WebSocket live updates, OTA firmware and web asset flashing, and support for both MicroSD and internal Flash (LittleFS) storage.
+An ESP32-based monitoring device that periodically checks the availability of HTTP/HTTPS services and sends Discord notifications when status changes occur. It features a responsive Web UI, WebSocket live updates, built-in Swagger/OpenAPI documentation, OTA firmware and web asset flashing, and support for both MicroSD and internal Flash (LittleFS) storage.
 
 ## Features
 
 - **Multi-board support**: Native configurations for `esp32-s3-cam` (MicroSD slot), `esp32-s3` (LittleFS), `esp32` (classic dual-core ESP32-WROOM-32), `esp32-c3` (single-core RISC-V), `esp32-c6` (single-core RISC-V with Wi-Fi 6), and `esp32-c5` (single-core RISC-V with Dual-Band 2.4/5GHz Wi-Fi 6) via `devices.h`
 - **WiFi AP/STA mode**: Easy configuration via built-in captive portal access point or connection to existing WiFi (supports 2.4 GHz and 5 GHz Dual-Band Wi-Fi 6)
 - **Dual storage backends**: Supports FAT32 MicroSD (1-bit SD_MMC) or internal SPI Flash with wear-leveling (LittleFS)
-- **OTA Firmware updates**: Wireless updates via Web UI or PlatformIO (`esp32-s3-cam-ota`, `esp32-s3-ota`, `esp32-ota`, `esp32-c3-ota`, `esp32-c6-ota`, `esp32-c5-ota`)
-- **Over-the-Air Web UI updates**: Update web assets (.zip) over the network with automatic in-memory minification (`uploadweb`)
+- **OTA Firmware updates**: Wireless updates via Web UI or PlatformIO (`*-ota` environments)
 - **Modern Web UI**: Responsive Bootstrap 5 interface with dark mode, live status filtering, and entity management
+- **Interactive API Docs (Swagger UI)**: Available directly on the device at `/api/docs` (or `/swagger`) and for static hosting in [`docs/api/`](docs/api/index.html)
 - **WebSocket live stream**: Real-time log streaming and instant UI updates without polling
 - **Discord notifications**: Rich embed notifications sent to a configured Discord webhook on status change
 - **Config backup & restore**: Export and import configuration and monitored entity snapshots in JSON format
-- **File Manager**: Built-in web file manager for browsing, uploading, downloading, and managing files
+- **File Manager**: Built-in web file manager for browsing, uploading, downloading, and managing files during development
 - **mDNS & SNTP**: Access via `http://<hostname>.local/` and automatic NTP time synchronization
 - **LED indicators**: Visual feedback via addressable RGB LED (WS2812B) and optional status LED
 
 ## Hardware & Board Profiles
 
-The project uses `include/devices.h` to define board pins and available hardware features (`HAS_SD_CARD`, `HAS_STATUS_LED`, `HAS_RGB_LED`) based on the active PlatformIO build environment:
+The project uses [`include/devices.h`](include/devices.h) to define board pins and available hardware features (`HAS_SD_CARD`, `HAS_STATUS_LED`, `HAS_RGB_LED`) based on the active PlatformIO build environment:
 
 | Feature / Pin | `esp32-s3-cam` | `esp32-s3` | `esp32` | `esp32-c3` | `esp32-c6` | `esp32-c5` |
 |---|---|---|---|---|---|---|
@@ -31,94 +31,20 @@ The project uses `include/devices.h` to define board pins and available hardware
 | **Boot Button** | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 0 (`BOOT_BTN_PIN`) | GPIO 9 (`BOOT_BTN_PIN`) | GPIO 9 (`BOOT_BTN_PIN`) | GPIO 28 (`BOOT_BTN_PIN`) |
 | **SD CMD / DATA / CLK** | GPIO 38 / 40 / 39 | N/A | N/A | N/A | N/A | N/A |
 
-## Installation & Build
+## Quick Start & Installation
 
-### Prerequisites
-
-- [PlatformIO Core (CLI)](https://platformio.org/install/cli) or PlatformIO IDE
-- Node.js & npm (for Web UI development and testing)
-- MicroSD card (FAT32 formatted, only needed for `esp32-s3-cam`)
-
-### Build & Upload Commands
-
-#### Firmware Build & Upload
+### Flash via USB (PlatformIO)
 
 ```bash
-# Build firmware for all default boards
-pio run
-
-# Or build for a specific target board:
-pio run -e esp32-s3-cam   # ESP32-S3-CAM (MicroSD)
-pio run -e esp32-s3       # ESP32-S3 DevKit (LittleFS Flash, 16MB)
-pio run -e esp32          # Classic ESP32-WROOM-32 (LittleFS Flash, 4MB)
-pio run -e esp32-c3       # ESP32-C3 SuperMini / RISC-V (LittleFS Flash, 4MB)
-pio run -e esp32-c6       # ESP32-C6 DevKit / Wi-Fi 6 RISC-V (LittleFS Flash, 4MB)
-pio run -e esp32-c5       # ESP32-C5 DevKit / Dual-Band 2.4/5GHz Wi-Fi 6 RISC-V (LittleFS Flash, 4MB)
-
-# Upload firmware via USB
+# Build and flash firmware for your board via USB
 pio run -e esp32-s3-cam --target upload
-# or for standard S3 / classic ESP32 / C3 / C6 / C5:
-pio run -e esp32-s3 --target upload
-pio run -e esp32 --target upload
-pio run -e esp32-c3 --target upload
-pio run -e esp32-c6 --target upload
-pio run -e esp32-c5 --target upload
+# Or: esp32-s3 | esp32 | esp32-c3 | esp32-c6 | esp32-c5
 
 # Monitor serial output (115200 8N1)
 pio device monitor
-
-# Export firmware & merged ESP Web Tools binaries to dist/
-pio run -t dist
 ```
 
-> **Web Flasher (ESP Web Tools) & Binary Distribution:**
-> When building with `pio run` or `pio run -t dist`, binaries are automatically generated in the `dist/` directory (ignored by git):
-> - `dist/firmware-<env>.bin`: Standalone application binary for OTA updates.
-> - `dist/factory-<env>.bin`: Merged single binary (bootloader + partitions + boot_app0 + firmware) flashable at offset `0x0000` via [ESP Web Tools](https://esphome.github.io/esp-web-tools/) or WebSerial in one click.
-> - `dist/manifest.json`: Auto-generated manifest for ESP Web Tools hosting.
-
-#### OTA Firmware Upload
-
-Wirelessly update the firmware of an already deployed device:
-
-```bash
-# Upload over OTA (default hostname: esp32-service-uptime-monitor.local)
-pio run -e esp32-s3-cam-ota --target upload
-
-# Upload to S3 board over OTA
-pio run -e esp32-s3-ota --target upload
-
-# Specify a custom IP or hostname via environment variable:
-ESP_IP=192.168.0.118 pio run -e esp32-s3-cam-ota --target upload
-# or:
-ESP_HOST=my-device.local pio run -e esp32-s3-cam-ota --target upload
-
-# Or via PlatformIO upload-port flag:
-pio run -e esp32-s3-ota --target upload --upload-port 192.168.0.118
-```
-
-> **Target Resolution:** The OTA and web asset upload scripts dynamically resolve the destination address in this order:
-> 1. `ESP_HOST` / `ESP_IP` environment variables
-> 2. `upload_port` in `platformio.ini` (or `--upload-port` CLI flag)
-> 3. `hostname` read from local `config.json` (if present)
-> 4. Default fallback: `esp32-service-uptime-monitor.local`
-
-#### Web UI Asset Packaging & Upload
-
-Web UI assets (HTML, JS, CSS, icons) reside in the storage filesystem (`/web`). You can build, minify, and upload them over the network without taking out the SD card or using serial:
-
-```bash
-# Package, minify in-memory, and upload directly to device storage
-pio run --target uploadweb
-
-# Upload to a custom IP or hostname
-ESP_IP=192.168.0.118 pio run --target uploadweb
-# or:
-ESP_HOST=my-device.local pio run --target uploadweb
-
-# Create the minified production archive locally without uploading (web.zip)
-pio run --target packweb
-```
+> **Web Flasher (ESP Web Tools):** Pre-merged `dist/<env>.bin` images and `dist/manifest.json` can also be generated via `pio run -t dist` for one-click browser flashing via [ESP Web Tools](https://esphome.github.io/esp-web-tools/).
 
 ### Initial Setup
 
@@ -141,73 +67,63 @@ Access the dashboard at `http://<hostname>.local/` (default: `http://esp32-servi
 > [!TIP]
 > **Hostname & mDNS Compatibility:** In accordance with RFC 1123, device hostnames only allow lowercase ASCII letters (`a-z`), digits (`0-9`), and hyphens (`-`). Any spaces, dots, or underscores entered via the web interface are automatically sanitized to hyphens to ensure seamless mDNS resolution across all operating systems, including Windows, macOS, iOS, Android, and Linux.
 
-- **Main Dashboard (`/`)**: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature).
+- **Main Dashboard (`/`)**: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature) and device log terminal.
 - **Configuration Page (`/config`)**: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.
+- **Interactive API Documentation (`/api/docs` or `/swagger`)**: On-device Swagger UI backed by `/api/openapi.yaml` (also deployable statically to GitHub Pages from [`docs/api/`](docs/api/index.html)).
 - **File Manager (`/fileManager`)**: Browse directories, upload files, download files, delete items, and create folders.
 
 ### Configuration Protection Toggle
 
-Press the hardware Boot button (GPIO 0) at any time to toggle configuration access:
+Press the hardware **BOOT** button at any time to toggle configuration access:
 - **Enabled**: Settings button visible in the web header; `/config` and management endpoints unlocked.
-- **Disabled**: Configuration protected; sensitive endpoints return 403 Forbidden.
+- **Disabled**: Configuration protected; sensitive endpoints return `403 Forbidden`.
 
-## API Endpoints
+## API Overview
 
-### System & Health
+Full interactive request/response schemas and live testing are available in the Swagger UI at `http://<device-address>/api/docs` and in [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
+
+### System & Monitoring
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/health` | Health check (`{"status":"UP"}`) |
-| `GET` | `/api/sysinfo` | System stats (heap, temperature, uptime, version, RSSI) |
+| `GET` | `/api/sysinfo` | Basic system stats (heap, PSRAM, temperature, uptime, version, RSSI) |
+| `GET` | `/api/sysinfo/details` | Detailed device, memory, storage, network, monitoring, and firmware diagnostics |
 | `GET` | `/api/summary` | Monitoring summary (total, online, offline counts) |
-| `WS` | `/ws` | WebSocket connection for real-time state and log stream |
+| `GET` | `/api/monitoredentities` | List all monitored entities |
+| `GET` | `/api/monitoredentity/{name}` | Retrieve details for a specific entity |
+| `POST` | `/api/monitoredentity` | Add a new monitored entity |
+| `PUT` | `/api/monitoredentity/{name}` | Update an existing entity |
+| `DELETE` | `/api/monitoredentity/{name}` | Delete an entity |
+| `WS` | `/ws` | WebSocket connection for real-time state updates and live log stream |
 
-### Configuration
+### Configuration & Updates
+
+*(Configuration endpoints require BOOT button unlock or AP mode; otherwise they return `403 Forbidden`.)*
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/config` | Retrieve current configuration |
 | `POST` | `/api/config` | Update configuration parameters |
 | `GET` | `/api/config/backup` | Download complete configuration and entity backup JSON |
-| `POST` | `/api/config/restore` | Restore configuration and entities from backup JSON |
+| `POST` | `/api/config/restore` | Restore configuration and entities from backup JSON (`multipart/form-data`) |
 | `POST` | `/api/config/factoryReset` | Reset settings to factory defaults |
-| `POST` | `/api/config/test-led` | Preview RGB LED brightness (cyan pulse for 3 seconds) |
-| `GET` | `/api/wifiscan` | Scan available Wi-Fi networks (AP mode only) |
-| `POST` | `/api/testDiscord` | Send a test notification to the configured Discord webhook |
-
-### Entity Management
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/monitoredentities` | List all monitored entities |
-| `GET` | `/api/monitoredentity/{name}` | Retrieve details for a specific entity |
-| `POST` | `/api/monitoredentity` | Add a new monitored entity |
-| `PUT` | `/api/monitoredentity/{name}` | Update an existing entity |
-| `DELETE` | `/api/monitoredentity/{name}` | Delete an entity |
-
-### Updates & Storage
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/update` | Firmware binary upload handled by ElegantOTA |
+| `POST` | `/api/config/test-led` | Preview RGB LED brightness (cyan pulse) |
+| `GET` | `/api/wifiscan` | Trigger/poll non-blocking Wi-Fi network scan |
+| `POST` | `/api/testDiscord` | Send a test notification to a Discord webhook URL |
 | `POST` | `/api/web/upload-archive` | Upload and unpack `web.zip` archive into `/web` |
-| `GET` | `/fileManager` | File Manager HTML interface |
-| `GET` | `/list` | List files and directories in storage |
-| `POST` | `/upload` | Upload a file to storage |
-| `GET` | `/download` | Download a file from storage |
-| `DELETE` | `/delete` | Delete a file or directory |
-| `POST` | `/mkdir` | Create a new directory |
+| `POST` | `/update` | Firmware binary upload handled by ElegantOTA |
 
 ## Status Indicators
 
-### RGB LED (GPIO 48)
+### RGB LED (`HAS_RGB_LED`)
 - **Off**: All services online (steady state)
 - **Pulsing Burgundy / Magenta**: One or more services are offline
 - **Pulsing Amber**: Access Point (configuration) mode active
 - **Pulsing Red**: System error (storage or critical fault)
 - **Cyan**: LED brightness test active
 
-### Status LED (GPIO 2, CAM board only)
+### Status LED (`HAS_STATUS_LED`)
 - **Blink**: Active network check cycle executing
 
 ## Configuration Files
@@ -225,7 +141,7 @@ The device stores its persistent state in JSON format in the root of the filesys
   "ledBrightness": 50,
   "discordWebhookURL": "https://discord.com/api/webhooks/...",
   "hostname": "esp32-service-uptime-monitor",
-  "logLevel": "DEBUG"
+  "logLevel": 8
 }
 ```
 
@@ -244,21 +160,9 @@ The device stores its persistent state in JSON format in the root of the filesys
 ]
 ```
 
-## Testing & Quality Assurance
+## Development & Contributing
 
-```bash
-# Run native C++ unit tests (Unity framework)
-pio test -e native
-
-# Run Web UI frontend unit tests (Vitest)
-npm --prefix web test
-
-# Run static analysis
-pio check
-
-# Clean build artifacts
-pio run --target clean
-```
+For multi-board builds, OTA targets, Web UI asset packing (`packweb` / `uploadweb`), OpenAPI doc generation flags (`--strict`, `--include-internal`), unit testing (`pio test -e native`, Vitest), and contribution guidelines, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## License
 

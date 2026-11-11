@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32 Service Uptime Monitor — API Documentation</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  <style>
+    html {
+      box-sizing: border-box;
+      overflow-y: scroll;
+    }
+    *, *:before, *:after {
+      box-sizing: inherit;
+    }
+    body {
+      margin: 0;
+      background: #fafafa;
+    }
+    .swagger-ui .topbar .download-url-wrapper {
+      display: none;
+    }
+    .swagger-ui .servers input[type="text"] {
+      min-width: 300px;
+    }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js" crossorigin></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: './openapi.yaml',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: 'StandaloneLayout',
+        responseInterceptor: (res) => {
+          if (
+            res.url &&
+            res.url.endsWith('openapi.yaml') &&
+            window.location.protocol === 'http:' &&
+            !['localhost', '127.0.0.1'].includes(window.location.hostname)
+          ) {
+            res.text = res.text.replace(
+              'default: esp32-service-uptime-monitor.local',
+              `default: ${window.location.host}`
+            );
+          }
+          return res;
+        }
+      });
+    };
+  </script>
+</body>
+</html>
