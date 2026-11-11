@@ -7,8 +7,11 @@
 
 #include <Ticker.h>
 #include "driver/temperature_sensor.h"
+#ifndef UNIT_TEST
+#include "soc/soc_caps.h"
+#endif
 
-#if defined(TEMPERATURE_SENSOR_CLK_SRC_DEFAULT) || defined(UNIT_TEST)
+#if (defined(SOC_TEMP_SENSOR_SUPPORTED) && SOC_TEMP_SENSOR_SUPPORTED) || defined(UNIT_TEST)
 #define HAS_TEMPERATURE_SENSOR 1
 #endif
 

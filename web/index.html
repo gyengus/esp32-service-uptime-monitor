@@ -186,6 +186,240 @@
         </div>
     </div>
 
+    <div class="modal fade" id="sysinfoModal" tabindex="-1" aria-labelledby="sysinfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title d-flex align-items-center gap-2" id="sysinfoModalLabel">
+                        <span class="mdi mdi-chip text-primary"></span>
+                        <span>System Metrics</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="sysinfoLoading" class="text-center py-4 d-none">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></div>
+                        <span class="text-muted">Loading system metrics...</span>
+                    </div>
+                    <div id="sysinfoError" class="alert alert-danger py-2 small d-none" role="alert"></div>
+
+                    <div class="row g-3" id="sysinfoContent">
+                        <!-- Device & CPU -->
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100 sysinfo-card">
+                                <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
+                                    <span class="mdi mdi-chip text-primary"></span>
+                                    <span>Device &amp; CPU</span>
+                                </div>
+                                <div class="card-body py-2 px-3">
+                                    <dl class="row mb-0 sysinfo-dl small">
+                                        <dt class="col-5 text-muted">Board</dt>
+                                        <dd class="col-7 text-end fw-medium" id="sysBoard">--</dd>
+                                        <dt class="col-5 text-muted">Chip</dt>
+                                        <dd class="col-7 text-end" id="sysChip">--</dd>
+                                        <dt class="col-5 text-muted">CPU</dt>
+                                        <dd class="col-7 text-end" id="sysCpu">--</dd>
+                                        <dt class="col-5 text-muted">CPU Temp</dt>
+                                        <dd class="col-7 text-end" id="sysTemp">--</dd>
+                                        <dt class="col-5 text-muted">Reset Reason</dt>
+                                        <dd class="col-7 text-end"><span class="badge bg-secondary-subtle text-secondary-emphasis" id="sysResetReason">--</span></dd>
+                                        <dt class="col-5 text-muted">eFuse MAC</dt>
+                                        <dd class="col-7 text-end font-monospace" id="sysEfuseMac">--</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Memory & Flash -->
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100 sysinfo-card">
+                                <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
+                                    <span class="mdi mdi-memory text-success"></span>
+                                    <span>Memory &amp; Flash</span>
+                                </div>
+                                <div class="card-body py-2 px-3 small">
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">Internal Heap</span>
+                                            <span id="sysHeapText" class="fw-medium">--</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div id="sysHeapBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between text-muted mt-1 sysinfo-sub">
+                                            <span>Min Free: <strong id="sysMinFreeHeap" class="text-body">--</strong></span>
+                                            <span>Max Alloc: <strong id="sysMaxAllocHeap" class="text-body">--</strong></span>
+                                        </div>
+                                        <div class="text-muted sysinfo-sub">
+                                            <span>Max Free Block: <strong id="sysMaxFreeBlock" class="text-body">--</strong></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2 pt-1 border-top" id="sysPsramRow">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">PSRAM</span>
+                                            <span id="sysPsramText" class="fw-medium">--</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div id="sysPsramBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between text-muted mt-1 sysinfo-sub">
+                                            <span>Min Free: <strong id="sysMinFreePsram" class="text-body">--</strong></span>
+                                            <span>Max Alloc: <strong id="sysMaxAllocPsram" class="text-body">--</strong></span>
+                                        </div>
+                                    </div>
+
+                                    <dl class="row mb-0 pt-1 border-top sysinfo-dl">
+                                        <dt class="col-4 text-muted">Flash</dt>
+                                        <dd class="col-8 text-end" id="sysFlash">--</dd>
+                                        <dt class="col-4 text-muted">App / OTA</dt>
+                                        <dd class="col-8 text-end" id="sysSketch">--</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Storage -->
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100 sysinfo-card">
+                                <div class="card-header py-2 fw-semibold small d-flex align-items-center justify-content-between">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="mdi mdi-harddisk text-warning" id="sysStorageIcon"></span>
+                                        <span>Storage</span>
+                                    </span>
+                                    <span class="badge bg-secondary" id="sysStorageStatus">--</span>
+                                </div>
+                                <div class="card-body py-2 px-3 small">
+                                    <dl class="row mb-2 sysinfo-dl">
+                                        <dt class="col-5 text-muted">Backend</dt>
+                                        <dd class="col-7 text-end fw-medium" id="sysStorageBackend">--</dd>
+                                        <dt class="col-5 text-muted d-none sysinfo-sd-field">Card Type / Size</dt>
+                                        <dd class="col-7 text-end d-none sysinfo-sd-field" id="sysSdCardInfo">--</dd>
+                                    </dl>
+                                    <div id="sysStorageUsageRow">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">Usage</span>
+                                            <span id="sysStorageText" class="fw-medium">--</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div id="sysStorageBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+                                        </div>
+                                        <div class="text-muted mt-1 sysinfo-sub text-end">
+                                            Free: <strong id="sysStorageFree" class="text-body">--</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Network & Wi-Fi -->
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100 sysinfo-card">
+                                <div class="card-header py-2 fw-semibold small d-flex align-items-center justify-content-between">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="mdi mdi-wifi text-info"></span>
+                                        <span>Network &amp; Wi-Fi</span>
+                                    </span>
+                                    <span class="badge bg-secondary" id="sysNetMode">--</span>
+                                </div>
+                                <div class="card-body py-2 px-3 small">
+                                    <dl class="row mb-0 sysinfo-dl">
+                                        <dt class="col-4 text-muted">SSID / Ch</dt>
+                                        <dd class="col-8 text-end" id="sysNetSsid">--</dd>
+                                        <dt class="col-4 text-muted">BSSID</dt>
+                                        <dd class="col-8 text-end font-monospace" id="sysNetBssid">--</dd>
+                                        <dt class="col-4 text-muted">Signal</dt>
+                                        <dd class="col-8 text-end" id="sysNetRssi">--</dd>
+                                        <dt class="col-5 text-muted">IP Address</dt>
+                                        <dd class="col-7 text-end font-monospace" id="sysNetIp">--</dd>
+                                        <dt class="col-5 text-muted">Gateway / Mask</dt>
+                                        <dd class="col-7 text-end font-monospace" id="sysNetGateway">--</dd>
+                                        <dt class="col-4 text-muted">DNS</dt>
+                                        <dd class="col-8 text-end font-monospace" id="sysNetDns">--</dd>
+                                        <dt class="col-4 text-muted">Wi-Fi MAC</dt>
+                                        <dd class="col-8 text-end font-monospace" id="sysNetMac">--</dd>
+                                        <dt class="col-4 text-muted">Hostname</dt>
+                                        <dd class="col-8 text-end" id="sysNetHostname">--</dd>
+                                        <dt class="col-4 text-muted">WS Clients</dt>
+                                        <dd class="col-8 text-end" id="sysNetWsClients">--</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time & Monitoring -->
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100 sysinfo-card">
+                                <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
+                                    <span class="mdi mdi-clock-outline text-primary"></span>
+                                    <span>Time &amp; Monitoring</span>
+                                </div>
+                                <div class="card-body py-2 px-3 small">
+                                    <dl class="row mb-0 sysinfo-dl">
+                                        <dt class="col-4 text-muted">Local Time</dt>
+                                        <dd class="col-8 text-end font-monospace" id="sysLocalTime">--</dd>
+                                        <dt class="col-4 text-muted">SNTP / TZ</dt>
+                                        <dd class="col-8 text-end" id="sysSntp">--</dd>
+                                        <dt class="col-4 text-muted">Uptime</dt>
+                                        <dd class="col-8 text-end fw-medium" id="sysModalUptime">--</dd>
+                                        <dt class="col-4 text-muted">Check Interval</dt>
+                                        <dd class="col-8 text-end" id="sysCheckInterval">--</dd>
+                                        <dt class="col-4 text-muted">Last Cycle</dt>
+                                        <dd class="col-8 text-end" id="sysLastCheck">--</dd>
+                                        <dt class="col-4 text-muted">Free Stack</dt>
+                                        <dd class="col-8 text-end" id="sysMonStack">--</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Firmware & Build -->
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100 sysinfo-card">
+                                <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
+                                    <span class="mdi mdi-package-variant-closed text-secondary"></span>
+                                    <span>Firmware &amp; Build</span>
+                                </div>
+                                <div class="card-body py-2 px-3 small">
+                                    <dl class="row mb-0 sysinfo-dl">
+                                        <dt class="col-5 text-muted">Firmware</dt>
+                                        <dd class="col-7 text-end fw-medium" id="sysFwVersion">--</dd>
+                                        <dt class="col-5 text-muted">Web UI</dt>
+                                        <dd class="col-7 text-end" id="sysUiVersion">--</dd>
+                                        <dt class="col-5 text-muted">Commit</dt>
+                                        <dd class="col-7 text-end font-monospace" id="sysCommit">--</dd>
+                                        <dt class="col-5 text-muted">Build Date</dt>
+                                        <dd class="col-7 text-end" id="sysBuildDate">--</dd>
+                                        <dt class="col-5 text-muted">OTA Partition</dt>
+                                        <dd class="col-7 text-end font-monospace" id="sysOtaPartition">--</dd>
+                                        <dt class="col-5 text-muted">SDK / Core</dt>
+                                        <dd class="col-7 text-end" id="sysSdk">--</dd>
+                                        <dt class="col-5 text-muted">Config Mode</dt>
+                                        <dd class="col-7 text-end" id="sysConfigMode">--</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <small class="text-muted" id="sysinfoLastUpdated">Updated: --</small>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" id="btnRefreshSysinfo">
+                            <span class="mdi mdi-refresh" id="sysinfoRefreshIcon"></span>
+                            <span>Refresh</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btnCopySysinfo">
+                            <span class="mdi mdi-content-copy"></span>
+                            <span>Copy JSON</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="terminalDrawer" class="terminal-drawer">
         <div class="terminal-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom border-secondary bg-dark">
             <div class="d-flex align-items-center gap-2">
@@ -225,7 +459,7 @@
 
     <footer class="footer mt-auto py-3 bg-dark text-white border-top border-secondary">
         <div class="container-fluid d-flex align-items-center justify-content-center justify-content-md-between">
-            <div class="small text-secondary d-flex gap-2 gap-sm-3 align-items-center">
+            <div class="small text-secondary d-flex gap-2 gap-sm-3 align-items-center flex-wrap">
                 <span>
                     <span class="mdi mdi-clock-outline me-1"></span><span id="uptimeVal">--</span>
                 </span>
@@ -238,6 +472,9 @@
                 <span id="tempContainer" style="display: none;">
                     <span class="mdi mdi-thermometer me-1"></span><span id="tempVal">--</span>
                 </span>
+                <button type="button" id="btnSysinfoModal" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center py-0 px-1" title="System Metrics" data-bs-toggle="modal" data-bs-target="#sysinfoModal">
+                    <span class="mdi mdi-information-outline"></span>
+                </button>
             </div>
 
             <div class="d-none d-md-flex align-items-center justify-content-center">

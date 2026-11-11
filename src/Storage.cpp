@@ -14,6 +14,23 @@ bool Storage::mount() { return true; }
 bool Storage::unmount() { return true; }
 bool Storage::isAvailable() { return true; }
 
+StorageStats Storage::getStats() {
+    uint64_t used = 0;
+    for (const auto& kv : files) {
+        used += kv.second.size();
+    }
+    const uint64_t total = 1048576ULL;
+    return {
+        "MockFS",
+        true,
+        "",
+        0,
+        total,
+        used,
+        used < total ? (total - used) : 0
+    };
+}
+
 bool Storage::fileExists(const String& path) {
     return files.find(path) != files.end();
 }
@@ -59,6 +76,7 @@ bool Storage::deleteFile(const String& path) {
 #include <Arduino.h>
 
 #include "Config.h"
+#include "globals.h"
 
 Storage& Storage::getInstance() {
     static Storage instance;
@@ -136,6 +154,47 @@ bool Storage::isAvailable() {
 #else
     return SD_MMC.cardType() != CARD_NONE;
 #endif
+}
+
+StorageStats Storage::getStats() {
+    StorageStats stats{};
+#ifdef USE_LITTLEFS
+    stats.backend = "LittleFS";
+    stats.cardType = "";
+    stats.cardSizeBytes = 0;
+    if (isOtaUpdating) {
+        stats.available = false;
+        return stats;
+    }
+    stats.totalBytes = LittleFS.totalBytes();
+    stats.usedBytes = LittleFS.usedBytes();
+    stats.available = stats.totalBytes > 0;
+    stats.freeBytes = (stats.totalBytes >= stats.usedBytes) ? (stats.totalBytes - stats.usedBytes) : 0;
+#else
+    stats.backend = "SD_MMC";
+    if (isOtaUpdating) {
+        stats.available = false;
+        return stats;
+    }
+    uint8_t cardType = SD_MMC.cardType();
+    if (cardType == CARD_NONE) {
+        stats.available = false;
+        stats.cardType = "NONE";
+        return stats;
+    }
+    stats.available = true;
+    switch (cardType) {
+        case CARD_MMC: stats.cardType = "MMC"; break;
+        case CARD_SD: stats.cardType = "SDSC"; break;
+        case CARD_SDHC: stats.cardType = "SDHC"; break;
+        default: stats.cardType = "UNKNOWN"; break;
+    }
+    stats.cardSizeBytes = SD_MMC.cardSize();
+    stats.totalBytes = SD_MMC.totalBytes();
+    stats.usedBytes = SD_MMC.usedBytes();
+    stats.freeBytes = (stats.totalBytes >= stats.usedBytes) ? (stats.totalBytes - stats.usedBytes) : 0;
+#endif
+    return stats;
 }
 
 bool Storage::fileExists(const String &path) {

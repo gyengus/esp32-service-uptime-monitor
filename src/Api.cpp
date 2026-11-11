@@ -16,6 +16,7 @@
 #include "WsService.h"
 #include "LedService.h"
 #include "PSRAMAllocator.h"
+#include "SystemInfo.h"
 #include "WebArchiveExtractor.h"
 
 static PSRAMAllocator psramAllocator;
@@ -521,22 +522,18 @@ void Api::registerSystemInformationEndpoints() {
         request->send(200, "application/json", "{\"status\":\"UP\"}");
     });
 
+    server.on("/api/sysinfo/details", HTTP_GET, [](AsyncWebServerRequest *request) {
+        AsyncJsonResponse *response = new AsyncJsonResponse(false);
+        JsonObject doc = response->getRoot().to<JsonObject>();
+        SystemInfo::fillDetailedSysinfo(doc);
+        response->setLength();
+        request->send(response);
+    });
+
     server.on("/api/sysinfo", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncJsonResponse *response = new AsyncJsonResponse(false);
         JsonObject doc = response->getRoot().to<JsonObject>();
-        float tsens_out = 0.0;
-#ifdef HAS_TEMPERATURE_SENSOR
-        if (temp_sensor != NULL && temperature_sensor_get_celsius(temp_sensor, &tsens_out) == ESP_OK) {
-            doc["temperature"] = tsens_out;
-        }
-#endif
-        doc["freeHeap"] = ESP.getFreeHeap();
-        doc["rssi"] = WiFi.RSSI();
-        doc["uptime"] = millis() / 1000;
-        doc["version"] = FIRMWARE_VERSION;
-        doc["buildDate"] = BUILD_TIMESTAMP;
-        doc["commit"] = COMMIT_HASH;
-        doc["configEnabled"] = isConfigFunctionsEnabled;
+        SystemInfo::fillBasicSysinfo(doc);
         response->setLength();
         request->send(response);
     });

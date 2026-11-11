@@ -18,6 +18,7 @@ void setUp(void) {
     storage.clear();
     HTTPClient::resetMock();
     When(Method(ArduinoFake(), delay)).AlwaysReturn();
+    When(Method(ArduinoFake(), millis)).AlwaysReturn(1000);
     auto entities = monitoredEntityRepository.getEntitiesSnapshot();
     for (const auto& e : entities) {
         monitoredEntityRepository.removeEntity(e.getName());

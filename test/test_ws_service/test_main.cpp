@@ -135,8 +135,13 @@ void test_ws_broadcast_sysinfo(void) {
     JsonDocument doc;
     deserializeJson(doc, client->sentMessages.back());
     TEST_ASSERT_EQUAL_STRING("sysinfo", doc["type"]);
-    TEST_ASSERT_TRUE(doc["data"].containsKey("uptime"));
-    TEST_ASSERT_TRUE(doc["data"].containsKey("freeHeap"));
+    TEST_ASSERT_TRUE(doc["data"]["uptime"].is<unsigned long>());
+    TEST_ASSERT_TRUE(doc["data"]["freeHeap"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["data"]["maxFreeBlock"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["data"]["heapSize"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["data"]["wsClients"].is<size_t>());
+    TEST_ASSERT_EQUAL_UINT(1, doc["data"]["wsClients"].as<size_t>());
+    TEST_ASSERT_TRUE(doc["data"]["stackHighWaterBytes"].is<uint32_t>());
     TEST_ASSERT_TRUE(doc["data"]["configEnabled"].as<bool>());
 }
 

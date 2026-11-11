@@ -459,4 +459,199 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: 'set_log_level', level: 'ERROR' }));
     });
   });
+
+  describe('System Metrics Modal', () => {
+    it('places the modal trigger button at the end of the left footer metrics', () => {
+      const $footerLeft = $('footer .container-fluid > div').first();
+      const $btn = $footerLeft.find('#btnSysinfoModal');
+      expect($btn.length).toBe(1);
+      expect($btn.attr('data-bs-target')).toBe('#sysinfoModal');
+    });
+
+    it('formats byte values accurately', () => {
+      expect(window.formatBytes(512)).toBe('512 B');
+      expect(window.formatBytes(2048)).toBe('2.0 KB');
+      expect(window.formatBytes(2 * 1024 * 1024)).toBe('2.00 MB');
+      expect(window.formatBytes(4 * 1024 * 1024 * 1024)).toBe('4.00 GB');
+    });
+
+    it('loads and renders detailed system metrics including maxFreeBlock, SD storage, and UI version mismatch', () => {
+      const sampleDetails = {
+        uptime: 7200,
+        rssi: -52,
+        temperature: 43.2,
+        localTime: '2026-11-11 11:30:00',
+        timeSynced: true,
+        configEnabled: true,
+        device: {
+          board: 'ESP32-S3-CAM',
+          chipModel: 'ESP32-S3',
+          chipRevision: 2,
+          chipCores: 2,
+          cpuFreqMHz: 240,
+          resetReason: 'POWERON',
+          efuseMac: 'AA:BB:CC:DD:EE:FF',
+          hasTempSensor: true
+        },
+        memory: {
+          heapSize: 400000,
+          freeHeap: 200000,
+          minFreeHeap: 150000,
+          maxAllocHeap: 120000,
+          maxFreeBlock: 110592,
+          psramSize: 8388608,
+          freePsram: 7340032,
+          minFreePsram: 7000000,
+          maxAllocPsram: 4194304,
+          flashSize: 16777216,
+          flashSpeed: 80000000,
+          sketchSize: 1258291,
+          freeSketchSpace: 2097152
+        },
+        storage: {
+          backend: 'SD_MMC',
+          available: true,
+          cardType: 'SDHC',
+          cardSizeBytes: 15931539456,
+          totalBytes: 15900000000,
+          usedBytes: 536870912,
+          freeBytes: 15363129088
+        },
+        network: {
+          mode: 'STA',
+          connected: true,
+          ssid: 'HomeLab',
+          bssid: '11:22:33:44:55:66',
+          channel: 6,
+          rssi: -52,
+          ip: '192.168.1.50',
+          subnetMask: '255.255.255.0',
+          gateway: '192.168.1.1',
+          dns: '192.168.1.1',
+          mac: 'AA:BB:CC:DD:EE:FF',
+          hostname: 'uptime-mon',
+          wsClients: 2
+        },
+        time: {
+          localTime: '2026-11-11 11:30:00',
+          timeSynced: true,
+          sntpServer: 'pool.ntp.org',
+          timezoneOffset: 1,
+          uptime: 7200
+        },
+        monitoring: {
+          checkInterval: 60,
+          lastCheckDurationMs: 420,
+          lastCheckTime: '2026-11-11 11:29:50',
+          stackHighWaterBytes: 3072
+        },
+        firmware: {
+          version: '1.0.0',
+          commit: 'abc1234',
+          buildDate: 'Nov 11 2026',
+          uiVersion: '0.9.9-oldhash',
+          expectedUiVersion: '1.0.0-abc1234',
+          otaPartition: 'app0',
+          sdkVersion: 'v5.1',
+          coreVersion: '3.0.0',
+          configEnabled: true
+        }
+      };
+
+      $.getJSON = vi.fn().mockImplementation((url, cb) => {
+        if (url === '/api/sysinfo/details') {
+          cb(sampleDetails);
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn().mockImplementation((a) => { a(); return this; }) };
+      });
+
+      window.loadDetailedSysinfo();
+
+      expect($('#sysBoard').text()).toBe('ESP32-S3-CAM');
+      expect($('#sysChip').text()).toBe('ESP32-S3 (rev 2)');
+      expect($('#sysResetReason').text()).toBe('POWERON');
+      expect($('#sysMaxFreeBlock').text()).toBe('108.0 KB');
+      expect($('#sysStorageBackend').text()).toBe('SD_MMC');
+      expect($('#sysStorageStatus').text()).toBe('Mounted');
+      expect($('#sysSdCardInfo').text()).toContain('SDHC');
+      expect($('#sysNetIp').text()).toBe('192.168.1.50');
+      expect($('#sysNetHostname a').attr('href')).toBe('http://uptime-mon.local');
+      expect($('#sysUiVersion').text()).toContain('0.9.9-oldhash');
+      expect($('#sysUiVersion').text()).toContain('Mismatch');
+      expect($('#sysOtaPartition').text()).toBe('app0');
+    });
+
+    it('updates maxFreeBlock and live modal fields on incoming WS sysinfo message', () => {
+      window.handleWsMessage({
+        type: 'sysinfo',
+        data: {
+          uptime: 3600,
+          heapSize: 400000,
+          freeHeap: 250000,
+          minFreeHeap: 180000,
+          maxAllocHeap: 140000,
+          maxFreeBlock: 131072,
+          psramSize: 8388608,
+          freePsram: 7340032,
+          minFreePsram: 7100000,
+          maxAllocPsram: 4194304,
+          rssi: -68,
+          wsClients: 3,
+          lastCheckDurationMs: 315,
+          lastCheckTime: '2026-11-11 11:59:50',
+          stackHighWaterBytes: 3584,
+          localTime: '2026-11-11 12:00:00',
+          timeSynced: true,
+          configEnabled: false
+        }
+      });
+
+      expect($('#sysModalUptime').text()).toBe('1h 0m');
+      expect($('#sysMaxFreeBlock').text()).toBe('128.0 KB');
+      expect($('#sysMinFreeHeap').text()).toBe('175.8 KB');
+      expect($('#sysNetWsClients').text()).toBe('3');
+      expect($('#sysLastCheck').text()).toBe('315 ms @ 11:59:50');
+      expect($('#sysMonStack').text()).toBe('3.5 KB');
+      expect($('#sysLocalTime').text()).toContain('2026-11-11 12:00:00');
+      expect($('#sysConfigMode').text()).toBe('Locked');
+    });
+
+    it('copies diagnostics JSON to clipboard when Copy JSON button is clicked', () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      window.set_lastDetailedSysinfo({ device: { board: 'ESP32-S3' } });
+      $('#btnCopySysinfo').click();
+
+      expect(writeTextMock).toHaveBeenCalledTimes(1);
+      expect(writeTextMock.mock.calls[0][0]).toContain('"board": "ESP32-S3"');
+    });
+
+    it('changes progress bar colors from green to yellow and red based on usage thresholds', () => {
+      // < 70% -> bg-success
+      window.handleWsMessage({
+        type: 'sysinfo',
+        data: { heapSize: 1000, freeHeap: 500, psramSize: 1000, freePsram: 500 }
+      });
+      expect($('#sysHeapBar').hasClass('bg-success')).toBe(true);
+      expect($('#sysPsramBar').hasClass('bg-success')).toBe(true);
+      expect($('#sysPsramBar').hasClass('bg-info')).toBe(false);
+
+      // 75% used -> bg-warning
+      window.handleWsMessage({
+        type: 'sysinfo',
+        data: { heapSize: 1000, freeHeap: 250, psramSize: 1000, freePsram: 250 }
+      });
+      expect($('#sysHeapBar').hasClass('bg-warning')).toBe(true);
+      expect($('#sysPsramBar').hasClass('bg-warning')).toBe(true);
+
+      // 90% used -> bg-danger
+      window.handleWsMessage({
+        type: 'sysinfo',
+        data: { heapSize: 1000, freeHeap: 100, psramSize: 1000, freePsram: 100 }
+      });
+      expect($('#sysHeapBar').hasClass('bg-danger')).toBe(true);
+      expect($('#sysPsramBar').hasClass('bg-danger')).toBe(true);
+    });
+  });
 });

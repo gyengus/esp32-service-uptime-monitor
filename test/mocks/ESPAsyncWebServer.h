@@ -306,7 +306,7 @@ public:
                     }
                 } catch (...) {}
             } else {
-                if (route.uri.equals(path)) {
+                if (route.uri.equals(path) || path.startsWith(route.uri + "/")) {
                     matched = true;
                 }
             }

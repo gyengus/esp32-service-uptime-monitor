@@ -74,12 +74,42 @@ void test_api_sysinfo(void) {
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, req.lastBody);
     TEST_ASSERT_FALSE(err);
-    TEST_ASSERT_TRUE(doc.containsKey("temperature"));
-    TEST_ASSERT_TRUE(doc.containsKey("freeHeap"));
-    TEST_ASSERT_TRUE(doc.containsKey("uptime"));
-    TEST_ASSERT_TRUE(doc.containsKey("version"));
-    TEST_ASSERT_TRUE(doc.containsKey("configEnabled"));
+    TEST_ASSERT_TRUE(doc["temperature"].is<float>());
+    TEST_ASSERT_TRUE(doc["freeHeap"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["maxFreeBlock"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["heapSize"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["minFreeHeap"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["maxAllocHeap"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["uptime"].is<unsigned long>());
+    TEST_ASSERT_TRUE(doc["version"].is<const char*>());
+    TEST_ASSERT_TRUE(doc["configEnabled"].is<bool>());
     TEST_ASSERT_TRUE(doc["configEnabled"].as<bool>());
+}
+
+void test_api_sysinfo_details(void) {
+    storage.writeFile(String(WEB_UI_PATH) + "/.version", "1.0.0-abc123\n");
+
+    AsyncWebServerRequest req;
+    bool handled = testServer->dispatch("/api/sysinfo/details", HTTP_GET, &req);
+    TEST_ASSERT_TRUE(handled);
+    TEST_ASSERT_EQUAL_INT(200, req.lastCode);
+
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, req.lastBody);
+    TEST_ASSERT_FALSE(err);
+
+    TEST_ASSERT_TRUE(doc["device"]["chipModel"].is<const char*>());
+    TEST_ASSERT_TRUE(doc["device"]["resetReason"].is<const char*>());
+    TEST_ASSERT_TRUE(doc["memory"]["maxFreeBlock"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["memory"]["flashSize"].is<uint32_t>());
+    TEST_ASSERT_TRUE(doc["storage"]["backend"].is<const char*>());
+    TEST_ASSERT_TRUE(doc["storage"]["available"].as<bool>());
+    TEST_ASSERT_TRUE(doc["network"]["ip"].is<const char*>());
+    TEST_ASSERT_TRUE(doc["network"]["mac"].is<const char*>());
+    TEST_ASSERT_TRUE(doc["time"]["uptime"].is<unsigned long>());
+    TEST_ASSERT_TRUE(doc["monitoring"]["checkInterval"].is<uint8_t>());
+    TEST_ASSERT_EQUAL_STRING("1.0.0-abc123", doc["firmware"]["uiVersion"].as<const char*>());
+    TEST_ASSERT_TRUE(doc["firmware"]["otaPartition"].is<const char*>());
 }
 
 void test_api_config_get(void) {
@@ -338,6 +368,7 @@ int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_api_health);
     RUN_TEST(test_api_sysinfo);
+    RUN_TEST(test_api_sysinfo_details);
     RUN_TEST(test_api_config_get);
     RUN_TEST(test_api_config_post_success);
     RUN_TEST(test_api_config_post_forbidden);

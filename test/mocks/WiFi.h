@@ -88,6 +88,13 @@ public:
 
     MockIPAddress localIP() { return mockIP; }
     MockIPAddress softAPIP() { return MockIPAddress(192, 168, 4, 1); }
+    MockIPAddress subnetMask() { return MockIPAddress(255, 255, 255, 0); }
+    MockIPAddress gatewayIP() { return MockIPAddress(192, 168, 1, 1); }
+    MockIPAddress dnsIP() { return MockIPAddress(192, 168, 1, 1); }
+    String macAddress() { return "AA:BB:CC:DD:EE:FF"; }
+    String SSID() { return lastSSID.length() ? lastSSID : String("MockWiFi"); }
+    String BSSIDstr() { return "11:22:33:44:55:66"; }
+    int32_t channel() { return 6; }
 
     bool softAP(const char*, const char* = nullptr, int = 1, int = 0, int = 4) {
         mockMode = WIFI_AP;

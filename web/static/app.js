@@ -8,6 +8,9 @@ let terminalOpen = false;
 let terminalAutoScroll = true;
 let terminalLogsBuffer = [];
 const MAX_TERMINAL_LOGS = 300;
+let lastDetailedSysinfo = null;
+let sysinfoRefreshTimer = null;
+const SYSINFO_DETAILS_REFRESH_MS = 30000;
 
 $(document).ready(function() {
     initWebSocket();
@@ -459,6 +462,311 @@ function updateSysinfoUI(data) {
             $('#configButton').hide();
         }
     }
+
+    updateLiveSysinfoModalFields(data);
+}
+
+function formatBytes(bytes) {
+    if (bytes === undefined || bytes === null || isNaN(bytes) || bytes < 0) return '--';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function getUsageBarClass(percent) {
+    if (percent >= 85) return 'bg-danger';
+    if (percent >= 70) return 'bg-warning';
+    return 'bg-success';
+}
+
+function setProgressBar($bar, used, total) {
+    if (!total || total <= 0) {
+        $bar.css('width', '0%').removeClass('bg-success bg-warning bg-danger bg-info').addClass('bg-secondary');
+        return;
+    }
+    const pct = Math.min(100, Math.max(0, Math.round((used / total) * 100)));
+    $bar.css('width', `${pct}%`)
+        .removeClass('bg-success bg-warning bg-danger bg-secondary bg-info')
+        .addClass(getUsageBarClass(pct));
+}
+
+function formatRssiHtml(rssi) {
+    if (rssi === undefined || rssi === null || isNaN(rssi)) return '--';
+    let label = 'Weak';
+    let cls = 'bg-danger';
+    if (rssi > -55) {
+        label = 'Excellent';
+        cls = 'bg-success';
+    } else if (rssi > -70) {
+        label = 'Good';
+        cls = 'bg-success';
+    } else if (rssi > -80) {
+        label = 'Fair';
+        cls = 'bg-warning text-dark';
+    }
+    return `${rssi} dBm <span class="badge ${cls} ms-1">${label}</span>`;
+}
+
+function updateLiveSysinfoModalFields(data) {
+    if (!data) return;
+
+    if (data.uptime !== undefined) {
+        $('#sysModalUptime').text(formatUptime(data.uptime));
+    }
+
+    if (data.temperature !== undefined && data.temperature !== null) {
+        $('#sysTemp').html(`${data.temperature.toFixed(1)} °C <span class="text-muted">(internal)</span>`);
+    } else if (lastDetailedSysinfo && lastDetailedSysinfo.device && !lastDetailedSysinfo.device.hasTempSensor) {
+        $('#sysTemp').text('N/A');
+    }
+
+    if (data.heapSize !== undefined && data.freeHeap !== undefined) {
+        const usedHeap = Math.max(0, data.heapSize - data.freeHeap);
+        $('#sysHeapText').text(`${formatBytes(usedHeap)} / ${formatBytes(data.heapSize)}`);
+        setProgressBar($('#sysHeapBar'), usedHeap, data.heapSize);
+    } else if (data.freeHeap !== undefined) {
+        $('#sysHeapText').text(`${formatBytes(data.freeHeap)} free`);
+    }
+
+    if (data.minFreeHeap !== undefined) {
+        $('#sysMinFreeHeap').text(formatBytes(data.minFreeHeap));
+    }
+    if (data.maxAllocHeap !== undefined) {
+        $('#sysMaxAllocHeap').text(formatBytes(data.maxAllocHeap));
+    }
+    if (data.maxFreeBlock !== undefined) {
+        $('#sysMaxFreeBlock').text(formatBytes(data.maxFreeBlock));
+    }
+
+    if (data.psramSize !== undefined) {
+        if (data.psramSize > 0 && data.freePsram !== undefined) {
+            $('#sysPsramRow').show();
+            const usedPsram = Math.max(0, data.psramSize - data.freePsram);
+            $('#sysPsramText').text(`${formatBytes(usedPsram)} / ${formatBytes(data.psramSize)}`);
+            setProgressBar($('#sysPsramBar'), usedPsram, data.psramSize);
+        } else {
+            $('#sysPsramRow').hide();
+        }
+    }
+    if (data.minFreePsram !== undefined) {
+        $('#sysMinFreePsram').text(formatBytes(data.minFreePsram));
+    }
+    if (data.maxAllocPsram !== undefined) {
+        $('#sysMaxAllocPsram').text(formatBytes(data.maxAllocPsram));
+    }
+
+    if (data.rssi !== undefined) {
+        $('#sysNetRssi').html(formatRssiHtml(data.rssi));
+    }
+    if (data.wsClients !== undefined) {
+        $('#sysNetWsClients').text(String(data.wsClients));
+    }
+    if (data.lastCheckDurationMs !== undefined) {
+        const when = data.lastCheckTime ? ` @ ${data.lastCheckTime.split(' ')[1] || data.lastCheckTime}` : '';
+        $('#sysLastCheck').text(`${data.lastCheckDurationMs} ms${when}`);
+    }
+    if (data.stackHighWaterBytes !== undefined) {
+        $('#sysMonStack').text(data.stackHighWaterBytes ? formatBytes(data.stackHighWaterBytes) : 'N/A');
+    }
+
+    if (data.timeSynced !== undefined || data.localTime !== undefined) {
+        if (data.timeSynced && data.localTime) {
+            $('#sysLocalTime').html(`${data.localTime} <span class="badge bg-success ms-1">Synced</span>`);
+        } else {
+            $('#sysLocalTime').html('<span class="badge bg-warning text-dark">Not synced</span>');
+        }
+    }
+
+    if (data.configEnabled !== undefined) {
+        $('#sysConfigMode').html(data.configEnabled
+            ? '<span class="badge bg-warning text-dark">Unlocked</span>'
+            : '<span class="badge bg-secondary">Locked</span>');
+    }
+
+    if (lastDetailedSysinfo) {
+        ['temperature', 'heapSize', 'freeHeap', 'minFreeHeap', 'maxAllocHeap', 'maxFreeBlock',
+         'psramSize', 'freePsram', 'minFreePsram', 'maxAllocPsram', 'rssi', 'wsClients',
+         'uptime', 'localTime', 'timeSynced', 'lastCheckDurationMs', 'lastCheckTime',
+         'stackHighWaterBytes', 'configEnabled'].forEach(key => {
+            if (data[key] !== undefined) {
+                lastDetailedSysinfo[key] = data[key];
+            }
+        });
+        if (lastDetailedSysinfo.memory) {
+            if (data.freeHeap !== undefined) lastDetailedSysinfo.memory.freeHeap = data.freeHeap;
+            if (data.minFreeHeap !== undefined) lastDetailedSysinfo.memory.minFreeHeap = data.minFreeHeap;
+            if (data.maxAllocHeap !== undefined) lastDetailedSysinfo.memory.maxAllocHeap = data.maxAllocHeap;
+            if (data.maxFreeBlock !== undefined) lastDetailedSysinfo.memory.maxFreeBlock = data.maxFreeBlock;
+            if (data.freePsram !== undefined) lastDetailedSysinfo.memory.freePsram = data.freePsram;
+            if (data.minFreePsram !== undefined) lastDetailedSysinfo.memory.minFreePsram = data.minFreePsram;
+            if (data.maxAllocPsram !== undefined) lastDetailedSysinfo.memory.maxAllocPsram = data.maxAllocPsram;
+        }
+        if (lastDetailedSysinfo.network) {
+            if (data.rssi !== undefined) lastDetailedSysinfo.network.rssi = data.rssi;
+            if (data.wsClients !== undefined) lastDetailedSysinfo.network.wsClients = data.wsClients;
+        }
+        if (lastDetailedSysinfo.monitoring) {
+            if (data.lastCheckDurationMs !== undefined) lastDetailedSysinfo.monitoring.lastCheckDurationMs = data.lastCheckDurationMs;
+            if (data.lastCheckTime !== undefined) lastDetailedSysinfo.monitoring.lastCheckTime = data.lastCheckTime;
+            if (data.stackHighWaterBytes !== undefined) lastDetailedSysinfo.monitoring.stackHighWaterBytes = data.stackHighWaterBytes;
+        }
+        if (lastDetailedSysinfo.time) {
+            if (data.uptime !== undefined) lastDetailedSysinfo.time.uptime = data.uptime;
+            if (data.localTime !== undefined) lastDetailedSysinfo.time.localTime = data.localTime;
+            if (data.timeSynced !== undefined) lastDetailedSysinfo.time.timeSynced = data.timeSynced;
+        }
+    }
+
+    const nowStr = new Date().toLocaleTimeString();
+    $('#sysinfoLastUpdated').text(`Updated: ${nowStr}`);
+}
+
+function renderDetailedSysinfoModal(data) {
+    if (!data) return;
+    lastDetailedSysinfo = data;
+
+    // Device & CPU
+    const dev = data.device || {};
+    $('#sysBoard').text(dev.board || '--');
+    $('#sysChip').text(dev.chipModel ? `${dev.chipModel} (rev ${dev.chipRevision ?? 0})` : '--');
+    $('#sysCpu').text(dev.chipCores ? `${dev.chipCores} core${dev.chipCores > 1 ? 's' : ''} @ ${dev.cpuFreqMHz} MHz` : '--');
+    $('#sysResetReason').text(dev.resetReason || '--');
+    $('#sysEfuseMac').text(dev.efuseMac || '--');
+    if (!dev.hasTempSensor && data.temperature === undefined) {
+        $('#sysTemp').text('N/A');
+    }
+
+    // Memory & Flash
+    const mem = data.memory || {};
+    const heapSize = mem.heapSize ?? data.heapSize;
+    const freeHeap = mem.freeHeap ?? data.freeHeap;
+    if (heapSize !== undefined && freeHeap !== undefined) {
+        const usedHeap = Math.max(0, heapSize - freeHeap);
+        $('#sysHeapText').text(`${formatBytes(usedHeap)} / ${formatBytes(heapSize)}`);
+        setProgressBar($('#sysHeapBar'), usedHeap, heapSize);
+    }
+    if (mem.minFreeHeap !== undefined) $('#sysMinFreeHeap').text(formatBytes(mem.minFreeHeap));
+    if (mem.maxAllocHeap !== undefined) $('#sysMaxAllocHeap').text(formatBytes(mem.maxAllocHeap));
+    if (mem.maxFreeBlock !== undefined) $('#sysMaxFreeBlock').text(formatBytes(mem.maxFreeBlock));
+
+    if (mem.psramSize > 0) {
+        $('#sysPsramRow').show();
+        const usedPsram = Math.max(0, mem.psramSize - (mem.freePsram || 0));
+        $('#sysPsramText').text(`${formatBytes(usedPsram)} / ${formatBytes(mem.psramSize)}`);
+        setProgressBar($('#sysPsramBar'), usedPsram, mem.psramSize);
+        $('#sysMinFreePsram').text(formatBytes(mem.minFreePsram));
+        $('#sysMaxAllocPsram').text(formatBytes(mem.maxAllocPsram));
+    } else {
+        $('#sysPsramRow').hide();
+    }
+    $('#sysFlash').text(mem.flashSize ? `${formatBytes(mem.flashSize)} (${Math.round((mem.flashSpeed || 0) / 1000000)} MHz)` : '--');
+    $('#sysSketch').text(mem.sketchSize ? `${formatBytes(mem.sketchSize)} / ${formatBytes(mem.freeSketchSpace)} free` : '--');
+
+    // Storage
+    const st = data.storage || {};
+    $('#sysStorageBackend').text(st.backend || '--');
+    $('#sysStorageIcon')
+        .removeClass('mdi-sd mdi-harddisk')
+        .addClass(st.backend === 'SD_MMC' ? 'mdi-sd' : 'mdi-harddisk');
+    if (st.available) {
+        $('#sysStorageStatus').text('Mounted').removeClass('bg-secondary bg-danger').addClass('bg-success');
+        $('#sysStorageUsageRow').show();
+        $('#sysStorageText').text(`${formatBytes(st.usedBytes)} / ${formatBytes(st.totalBytes)}`);
+        $('#sysStorageFree').text(formatBytes(st.freeBytes));
+        setProgressBar($('#sysStorageBar'), st.usedBytes, st.totalBytes);
+    } else {
+        $('#sysStorageStatus').text('Unavailable').removeClass('bg-secondary bg-success').addClass('bg-danger');
+        $('#sysStorageUsageRow').hide();
+    }
+    if (st.cardType) {
+        $('.sysinfo-sd-field').removeClass('d-none');
+        $('#sysSdCardInfo').text(st.cardSizeBytes ? `${st.cardType} (${formatBytes(st.cardSizeBytes)})` : st.cardType);
+    } else {
+        $('.sysinfo-sd-field').addClass('d-none');
+    }
+
+    // Network & Wi-Fi
+    const net = data.network || {};
+    const modeLabel = net.mode || '--';
+    $('#sysNetMode')
+        .text(net.connected ? `${modeLabel} · Connected` : `${modeLabel} · Disconnected`)
+        .removeClass('bg-secondary bg-success bg-danger')
+        .addClass(net.connected ? 'bg-success' : 'bg-danger');
+    $('#sysNetSsid').text(net.ssid ? `${net.ssid} (ch ${net.channel ?? '--'})` : '--');
+    $('#sysNetBssid').text(net.bssid || 'N/A');
+    $('#sysNetIp').text(net.ip || '--');
+    $('#sysNetGateway').text(net.gateway ? `${net.gateway} / ${net.subnetMask || '--'}` : 'N/A');
+    $('#sysNetDns').text(net.dns || 'N/A');
+    $('#sysNetMac').text(net.mac || '--');
+    if (net.hostname) {
+        const mdnsHost = `${net.hostname}.local`;
+        const $link = $('<a>')
+            .attr('href', `http://${mdnsHost}`)
+            .attr('target', '_blank')
+            .attr('rel', 'noopener noreferrer')
+            .addClass('text-decoration-none')
+            .text(mdnsHost);
+        $('#sysNetHostname').empty().append($link);
+    } else {
+        $('#sysNetHostname').text('--');
+    }
+    $('#sysNetWsClients').text(net.wsClients !== undefined ? String(net.wsClients) : '--');
+
+    // Time & Monitoring
+    const tm = data.time || {};
+    const tzOffset = tm.timezoneOffset !== undefined ? `UTC${tm.timezoneOffset >= 0 ? '+' : ''}${tm.timezoneOffset}` : '';
+    $('#sysSntp').text(tm.sntpServer ? `${tm.sntpServer}${tzOffset ? ' (' + tzOffset + ')' : ''}` : '--');
+
+    const mon = data.monitoring || {};
+    $('#sysCheckInterval').text(mon.checkInterval !== undefined ? `${mon.checkInterval} s` : '--');
+    if (mon.lastCheckDurationMs !== undefined) {
+        const when = mon.lastCheckTime ? ` @ ${mon.lastCheckTime.split(' ')[1] || mon.lastCheckTime}` : '';
+        $('#sysLastCheck').text(`${mon.lastCheckDurationMs} ms${when}`);
+    } else {
+        $('#sysLastCheck').text('--');
+    }
+    $('#sysMonStack').text(mon.stackHighWaterBytes ? `${formatBytes(mon.stackHighWaterBytes)}` : 'N/A');
+
+    // Firmware & Build
+    const fw = data.firmware || {};
+    $('#sysFwVersion').text(fw.version || data.version || '--');
+    if (fw.uiVersion) {
+        const mismatch = fw.expectedUiVersion && fw.uiVersion !== fw.expectedUiVersion;
+        const $ui = $('#sysUiVersion').empty().text(fw.uiVersion);
+        if (mismatch) {
+            $ui.append(' ').append($('<span>').addClass('badge bg-warning text-dark ms-1').text('Mismatch'));
+        }
+    } else {
+        $('#sysUiVersion').text('Unknown');
+    }
+    $('#sysCommit').text(fw.commit ? `#${fw.commit}` : '--');
+    $('#sysBuildDate').text(fw.buildDate || '--');
+    $('#sysOtaPartition').text(fw.otaPartition || '--');
+    $('#sysSdk').text(fw.coreVersion ? `${fw.coreVersion} / ${fw.sdkVersion || ''}` : (fw.sdkVersion || '--'));
+
+    updateLiveSysinfoModalFields(data);
+}
+
+function loadDetailedSysinfo() {
+    const $icon = $('#sysinfoRefreshIcon');
+    const $btn = $('#btnRefreshSysinfo');
+    $icon.addClass('spin-animation');
+    $btn.prop('disabled', true);
+    $('#sysinfoError').addClass('d-none').text('');
+    if (!lastDetailedSysinfo) {
+        $('#sysinfoLoading').removeClass('d-none');
+    }
+
+    return $.getJSON('/api/sysinfo/details', function(data) {
+        renderDetailedSysinfoModal(data);
+    }).fail(function() {
+        $('#sysinfoError').text('Failed to load detailed system metrics.').removeClass('d-none');
+    }).always(function() {
+        $('#sysinfoLoading').addClass('d-none');
+        $icon.removeClass('spin-animation');
+        $btn.prop('disabled', false);
+    });
 }
 
 function formatUptime(seconds) {
@@ -560,14 +868,52 @@ $('#filterAll').click(() => { currentFilter = 'ALL'; renderEntities(); });
 $('#filterOnline').click(() => { currentFilter = 'ONLINE'; renderEntities(); });
 $('#filterOffline').click(() => { currentFilter = 'OFFLINE'; renderEntities(); });
 
+$('#sysinfoModal').on('show.bs.modal', function() {
+    loadDetailedSysinfo();
+    if (sysinfoRefreshTimer) clearInterval(sysinfoRefreshTimer);
+    sysinfoRefreshTimer = setInterval(() => {
+        loadDetailedSysinfo();
+    }, SYSINFO_DETAILS_REFRESH_MS);
+});
+
+$('#sysinfoModal').on('hidden.bs.modal', function() {
+    if (sysinfoRefreshTimer) {
+        clearInterval(sysinfoRefreshTimer);
+        sysinfoRefreshTimer = null;
+    }
+});
+
+$('#btnRefreshSysinfo').on('click', function() {
+    loadDetailedSysinfo();
+});
+
+$('#btnCopySysinfo').on('click', function() {
+    if (!lastDetailedSysinfo) return;
+    const payload = JSON.stringify(lastDetailedSysinfo, null, 2);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(payload).then(() => {
+            showSuccess('System diagnostics copied to clipboard');
+        }).catch(() => {
+            showError('Failed to copy diagnostics');
+        });
+    } else {
+        showError('Clipboard API unavailable');
+    }
+});
+
 if (typeof window !== 'undefined') {
     window.formatUptime = formatUptime;
+    window.formatBytes = formatBytes;
     window.loadSummary = loadSummary;
     window.updateSummaryUI = updateSummaryUI;
     window.loadEntities = loadEntities;
     window.renderEntities = renderEntities;
     window.loadSystemStats = loadSystemStats;
     window.updateSysinfoUI = updateSysinfoUI;
+    window.loadDetailedSysinfo = loadDetailedSysinfo;
+    window.renderDetailedSysinfoModal = renderDetailedSysinfoModal;
+    window.get_lastDetailedSysinfo = () => lastDetailedSysinfo;
+    window.set_lastDetailedSysinfo = (v) => { lastDetailedSysinfo = v; };
     window.showSuccess = showSuccess;
     window.showError = showError;
     window.initWebSocket = initWebSocket;

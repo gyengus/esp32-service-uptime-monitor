@@ -37,6 +37,7 @@ String MonitoringService::summary() {
 }
 
 bool MonitoringService::checkAll() {
+    unsigned long startMs = millis();
     auto entities = monitoredEntityRepository.getEntitiesSnapshot();
     bool mustSave = false;
 
@@ -72,6 +73,9 @@ bool MonitoringService::checkAll() {
     monitoredEntityRepository.getCounts(_online, _offline, total);
     _entities = total;
     wsService.queueSummary(_online, _offline, total);
+
+    _lastCheckDurationMs.store(static_cast<uint32_t>(millis() - startMs));
+    _lastCheckTime.store(time(nullptr));
 
     return true;
 }

@@ -8,6 +8,7 @@
 #include "MonitoringService.h"
 #include "Config.h"
 #include "PSRAMAllocator.h"
+#include "SystemInfo.h"
 #include "globals.h"
 #include "version.h"
 
@@ -273,20 +274,7 @@ void WsService::broadcastSysinfo() {
     JsonDocument doc;
     doc["type"] = "sysinfo";
     JsonObject data = doc["data"].to<JsonObject>();
-
-#ifdef HAS_TEMPERATURE_SENSOR
-    float tsens_out = 0.0;
-    if (temp_sensor != NULL && temperature_sensor_get_celsius(temp_sensor, &tsens_out) == ESP_OK) {
-        data["temperature"] = tsens_out;
-    }
-#endif
-    data["freeHeap"] = ESP.getFreeHeap();
-    data["rssi"] = WiFi.RSSI();
-    data["uptime"] = millis() / 1000;
-    data["version"] = FIRMWARE_VERSION;
-    data["buildDate"] = BUILD_TIMESTAMP;
-    data["commit"] = COMMIT_HASH;
-    data["configEnabled"] = isConfigFunctionsEnabled;
+    SystemInfo::fillBasicSysinfo(data);
 
     String out;
     serializeJson(doc, out);
@@ -323,19 +311,7 @@ void WsService::sendInitState(AsyncWebSocketClient* client) {
     sum["offline"] = offline;
 
     JsonObject sys = doc["sysinfo"].to<JsonObject>();
-#ifdef HAS_TEMPERATURE_SENSOR
-    float tsens_out = 0.0;
-    if (temp_sensor != NULL && temperature_sensor_get_celsius(temp_sensor, &tsens_out) == ESP_OK) {
-        sys["temperature"] = tsens_out;
-    }
-#endif
-    sys["freeHeap"] = ESP.getFreeHeap();
-    sys["rssi"] = WiFi.RSSI();
-    sys["uptime"] = millis() / 1000;
-    sys["version"] = FIRMWARE_VERSION;
-    sys["buildDate"] = BUILD_TIMESTAMP;
-    sys["commit"] = COMMIT_HASH;
-    sys["configEnabled"] = isConfigFunctionsEnabled;
+    SystemInfo::fillBasicSysinfo(sys);
 
     doc["logLevel"] = config.getConfig().logLevel;
     doc["logLevelName"] = Config::logLevelToString(config.getConfig().logLevel);

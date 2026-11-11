@@ -121,6 +121,15 @@ void test_web_archive_extractor_embedded(void) {
     TEST_ASSERT_TRUE(WebArchiveExtractor::ensureDirExists("/web"));
 }
 
+void test_storage_get_stats(void) {
+    storage.writeFile("/stats_test.txt", "1234567890");
+    StorageStats stats = storage.getStats();
+    TEST_ASSERT_EQUAL_STRING("MockFS", stats.backend.c_str());
+    TEST_ASSERT_TRUE(stats.available);
+    TEST_ASSERT_EQUAL_UINT64(10, stats.usedBytes);
+    TEST_ASSERT_EQUAL_UINT64(stats.totalBytes - 10, stats.freeBytes);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_storage_init_mount_unmount_available);
@@ -134,5 +143,6 @@ int main(int argc, char **argv) {
     RUN_TEST(test_storage_get_file_nonexistent_read_returns_false);
     RUN_TEST(test_storage_clear);
     RUN_TEST(test_web_archive_extractor_embedded);
+    RUN_TEST(test_storage_get_stats);
     return UNITY_END();
 }

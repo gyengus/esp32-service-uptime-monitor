@@ -9,6 +9,16 @@
 #include <string>
 #endif
 
+struct StorageStats {
+    String backend;
+    bool available;
+    String cardType;
+    uint64_t cardSizeBytes;
+    uint64_t totalBytes;
+    uint64_t usedBytes;
+    uint64_t freeBytes;
+};
+
 class Storage {
 public:
     Storage(const Storage&) = delete;
@@ -19,6 +29,7 @@ public:
     bool mount();
     bool unmount();
     bool isAvailable();
+    StorageStats getStats();
     bool fileExists(const String& path);
     File getFile(const String &path, const String &mode);
     String readFile(const String& path);
