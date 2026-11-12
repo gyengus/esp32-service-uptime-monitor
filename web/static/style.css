@@ -39,9 +39,28 @@ body {
     vertical-align: middle;
 }
 
+.ui-icon {
+    width: 1.15em;
+    height: 1.15em;
+    vertical-align: -0.18em;
+    fill: currentColor;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.ui-icon-lg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.ui-icon-xl {
+    width: 2rem;
+    height: 2rem;
+}
+
 div#mainContainer {
     flex: 1 0 auto;
-    padding-bottom: 2rem;
+    padding-bottom: 6rem;
     margin-top: 12px;
 }
 
@@ -75,14 +94,12 @@ div#mainContainer {
 }
 
 .monitoredEntity {
-    margin: 5px;
-    transition: transform 0.2s;
-    border: none;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
 }
 
 .monitoredEntity:hover {
-    border: var(--bs-light-text-emphasis) 2px solid;
-    margin: 3px;
+    border-color: var(--bs-light-text-emphasis);
 }
 
 .card {
@@ -108,27 +125,29 @@ div#mainContainer {
     transition: transform 0.2s ease;
 }
 
-.monitoredEntity .lastChanged {
-    color: khaki;
-    padding-bottom: 16px;
-    padding-right: 16px;}
-
 .monitoredEntity .buttons {
-    padding-top: 16px;
-    padding-right: 16px;
+    padding-top: 12px;
+    padding-right: 12px;
 }
 
 .btn-edit, .btn-delete {
     background: none !important;
-    border-color: var(--bs-light-text-emphasis) !important;
+    border-color: currentColor !important;
     box-shadow: none !important;
     padding: 0;
-    width: 24px;
-    height: 24px;
-    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+
+@media (max-width: 767.98px) {
+    .btn-edit, .btn-delete {
+        width: 36px;
+        height: 36px;
+    }
 }
 
 .btn-edit:hover, .btn-delete:hover {
@@ -136,9 +155,9 @@ div#mainContainer {
     background: none !important;
 }
 
-.btn-edit:focus, .btn-delete:focus {
-    outline: none !important;
-    box-shadow: none !important;
+.btn-edit:focus-visible, .btn-delete:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
 }
 
 @keyframes spin {
@@ -208,14 +227,6 @@ div#mainContainer {
     opacity: 0.5;
 }
 
-.monitoredEntity.text-bg-danger .card-title .entityIcon {
-    animation: icon-blink 1s infinite step-end;
-}
-
-@keyframes icon-blink {
-    50% { opacity: 0.5; }
-}
-
 .ws-dot {
     width: 8px;
     height: 8px;
@@ -224,26 +235,9 @@ div#mainContainer {
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.ws-dot.bg-success {
-    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
-    animation: ws-dot-pulse 2s infinite;
-}
-
 .ws-dot.bg-danger {
     box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
     animation: ws-dot-pulse-danger 2s infinite;
-}
-
-@keyframes ws-dot-pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 6px rgba(25, 135, 84, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
-    }
 }
 
 @keyframes ws-dot-pulse-danger {
@@ -438,5 +432,13 @@ div#mainContainer {
     font-weight: 600;
     opacity: 0.55;
     letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 

@@ -9,46 +9,74 @@
     <link href="static/style.css" rel="stylesheet" />
   </head>
   <body>
+    <svg xmlns="http://www.w3.org/2000/svg" class="d-none" aria-hidden="true">
+      <symbol id="ui-layers" viewBox="0 0 24 24"><path d="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.8L12,18.54Z"/></symbol>
+      <symbol id="ui-check-circle" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/></symbol>
+      <symbol id="ui-alert-circle" viewBox="0 0 24 24"><path d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z"/></symbol>
+      <symbol id="ui-refresh" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></symbol>
+      <symbol id="ui-menu" viewBox="0 0 24 24"><path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/></symbol>
+      <symbol id="ui-cog" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></symbol>
+      <symbol id="ui-chart" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19M9,17H7V10H9V17M13,17H11V7H13V17M17,17H15V13H17V17Z"/></symbol>
+      <symbol id="ui-api" viewBox="0 0 24 24"><path d="M7,7H5A2,2 0 0,0 3,9V17H5V13H7V17H9V9A2,2 0 0,0 7,7M7,11H5V9H7M14,7H10V17H12V13H14A2,2 0 0,0 16,11V9A2,2 0 0,0 14,7M14,11H12V9H14M20,9V15H21V17H17V15H18V9H17V7H21V9Z"/></symbol>
+      <symbol id="ui-balance" viewBox="0 0 24 24"><path d="M12,3C10.73,3 9.6,3.8 9.18,5H3V7H4.95L2,14C1.53,16 3,17 5.5,17C8,17 9.56,16 9,14L6.05,7H9.17C9.5,7.85 10.15,8.5 11,8.83V20H2V22H22V20H13V8.82C13.85,8.5 14.5,7.85 14.82,7H17.95L15,14C14.53,16 16,17 18.5,17C21,17 22.56,16 22,14L19.05,7H21V5H14.82C14.4,3.8 13.27,3 12,3M12,5A1,1 0 0,1 13,6A1,1 0 0,1 12,7A1,1 0 0,1 11,6A1,1 0 0,1 12,5M5.5,10.25L7,14H4L5.5,10.25M18.5,10.25L20,14H17L18.5,10.25Z"/></symbol>
+      <symbol id="ui-github" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"/></symbol>
+      <symbol id="ui-book" viewBox="0 0 24 24"><path d="M19,2L14,6.5V17.5L19,13V2M6.5,5C4.55,5 2.45,5.4 1,6.5V21.16C1,21.41 1.25,21.66 1.5,21.66C1.6,21.66 1.65,21.59 1.75,21.59C3.1,20.94 5.05,20.5 6.5,20.5C8.45,20.5 10.55,20.9 12,22C13.35,21.15 15.8,20.5 17.5,20.5C19.15,20.5 20.85,20.81 22.25,21.56C22.35,21.61 22.4,21.59 22.5,21.59C22.75,21.59 23,21.34 23,21.09V6.5C22.4,6.05 21.75,5.75 21,5.5V19C19.9,18.65 18.7,18.5 17.5,18.5C15.8,18.5 13.35,19.15 12,20V6.5C10.55,5.4 8.45,5 6.5,5Z"/></symbol>
+      <symbol id="ui-console" viewBox="0 0 24 24"><path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z"/></symbol>
+      <symbol id="ui-plus" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/></symbol>
+      <symbol id="ui-server" viewBox="0 0 24 24"><path d="M4,1H20A1,1 0 0,1 21,2V6A1,1 0 0,1 20,7H4A1,1 0 0,1 3,6V2A1,1 0 0,1 4,1M4,9H20A1,1 0 0,1 21,10V14A1,1 0 0,1 20,15H4A1,1 0 0,1 3,14V10A1,1 0 0,1 4,9M4,17H20A1,1 0 0,1 21,18V22A1,1 0 0,1 20,23H4A1,1 0 0,1 3,22V18A1,1 0 0,1 4,17M9,5H10V3H9V5M9,13H10V11H9V13M9,21H10V19H9V21M5,3V5H7V3H5M5,11V13H7V11H5M5,19V21H7V19H5Z"/></symbol>
+      <symbol id="ui-pencil" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/></symbol>
+      <symbol id="ui-delete" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></symbol>
+      <symbol id="ui-bell" viewBox="0 0 24 24"><path d="M10,21H14A2,2 0 0,1 12,23A2,2 0 0,1 10,21M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M17,11A5,5 0 0,0 12,6A5,5 0 0,0 7,11V18H17V11Z"/></symbol>
+      <symbol id="ui-clock" viewBox="0 0 24 24"><path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></symbol>
+      <symbol id="ui-pause-circle" viewBox="0 0 24 24"><path d="M13,16V8H15V16H13M9,16V8H11V16H9M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z"/></symbol>
+      <symbol id="ui-chip" viewBox="0 0 24 24"><path d="M6,4H18V5H21V7H18V9H21V11H18V13H21V15H18V17H21V19H18V20H6V19H3V17H6V15H3V13H6V11H3V9H6V7H3V5H6V4M8,6V18H16V6H8Z"/></symbol>
+      <symbol id="ui-memory" viewBox="0 0 24 24"><path d="M2,7H4.5V17H3V8.5H2M22,7V16H20V17H19V16H17V17H16V16H14V17H13V16H11V17H10V16H8V17H7V16H5V7H22M16,9H14V14H16V9M13,9H11V14H13V9M10,9H8V14H10V9M19,9H17V14H19V9Z"/></symbol>
+      <symbol id="ui-harddisk" viewBox="0 0 24 24"><path d="M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M12,4A6,6 0 0,0 6,10C6,13.31 8.69,16 12,16A6,6 0 0,0 18,10C18,6.69 15.31,4 12,4M12,9A1,1 0 0,1 13,10A1,1 0 0,1 12,11A1,1 0 0,1 11,10A1,1 0 0,1 12,9M7,18V20H10V18H7M12,18V20H17V18H12Z"/></symbol>
+      <symbol id="ui-wifi" viewBox="0 0 24 24"><path d="M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z"/></symbol>
+      <symbol id="ui-thermometer" viewBox="0 0 24 24"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z"/></symbol>
+      <symbol id="ui-package" viewBox="0 0 24 24"><path d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15Z"/></symbol>
+      <symbol id="ui-copy" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></symbol>
+    </svg>
     <nav class="navbar fixed-top bg-dark border-bottom border-body p-1" data-bs-theme="dark">
         <div class="container-fluid d-flex justify-content-between align-items-center flex-nowrap">
             
             <div class="d-flex align-items-center">
                 <a href="/" class="custom-brand text-decoration-none me-2 d-flex align-items-center">
-                    <span id="wsStatusDot" class="ws-dot bg-secondary me-2 flex-shrink-0" title="Connecting..." role="status"></span>
+                    <span id="wsStatusDot" class="ws-dot bg-secondary me-2 flex-shrink-0" title="Connecting..." aria-label="Connecting..." role="status"></span>
                     <h1 class="m-0 h5 text-nowrap">
                         <span class="d-none d-md-inline">ESP32 </span><span class="d-none d-sm-inline">Service </span>Uptime Monitor
                     </h1>
                 </a>
                 
                 <div id="navStats" class="d-flex gap-1 align-items-center">
-                    <span id="filterAll" class="badge rounded-pill bg-secondary bg-opacity-25 border border-secondary text-light px-2 py-1" role="button">
-                        <span class="mdi mdi-layers-outline d-none d-sm-inline"></span><span id="navTotal">--</span>
-                    </span>
+                    <button type="button" id="filterAll" class="badge rounded-pill bg-secondary bg-opacity-25 border border-secondary text-light px-2 py-1 d-inline-flex align-items-center gap-1" aria-pressed="true" aria-label="Filter: All services">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#ui-layers"></use></svg><span id="navTotal">--</span>
+                    </button>
                     
-                    <span id="filterOnline" class="badge rounded-pill bg-success bg-opacity-10 border border-success text-success px-2 py-1" role="button">
-                        <span class="mdi mdi-check-circle-outline d-none d-sm-inline"></span> <span id="navOnline">--</span>
-                    </span>
+                    <button type="button" id="filterOnline" class="badge rounded-pill bg-success bg-opacity-10 border border-success text-success px-2 py-1 d-inline-flex align-items-center gap-1" aria-pressed="false" aria-label="Filter: Online services">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#ui-check-circle"></use></svg><span id="navOnline">--</span>
+                    </button>
                     
-                    <span id="filterOffline" class="badge rounded-pill bg-danger bg-opacity-10 border border-danger text-danger px-2 py-1" role="button">
-                        <span class="mdi mdi-alert-circle-outline d-none d-sm-inline"></span> <span id="navOffline">--</span>
-                    </span>
+                    <button type="button" id="filterOffline" class="badge rounded-pill bg-danger bg-opacity-10 border border-danger text-danger px-2 py-1 d-inline-flex align-items-center gap-1" aria-pressed="false" aria-label="Filter: Offline services">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#ui-alert-circle"></use></svg><span id="navOffline">--</span>
+                    </button>
                 </div>
             </div>
 
             <div class="d-flex align-items-center flex-shrink-0 gap-1">
-                <button id="refreshButton" class="btn btn-sm btn-outline-light border-0 p-1" title="Refresh">
-                    <span id="refreshIcon" class="mdi mdi-refresh mdi-24px"></span>
+                <button type="button" id="refreshButton" class="btn btn-sm btn-outline-light border-0 p-1" title="Refresh" aria-label="Refresh services">
+                    <svg id="refreshIcon" class="ui-icon ui-icon-lg" aria-hidden="true"><use href="#ui-refresh"></use></svg>
                 </button>
                 <div id="headerMenuWrapper" class="dropdown position-relative">
-                    <button type="button" id="headerMenuButton" class="btn btn-sm btn-outline-light border-0 p-1 position-relative" title="Menu" aria-expanded="false" aria-haspopup="true">
-                        <span class="mdi mdi-menu mdi-24px"></span>
+                    <button type="button" id="headerMenuButton" class="btn btn-sm btn-outline-light border-0 p-1 position-relative" title="Menu" aria-label="Open menu" aria-expanded="false" aria-haspopup="true">
+                        <svg class="ui-icon ui-icon-lg" aria-hidden="true"><use href="#ui-menu"></use></svg>
                         <span id="headerConfigBadge" class="header-config-badge bg-warning d-none" title="Configuration unlocked"></span>
                     </button>
                     <ul id="headerMenuDropdown" class="dropdown-menu dropdown-menu-end shadow" data-bs-theme="dark" aria-labelledby="headerMenuButton">
                         <li>
                             <a href="/config" id="configButton" class="dropdown-item" style="display: none;">
                                 <span class="d-inline-flex align-items-center gap-2">
-                                    <span class="mdi mdi-cog-outline"></span>
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-cog"></use></svg>
                                     <span>Settings</span>
                                 </span>
                             </a>
@@ -56,7 +84,7 @@
                         <li>
                             <button type="button" id="menuSysinfoButton" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#sysinfoModal">
                                 <span class="d-inline-flex align-items-center gap-2">
-                                    <span class="mdi mdi-chart-box-outline"></span>
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-chart"></use></svg>
                                     <span>System Metrics</span>
                                 </span>
                             </button>
@@ -64,7 +92,7 @@
                         <li>
                             <a href="/api/docs" target="_blank" rel="noopener noreferrer" id="menuApiDocsLink" class="dropdown-item">
                                 <span class="d-inline-flex align-items-center gap-2">
-                                    <span class="mdi mdi-api"></span>
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-api"></use></svg>
                                     <span>API Docs</span>
                                 </span>
                             </a>
@@ -73,7 +101,7 @@
                         <li>
                             <a href="/license" target="_blank" rel="noopener noreferrer" id="menuLicenseLink" class="dropdown-item">
                                 <span class="d-inline-flex align-items-center gap-2">
-                                    <span class="mdi mdi-scale-balance"></span>
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-balance"></use></svg>
                                     <span>License</span>
                                 </span>
                             </a>
@@ -81,7 +109,7 @@
                         <li>
                             <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener noreferrer" id="menuGithubRepoLink" class="dropdown-item">
                                 <span class="d-inline-flex align-items-center gap-2">
-                                    <span class="mdi mdi-github"></span>
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-github"></use></svg>
                                     <span>GitHub Repository</span>
                                 </span>
                             </a>
@@ -89,7 +117,7 @@
                         <li>
                             <a href="https://gyengus.github.io/esp32-service-uptime-monitor/" target="_blank" rel="noopener noreferrer" id="menuGithubPagesLink" class="dropdown-item">
                                 <span class="d-inline-flex align-items-center gap-2">
-                                    <span class="mdi mdi-book-open-variant-outline"></span>
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-book"></use></svg>
                                     <span>Documentation</span>
                                 </span>
                             </a>
@@ -166,8 +194,8 @@
         <div id="entityGrid" class="row g-4"></div>
     </div>
 
-    <button type="button" class="btn btn-primary shadow-lg fab" id="addButton" title="Add entity">
-        <span class="mdi mdi-plus mdi-36px"></span>
+    <button type="button" class="btn btn-primary shadow-lg fab" id="addButton" title="Add entity" aria-label="Add entity">
+        <svg class="ui-icon ui-icon-xl" aria-hidden="true"><use href="#ui-plus"></use></svg>
     </button>
 
     <div class="modal fade" id="entityModal" tabindex="-1" aria-hidden="true">
@@ -216,7 +244,7 @@
                             <div class="col-sm-8" id="iconFieldWrapper">
                                 <div class="input-group">
                                     <span class="input-group-text icon-preview-box" id="iconPreview" title="Icon preview">
-                                        <span class="mdi mdi-server"></span>
+                                        <svg class="ui-icon" aria-hidden="true"><use href="#ui-server"></use></svg>
                                     </span>
                                     <input type="text" class="form-control" id="icon" placeholder="Search (e.g. proxmox, mdi-server) or paste URL" autocomplete="off" />
                                 </div>
@@ -248,7 +276,7 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure do you want to delete <strong id="deleteEntityNameDisplay"></strong>?</p>
+                    <p>Are you sure you want to delete <strong id="deleteEntityNameDisplay"></strong>?</p>
                     <p class="text-muted small">This action cannot be undone.</p>
                 </div>
                 <div class="modal-footer">
@@ -264,7 +292,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title d-flex align-items-center gap-2" id="sysinfoModalLabel">
-                        <span class="mdi mdi-chip text-primary"></span>
+                        <svg class="ui-icon text-primary" aria-hidden="true"><use href="#ui-chip"></use></svg>
                         <span>System Metrics</span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -281,7 +309,7 @@
                         <div class="col-12 col-md-6">
                             <div class="card h-100 sysinfo-card">
                                 <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
-                                    <span class="mdi mdi-chip text-primary"></span>
+                                    <svg class="ui-icon text-primary" aria-hidden="true"><use href="#ui-chip"></use></svg>
                                     <span>Device &amp; CPU</span>
                                 </div>
                                 <div class="card-body py-2 px-3">
@@ -307,7 +335,7 @@
                         <div class="col-12 col-md-6">
                             <div class="card h-100 sysinfo-card">
                                 <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
-                                    <span class="mdi mdi-memory text-success"></span>
+                                    <svg class="ui-icon text-success" aria-hidden="true"><use href="#ui-memory"></use></svg>
                                     <span>Memory &amp; Flash</span>
                                 </div>
                                 <div class="card-body py-2 px-3 small">
@@ -357,7 +385,7 @@
                             <div class="card h-100 sysinfo-card">
                                 <div class="card-header py-2 fw-semibold small d-flex align-items-center justify-content-between">
                                     <span class="d-flex align-items-center gap-2">
-                                        <span class="mdi mdi-harddisk text-warning" id="sysStorageIcon"></span>
+                                        <svg class="ui-icon text-warning" id="sysStorageIcon" aria-hidden="true"><use href="#ui-harddisk"></use></svg>
                                         <span>Storage</span>
                                     </span>
                                     <span class="badge bg-secondary" id="sysStorageStatus">--</span>
@@ -390,7 +418,7 @@
                             <div class="card h-100 sysinfo-card">
                                 <div class="card-header py-2 fw-semibold small d-flex align-items-center justify-content-between">
                                     <span class="d-flex align-items-center gap-2">
-                                        <span class="mdi mdi-wifi text-info"></span>
+                                        <svg class="ui-icon text-info" aria-hidden="true"><use href="#ui-wifi"></use></svg>
                                         <span>Network &amp; Wi-Fi</span>
                                     </span>
                                     <span class="badge bg-secondary" id="sysNetMode">--</span>
@@ -424,7 +452,7 @@
                         <div class="col-12 col-md-6">
                             <div class="card h-100 sysinfo-card">
                                 <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
-                                    <span class="mdi mdi-clock-outline text-primary"></span>
+                                    <svg class="ui-icon text-primary" aria-hidden="true"><use href="#ui-clock"></use></svg>
                                     <span>Time &amp; Monitoring</span>
                                 </div>
                                 <div class="card-body py-2 px-3 small">
@@ -450,7 +478,7 @@
                         <div class="col-12 col-md-6">
                             <div class="card h-100 sysinfo-card">
                                 <div class="card-header py-2 fw-semibold small d-flex align-items-center gap-2">
-                                    <span class="mdi mdi-package-variant-closed text-secondary"></span>
+                                    <svg class="ui-icon text-secondary" aria-hidden="true"><use href="#ui-package"></use></svg>
                                     <span>Firmware &amp; Build</span>
                                 </div>
                                 <div class="card-body py-2 px-3 small">
@@ -479,11 +507,11 @@
                     <small class="text-muted" id="sysinfoLastUpdated">Updated: --</small>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" id="btnRefreshSysinfo">
-                            <span class="mdi mdi-refresh" id="sysinfoRefreshIcon"></span>
+                            <svg class="ui-icon" id="sysinfoRefreshIcon" aria-hidden="true"><use href="#ui-refresh"></use></svg>
                             <span>Refresh</span>
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btnCopySysinfo">
-                            <span class="mdi mdi-content-copy"></span>
+                            <svg class="ui-icon" aria-hidden="true"><use href="#ui-copy"></use></svg>
                             <span>Copy JSON</span>
                         </button>
                         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -493,14 +521,14 @@
         </div>
     </div>
 
-    <div id="terminalDrawer" class="terminal-drawer">
-        <div class="terminal-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom border-secondary bg-dark">
+    <div id="terminalDrawer" class="terminal-drawer d-none d-md-flex">
+        <div class="terminal-header d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2 border-bottom border-secondary bg-dark">
             <div class="d-flex align-items-center gap-2">
-                <span class="mdi mdi-console text-info"></span>
+                <svg class="ui-icon text-info" aria-hidden="true"><use href="#ui-console"></use></svg>
                 <span class="fw-semibold small text-light">Device Logs</span>
                 <span id="terminalLineCount" class="badge bg-secondary">0 lines</span>
             </div>
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3">
                 <div class="d-flex align-items-center gap-2">
                     <label for="terminalLogLevel" class="small text-secondary mb-0">Log Level:</label>
                     <select id="terminalLogLevel" class="form-select form-select-sm bg-dark text-light border-secondary" style="width: auto;">
@@ -519,8 +547,8 @@
                     <input class="form-check-input" type="checkbox" id="terminalAutoScroll" checked>
                     <label class="form-check-label small text-secondary" for="terminalAutoScroll">Auto-scroll</label>
                 </div>
-                <button type="button" id="btnTerminalClear" class="btn btn-sm btn-outline-secondary" title="Clear logs">
-                    <span class="mdi mdi-delete"></span>
+                <button type="button" id="btnTerminalClear" class="btn btn-sm btn-outline-secondary" title="Clear logs" aria-label="Clear logs">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-delete"></use></svg>
                 </button>
                 <button type="button" id="btnTerminalClose" class="btn-close btn-close-white" aria-label="Close terminal"></button>
             </div>
@@ -533,23 +561,23 @@
     <footer class="footer mt-auto py-3 bg-dark text-white border-top border-secondary">
         <div class="container-fluid d-flex align-items-center justify-content-center justify-content-md-between">
             <div class="small text-secondary d-flex gap-2 gap-sm-3 align-items-center flex-wrap">
-                <span>
-                    <span class="mdi mdi-clock-outline me-1"></span><span id="uptimeVal">--</span>
+                <span class="d-inline-flex align-items-center gap-1">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-clock"></use></svg><span id="uptimeVal">--</span>
                 </span>
-                <span>
-                    <span class="mdi mdi-wifi me-1" id="rssiIcon"></span><span id="rssiVal">--</span>
+                <span class="d-inline-flex align-items-center gap-1">
+                    <svg class="ui-icon" id="rssiIcon" aria-hidden="true"><use href="#ui-wifi"></use></svg><span id="rssiVal">--</span>
                 </span>
-                <span>
-                    <span class="mdi mdi-memory me-1"></span><span id="heapVal">--</span>
+                <span class="d-inline-flex align-items-center gap-1">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-memory"></use></svg><span id="heapVal">--</span>
                 </span>
-                <span id="tempContainer" style="display: none;">
-                    <span class="mdi mdi-thermometer me-1"></span><span id="tempVal">--</span>
+                <span id="tempContainer" class="d-inline-flex align-items-center gap-1" style="display: none;">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-thermometer"></use></svg><span id="tempVal">--</span>
                 </span>
             </div>
 
             <div class="d-none d-md-flex align-items-center justify-content-center gap-2">
-                <button type="button" id="btnToggleTerminal" class="btn btn-sm btn-outline-secondary d-flex align-items-center" title="Toggle Device Logs">
-                    <span class="mdi mdi-console"></span>
+                <button type="button" id="btnToggleTerminal" class="btn btn-sm btn-outline-secondary d-flex align-items-center" title="Toggle Device Logs" aria-label="Toggle Device Logs">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-console"></use></svg>
                 </button>
             </div>
             

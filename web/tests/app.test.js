@@ -153,11 +153,55 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#filterOffline').hasClass('badge-active')).toBe(true);
     });
 
-    it('displays "Nothing to show." when filter produces no results', () => {
+    it('displays contextual empty state when there are no entities and when filter produces no results', () => {
       window.loadEntities();
       window.allEntities = [];
       window.renderEntities();
-      expect($('#entityGrid').text()).toContain('Nothing to show.');
+      expect($('#entityGrid').text()).toContain('No monitored services yet');
+      expect($('#emptyAddButton').length).toBe(1);
+
+      window.allEntities = [
+        { name: 'Alpha', address: 'http://alpha.local', icon: 'mdi-server', isOnline: true, notification: false, disabled: false, lastChanged: 1700000000 }
+      ];
+      $('#filterOffline').trigger('click');
+      expect($('#entityGrid').text()).toContain('No services match the current filter');
+      expect($('#emptyShowAllButton').length).toBe(1);
+
+      $('#emptyShowAllButton').trigger('click');
+      expect(window.get_currentFilter()).toBe('ALL');
+      expect($('#entityGrid .monitoredEntity').length).toBe(1);
+    });
+
+    it('renders status badges and accessible contrast classes for Pending and colored cards', () => {
+      window.set_allEntities([
+        { name: 'OnlineSvc', address: 'http://online.local', icon: 'mdi-server', isOnline: true, notification: false, disabled: false, lastChanged: 1700000000 },
+        { name: 'OfflineSvc', address: 'http://offline.local', icon: 'mdi-server', isOnline: false, notification: false, disabled: false, lastChanged: 1700000000 },
+        { name: 'PendingSvc', address: 'http://pending.local', icon: 'mdi-server', isOnline: false, notification: false, disabled: false, lastChanged: 0 },
+        { name: 'DisabledSvc', address: 'http://disabled.local', icon: 'mdi-server', isOnline: false, notification: false, disabled: true, lastChanged: 0 }
+      ]);
+      window.renderEntities();
+
+      const pendingCard = $('.monitoredEntity[data-entity-name="PendingSvc"]');
+      expect(pendingCard.hasClass('text-bg-light')).toBe(true);
+      expect(pendingCard.find('a').hasClass('link-dark')).toBe(true);
+      expect(pendingCard.text()).toContain('Pending');
+
+      const onlineCard = $('.monitoredEntity[data-entity-name="OnlineSvc"]');
+      expect(onlineCard.find('a').hasClass('link-light')).toBe(true);
+      expect(onlineCard.text()).toContain('Online');
+
+      expect($('.monitoredEntity[data-entity-name="OfflineSvc"]').text()).toContain('Offline');
+      expect($('.monitoredEntity[data-entity-name="DisabledSvc"]').text()).toContain('Disabled');
+    });
+
+    it('updates aria-pressed on filter buttons', () => {
+      window.loadEntities();
+      expect($('#filterAll').attr('aria-pressed')).toBe('true');
+      expect($('#filterOnline').attr('aria-pressed')).toBe('false');
+
+      $('#filterOnline').trigger('click');
+      expect($('#filterAll').attr('aria-pressed')).toBe('false');
+      expect($('#filterOnline').attr('aria-pressed')).toBe('true');
     });
 
     it('renders clickable address links with http/https normalization', () => {
@@ -859,6 +903,14 @@ describe('Uptime Monitor Web UI - app.js', () => {
       window.updateSysinfoUI({ configEnabled: false });
       expect($('#configButton').css('display')).toBe('none');
       expect($('#headerConfigBadge').hasClass('d-none')).toBe(true);
+    });
+
+    it('sets aria-label alongside title on wsStatusDot', () => {
+      expect($('#menuLogsButton').length).toBe(0);
+      window.setWsStatus(true);
+      expect($('#wsStatusDot').attr('aria-label')).toBe('Live (WebSocket connected)');
+      window.setWsStatus(false);
+      expect($('#wsStatusDot').attr('aria-label')).toBe('Disconnected (Reconnecting...)');
     });
   });
 });

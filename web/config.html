@@ -9,10 +9,27 @@
     <link href="static/style.css" rel="stylesheet" />
   </head>
   <body>
+    <svg xmlns="http://www.w3.org/2000/svg" class="d-none" aria-hidden="true">
+      <symbol id="ui-arrow-left" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/></symbol>
+      <symbol id="ui-wifi" viewBox="0 0 24 24"><path d="M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z"/></symbol>
+      <symbol id="ui-webhook" viewBox="0 0 24 24"><path d="M10.42 12.61C10.03 13.07 9.45 13.36 8.8 13.36C7.62 13.36 6.67 12.41 6.67 11.23C6.67 10.64 6.91 10.11 7.29 9.73L4.46 14.63C4.17 15.13 4 15.72 4 16.34C4 18.23 5.53 19.76 7.42 19.76C9.04 19.76 10.4 18.63 10.75 17.11H14.5C14.23 18.08 13.5 18.87 12.56 19.22L12.1 21C14.5 20.67 16.43 18.77 16.78 16.38L10.42 12.61M15.17 7.11C15.17 5.22 13.64 3.69 11.75 3.69C9.86 3.69 8.33 5.22 8.33 7.11C8.33 8.53 9.2 9.75 10.44 10.27L8.56 13.53C8.64 13.54 8.72 13.55 8.8 13.55C10.08 13.55 11.12 12.51 11.12 11.23C11.12 10.67 10.92 10.16 10.58 9.76L12.19 6.97C12.39 7.05 12.6 7.11 12.83 7.11C13.42 7.11 13.95 6.87 14.33 6.49L15.17 7.11M16.58 12.93C16.22 12.93 15.88 13.02 15.58 13.17L13.71 9.93C14.6 9.33 15.17 8.29 15.17 7.11C15.17 6.85 15.14 6.6 15.08 6.36L16.86 5.66C17.28 6.84 17.19 8.18 16.54 9.3L19.04 13.63C19.65 14.69 20 15.92 20 17.22C20 19.29 18.43 21 16.42 21.18L16.58 19.34C17.56 19.24 18.33 18.41 18.33 17.4C18.33 16.33 17.46 15.46 16.39 15.46C16.16 15.46 15.94 15.5 15.74 15.57L14.07 12.68C14.81 12.84 15.68 12.93 16.58 12.93Z"/></symbol>
+      <symbol id="ui-lightbulb" viewBox="0 0 24 24"><path d="M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z"/></symbol>
+      <symbol id="ui-content-save" viewBox="0 0 24 24"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></symbol>
+      <symbol id="ui-upload" viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></symbol>
+      <symbol id="ui-web-sync" viewBox="0 0 24 24"><path d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z"/></symbol>
+      <symbol id="ui-chip" viewBox="0 0 24 24"><path d="M6,4H18V5H21V7H18V9H21V11H18V13H21V15H18V17H21V19H18V20H6V19H3V17H6V15H3V13H6V11H3V9H6V7H3V5H6V4M8,6V18H16V6H8Z"/></symbol>
+      <symbol id="ui-alert" viewBox="0 0 24 24"><path d="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z"/></symbol>
+    </svg>
     <nav class="navbar fixed-top bg-dark border-bottom border-body" data-bs-theme="dark">
-        <div class="container-fluid">
-            <a class="navbar-brand custom-brand text-decoration-none" href="/">
-                <h1 class="m-0 h5 text-nowrap">ESP32 Service Uptime Monitor</h1>
+        <div class="container-fluid d-flex justify-content-between align-items-center flex-nowrap gap-2">
+            <a class="navbar-brand custom-brand text-decoration-none min-w-0" href="/">
+                <h1 class="m-0 h5 text-truncate">
+                    <span class="d-none d-md-inline">ESP32 </span><span class="d-none d-sm-inline">Service </span>Uptime Monitor
+                </h1>
+            </a>
+            <a href="/" class="btn btn-sm btn-outline-light d-inline-flex align-items-center gap-1 flex-shrink-0 text-nowrap" aria-label="Back to Dashboard">
+                <svg class="ui-icon" aria-hidden="true"><use href="#ui-arrow-left"></use></svg>
+                <span>Back<span class="d-none d-sm-inline"> to Dashboard</span></span>
             </a>
         </div>
     </nav>
@@ -46,7 +63,7 @@
                                     <div class="input-group">
                                         <input type="text" class="form-control" id="wifiSSID" required />
                                         <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center" id="scanWifiButton">
-                                            <span id="btnIcon" class="mdi mdi-wifi me-1"></span>
+                                            <svg id="btnIcon" class="ui-icon me-1" aria-hidden="true"><use href="#ui-wifi"></use></svg>
                                             <span id="btnText" class="me-1">Scan</span>
                                             <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                         </button>
@@ -72,7 +89,7 @@
                                 <label for="offsetHours" class="col-sm-4 col-form-label">Timezone offset</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
-                                        <input type="number" class="form-control" id="offsetHours" value="1" min="-11", max="11" />
+                                        <input type="number" class="form-control" id="offsetHours" value="1" min="-11" max="11" />
                                         <span class="input-group-text">hours</span>
                                     </div>
                                 </div>
@@ -87,12 +104,12 @@
                                 </div>
                             </div>
                             <div class="mb-3 row">
-                                <label for="discordWebhook" class="col-sm-4 col-form-label">Discord webhook</label>
+                                <label for="discordWebhookURL" class="col-sm-4 col-form-label">Discord webhook</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
                                         <input type="text" class="form-control" id="discordWebhookURL" />
                                         <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center" id="testDiscordButton">
-                                            <span id="testDiscordButtonIcon" class="mdi mdi-webhook me-1"></span>
+                                            <svg id="testDiscordButtonIcon" class="ui-icon me-1" aria-hidden="true"><use href="#ui-webhook"></use></svg>
                                             <span id="testDiscordButtonText" class="me-1">Test</span>
                                             <span id="testDiscordButtonSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                         </button>
@@ -113,7 +130,7 @@
                                         <input type="range" class="form-range flex-grow-1" id="ledBrightness" min="0" max="100" value="50" />
                                         <span id="ledBrightnessVal" class="badge bg-secondary" style="min-width: 48px;">50%</span>
                                         <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center" id="testLedButton">
-                                            <span id="testLedButtonIcon" class="mdi mdi-lightbulb-on-outline me-1"></span>
+                                            <svg id="testLedButtonIcon" class="ui-icon me-1" aria-hidden="true"><use href="#ui-lightbulb"></use></svg>
                                             <span id="testLedButtonText" class="me-1">Test</span>
                                             <span id="testLedButtonSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                         </button>
@@ -122,51 +139,70 @@
                                     <div id="testLedFeedback" class="form-text mt-2" style="display: none;"></div>
                                 </div>
                             </div>
-                            <div class="mb-3 row" id="backupRow" style="display: none;">
-                                <button type="button" class="btn btn-outline-secondary" id="backupButton">
-                                    <span class="mdi mdi-content-save me-1"></span>
-                                    <span class="me-1">Backup configuration</span>
-                                </button>
-                            </div>
-                            <div class="mb-3 row" id="restoreRow">
-                                <input type="file" id="restoreFile" accept=".json" style="display: none;" />
-                                <button type="button" class="btn btn-outline-primary" id="restoreButton">
-                                    <span class="mdi mdi-upload me-1"></span>
-                                    <span>Restore configuration</span>
-                                </button>
-                            </div>
-                            <hr class="my-4" />
-                            <h6 class="text-muted text-uppercase mb-3">System & Firmware Updates</h6>
-                            <div class="mb-3 row" id="webUpdateRow">
-                                <input type="file" id="webArchiveFile" accept=".zip" style="display: none;" />
-                                <button type="button" class="btn btn-outline-info d-inline-flex align-items-center justify-content-center" id="updateWebButton">
-                                    <span id="updateWebIcon" class="mdi mdi-web-sync me-1"></span>
-                                    <span id="updateWebText">Update Web UI (.zip)</span>
-                                    <span id="updateWebSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status" aria-hidden="true"></span>
-                                </button>
-                                <div class="form-text text-muted text-center mt-1">Upload a ZIP archive containing updated Web UI files to the SD card.</div>
-                            </div>
-                            <div class="mb-3 row" id="otaFirmwareRow">
-                                <input type="file" id="firmwareBinaryFile" accept=".bin" style="display: none;" />
-                                <button type="button" class="btn btn-outline-warning d-inline-flex align-items-center justify-content-center" id="updateFirmwareButton">
-                                    <span id="updateFirmwareIcon" class="mdi mdi-chip me-1"></span>
-                                    <span id="updateFirmwareText">Update Firmware (.bin)</span>
-                                    <span id="updateFirmwareSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status" aria-hidden="true"></span>
-                                </button>
-                                <div class="form-text text-muted text-center mt-1">Upload compiled firmware binary (.bin) to update the device over the air.</div>
-                                <div id="firmwareProgressContainer" class="d-none mt-2">
-                                    <div class="progress" style="height: 12px;">
-                                        <div id="firmwareProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%;"></div>
-                                    </div>
-                                    <div id="firmwareProgressText" class="text-center small text-muted mt-1">0%</div>
+                            <div class="mb-3 row">
+                                <div class="col-12 d-grid">
+                                    <button type="button" class="btn btn-primary" id="saveButton">Save</button>
                                 </div>
                             </div>
                             <hr class="my-4" />
-                            <div class="mb-3 row" id="factoryResetRow" style="display: none;">
-                                <button type="button" class="btn btn-outline-danger" id="factoryResetButton">Factory reset</button>
+                            <h6 class="text-muted text-uppercase mb-3">Backup &amp; Restore</h6>
+                            <div class="mb-3 row" id="backupRow" style="display: none;">
+                                <div class="col-12 d-grid">
+                                    <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" id="backupButton">
+                                        <svg class="ui-icon me-1" aria-hidden="true"><use href="#ui-content-save"></use></svg>
+                                        <span>Backup configuration</span>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="mb-3 row">
-                                <button type="button" class="btn btn-primary" id="saveButton">Save</button>
+                            <div class="mb-3 row" id="restoreRow">
+                                <div class="col-12 d-grid">
+                                    <input type="file" id="restoreFile" accept=".json" style="display: none;" />
+                                    <button type="button" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center" id="restoreButton">
+                                        <svg id="restoreIcon" class="ui-icon me-1" aria-hidden="true"><use href="#ui-upload"></use></svg>
+                                        <span id="restoreText">Restore configuration</span>
+                                        <span id="restoreSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <hr class="my-4" />
+                            <h6 class="text-muted text-uppercase mb-3">System &amp; Firmware Updates</h6>
+                            <div class="mb-3 row" id="webUpdateRow">
+                                <div class="col-12 d-grid">
+                                    <input type="file" id="webArchiveFile" accept=".zip" style="display: none;" />
+                                    <button type="button" class="btn btn-outline-info d-inline-flex align-items-center justify-content-center" id="updateWebButton">
+                                        <svg id="updateWebIcon" class="ui-icon me-1" aria-hidden="true"><use href="#ui-web-sync"></use></svg>
+                                        <span id="updateWebText">Update Web UI (.zip)</span>
+                                        <span id="updateWebSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="form-text text-muted text-center mt-1">Upload a ZIP archive containing updated Web UI files to the device storage.</div>
+                                </div>
+                            </div>
+                            <div class="mb-3 row" id="otaFirmwareRow">
+                                <div class="col-12 d-grid">
+                                    <input type="file" id="firmwareBinaryFile" accept=".bin" style="display: none;" />
+                                    <button type="button" class="btn btn-outline-warning d-inline-flex align-items-center justify-content-center" id="updateFirmwareButton">
+                                        <svg id="updateFirmwareIcon" class="ui-icon me-1" aria-hidden="true"><use href="#ui-chip"></use></svg>
+                                        <span id="updateFirmwareText">Update Firmware (.bin)</span>
+                                        <span id="updateFirmwareSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="form-text text-muted text-center mt-1">Upload compiled firmware binary (.bin) to update the device over the air.</div>
+                                    <div id="firmwareProgressContainer" class="d-none mt-2">
+                                        <div class="progress" style="height: 12px;">
+                                            <div id="firmwareProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%;"></div>
+                                        </div>
+                                        <div id="firmwareProgressText" class="text-center small text-muted mt-1">0%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="factoryResetRow" class="mt-4 p-3 border border-danger rounded" style="display: none;">
+                                <h6 class="text-danger text-uppercase d-flex align-items-center gap-1 mb-2">
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-alert"></use></svg>
+                                    <span>Danger Zone</span>
+                                </h6>
+                                <p class="small text-muted mb-3">Resetting the device will erase all configuration and monitored services.</p>
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-outline-danger" id="factoryResetButton">Factory reset</button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -183,12 +219,12 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you do want to factory reset the device?</p>
+                    <p>Are you sure you want to factory reset the device?</p>
                     <p class="text-muted small">This action cannot be undone.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmFactoryResetButton">Delete</button>
+                    <button type="button" class="btn btn-danger" id="confirmFactoryResetButton">Factory Reset</button>
                 </div>
             </div>
         </div>

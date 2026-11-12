@@ -223,6 +223,10 @@ $.when($.ready).then(function() {
     });
 
     $('#confirmFactoryResetButton').on('click', function() {
+        const $btn = $(this);
+        if ($btn.prop('disabled')) return;
+        $btn.prop('disabled', true).text('Resetting...');
+
         $.ajax({
             type: 'POST',
             url: '/api/config/factoryReset',
@@ -233,6 +237,9 @@ $.when($.ready).then(function() {
             error: function(xhr, status, error) {
                 $('#factoryResetConfirmModal').modal('hide');
                 showError(xhr, "Factory reset failed");
+            },
+            complete: function() {
+                $btn.prop('disabled', false).text('Factory Reset');
             }
         });
     });
@@ -271,6 +278,16 @@ $('#restoreFile').on('change', function(event) {
     const file = event.target.files[0];
     if (!file) return;
 
+    const $btn = $('#restoreButton');
+    const $icon = $('#restoreIcon');
+    const $text = $('#restoreText');
+    const $spinner = $('#restoreSpinner');
+
+    $btn.prop('disabled', true);
+    $icon.addClass('d-none');
+    $spinner.removeClass('d-none');
+    $text.text('Restoring...');
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -285,6 +302,12 @@ $('#restoreFile').on('change', function(event) {
         },
         error: function(xhr, status, error) {
             showError(xhr, "Restore failed");
+        },
+        complete: function() {
+            $btn.prop('disabled', false);
+            $spinner.addClass('d-none');
+            $icon.removeClass('d-none');
+            $text.text('Restore configuration');
             $('#restoreFile').val('');
         }
     });

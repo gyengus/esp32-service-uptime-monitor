@@ -1,5 +1,6 @@
 (function() {
 let allEntities = [];
+let hasLoadedEntities = false;
 let currentFilter = 'ALL';
 let entityToDelete = "";
 let ws = null;
@@ -29,6 +30,11 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function renderUiSvg(symbolId, extraClass = '') {
+    const cls = extraClass ? `ui-icon ${extraClass}` : 'ui-icon';
+    return `<svg class="${escapeHtml(cls)}" aria-hidden="true"><use href="#${escapeHtml(symbolId)}"></use></svg>`;
 }
 
 function resolveIconConfig(rawIcon) {
@@ -128,9 +134,11 @@ function setWsStatus(connected) {
     const dot = $('#wsStatusDot');
     if (!dot.length) return;
     if (connected) {
-        dot.removeClass('bg-secondary bg-danger').addClass('bg-success').attr('title', 'Live (WebSocket connected)');
+        const msg = 'Live (WebSocket connected)';
+        dot.removeClass('bg-secondary bg-danger').addClass('bg-success').attr({ title: msg, 'aria-label': msg });
     } else {
-        dot.removeClass('bg-secondary bg-success').addClass('bg-danger').attr('title', 'Disconnected (Reconnecting...)');
+        const msg = 'Disconnected (Reconnecting...)';
+        dot.removeClass('bg-secondary bg-success').addClass('bg-danger').attr({ title: msg, 'aria-label': msg });
     }
 }
 
@@ -193,6 +201,7 @@ function handleWsMessage(msg) {
     switch (msg.type) {
         case 'init':
             if (Array.isArray(msg.entities)) {
+                hasLoadedEntities = true;
                 allEntities = msg.entities;
                 renderEntities();
             }
@@ -303,17 +312,33 @@ $('#refreshButton').click(function() {
     loadEntities();
 });
 
+function renderEntitiesLoading() {
+    const grid = $("#entityGrid");
+    grid.html(`
+        <div class="col-12 text-center text-secondary py-5" role="status" aria-live="polite">
+            <div class="spinner-border text-primary mb-2" role="status" aria-hidden="true"></div>
+            <div class="small">Loading services...</div>
+        </div>
+    `);
+}
+
 function loadEntities() {
     const icon = $("#refreshIcon");
     icon.addClass("spin-animation");
     $("#refreshButton").prop("disabled", true);
+    if (!hasLoadedEntities) {
+        renderEntitiesLoading();
+    }
 
     loadSummary();
     $.getJSON('/api/monitoredentities', function(data) {
+        hasLoadedEntities = true;
         allEntities = data;
         renderEntities();
     }).fail(function() {
+        hasLoadedEntities = true;
         showError("Can't fetch monitored entities");
+        renderEntities();
     }).always(function() {
         setTimeout(() => {
             icon.removeClass("spin-animation");
@@ -326,19 +351,22 @@ function renderEntities() {
     let grid = $("#entityGrid");
     grid.empty();
 
-    $('#filterAll, #filterOnline, #filterOffline').removeClass('badge-active');
+    $('#filterAll, #filterOnline, #filterOffline')
+        .removeClass('badge-active')
+        .attr('aria-pressed', 'false');
     $('#navStats').removeClass('nav-stats-filtering');
 
     if (currentFilter === 'ALL') {
-        $('#filterAll').addClass('badge-active');
+        $('#filterAll').addClass('badge-active').attr('aria-pressed', 'true');
     } else {
         $('#navStats').addClass('nav-stats-filtering');
-        if (currentFilter === 'ONLINE') $('#filterOnline').addClass('badge-active');
-        if (currentFilter === 'OFFLINE') $('#filterOffline').addClass('badge-active');
+        if (currentFilter === 'ONLINE') $('#filterOnline').addClass('badge-active').attr('aria-pressed', 'true');
+        if (currentFilter === 'OFFLINE') $('#filterOffline').addClass('badge-active').attr('aria-pressed', 'true');
     }
 
+    const userLocale = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : 'en-US';
     let displayList = [...allEntities].sort((a, b) => 
-        a.name.localeCompare(b.name, 'hu', { sensitivity: 'base' })
+        a.name.localeCompare(b.name, userLocale, { sensitivity: 'base' })
     );
 
     if (currentFilter === 'ONLINE') {
@@ -348,39 +376,74 @@ function renderEntities() {
     }
 
     if (displayList.length === 0) {
-        grid.append('<div class="col-12 text-center text-secondary py-5"><h5>Nothing to show.</h5></div>');
+        if (allEntities.length === 0) {
+            grid.append(`
+                <div class="col-12 text-center text-secondary py-5">
+                    <h5>No monitored services yet</h5>
+                    <p class="small mb-3">Add your first service to start monitoring its uptime.</p>
+                    <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1" id="emptyAddButton">
+                        ${renderUiSvg('ui-plus')}
+                        <span>Add your first service</span>
+                    </button>
+                </div>
+            `);
+        } else {
+            grid.append(`
+                <div class="col-12 text-center text-secondary py-5">
+                    <h5>No services match the current filter</h5>
+                    <button type="button" class="btn btn-outline-secondary mt-2" id="emptyShowAllButton">Show all</button>
+                </div>
+            `);
+        }
         return;
     }
 
+    const formatter = new Intl.DateTimeFormat(userLocale, {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
     displayList.forEach(entity => {
-        let cardBgClass = entity.disabled ? "text-bg-secondary" : entity.lastChanged ? (entity.isOnline ? "text-bg-success" : "text-bg-danger") : "text-bg-light";
+        const isLightCard = !entity.disabled && !entity.lastChanged;
+        const cardBgClass = entity.disabled ? "text-bg-secondary" : entity.lastChanged ? (entity.isOnline ? "text-bg-success" : "text-bg-danger") : "text-bg-light";
+        const linkClass = isLightCard ? 'link-dark' : 'link-light';
+        const subTextClass = isLightCard ? 'text-body-secondary' : 'text-white text-opacity-75';
+        const actionBtnClass = isLightCard ? 'btn-outline-dark text-dark' : 'btn-outline-light text-white';
+
+        let statusBadge = '';
+        if (entity.disabled) {
+            statusBadge = `<span class="badge text-bg-dark border border-secondary-subtle d-inline-flex align-items-center gap-1">${renderUiSvg('ui-pause-circle')}<span>Disabled</span></span>`;
+        } else if (!entity.lastChanged) {
+            statusBadge = `<span class="badge text-bg-secondary d-inline-flex align-items-center gap-1">${renderUiSvg('ui-clock')}<span>Pending</span></span>`;
+        } else if (entity.isOnline) {
+            statusBadge = `<span class="badge bg-dark bg-opacity-25 text-white border border-white border-opacity-25 d-inline-flex align-items-center gap-1">${renderUiSvg('ui-check-circle')}<span>Online</span></span>`;
+        } else {
+            statusBadge = `<span class="badge bg-dark bg-opacity-25 text-white border border-white border-opacity-25 d-inline-flex align-items-center gap-1">${renderUiSvg('ui-alert-circle')}<span>Offline</span></span>`;
+        }
+
         let iconHtml = renderIconHtml(entity.icon || "mdi-server");
-        let notifyIcon = entity.notification ? '<span class="mdi mdi-bell-outline ms-2" title="Notifications ON"></span>' : '';
+        let notifyIcon = entity.notification ? `<span class="ms-2 d-inline-flex align-items-center" title="Notifications ON">${renderUiSvg('ui-bell')}</span>` : '';
         let addressUrl = (entity.address.startsWith("http://") || entity.address.startsWith("https://")) 
             ? entity.address 
             : "http://" + entity.address;
         const safeName = escapeHtml(entity.name);
         const safeAddress = escapeHtml(entity.address);
         const safeAddressUrl = escapeHtml(addressUrl);
-        let address = `<a href="${safeAddressUrl}" target="_blank" class="link-light text-truncate" style="max-width:150px">${safeAddress}</a>`;
+        let address = `<a href="${safeAddressUrl}" target="_blank" rel="noopener noreferrer" class="${linkClass} d-block text-truncate">${safeAddress}</a>`;
 
         const lastChanged = new Date(entity.lastChanged * 1000);
-        const formatter = new Intl.DateTimeFormat('hu-HU', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
-        const lastChangedText = entity.lastChanged ? '<span class="mdi mdi-clock-outline"></span> ' + formatter.format(lastChanged) : "";
+        const lastChangedText = entity.lastChanged ? `${renderUiSvg('ui-clock', 'me-1')}${formatter.format(lastChanged)}` : "";
 
         let cardHtml = `
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="card h-100 shadow monitoredEntity ${cardBgClass}" data-entity-name="${safeName}">
                     <div class="card-body position-relative">
-                        <div class="position-absolute top-0 end-0 p-2 buttons">
-                            <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-edit p-1" data-name="${safeName}" title="Edit">
-                                <span class="mdi mdi-pencil"></span>
+                        <div class="position-absolute top-0 end-0 p-2 buttons d-flex gap-1">
+                            <button type="button" class="btn btn-sm ${actionBtnClass} opacity-75 btn-edit" data-name="${safeName}" title="Edit" aria-label="Edit ${safeName}">
+                                ${renderUiSvg('ui-pencil')}
                             </button>
-                            <button class="btn btn-sm btn-outline-light text-light-emphasis opacity-75 btn-delete p-1" data-name="${safeName}" title="Delete">
-                                <span class="mdi mdi-delete"></span>
+                            <button type="button" class="btn btn-sm ${actionBtnClass} opacity-75 btn-delete" data-name="${safeName}" title="Delete" aria-label="Delete ${safeName}">
+                                ${renderUiSvg('ui-delete')}
                             </button>
                         </div>
 
@@ -389,11 +452,13 @@ function renderEntities() {
                             <span class="text-truncate">${safeName}</span>
                             ${notifyIcon}
                         </h5>
-                        <p class="card-text small mb-0">
-                            ${entity.disabled ? '<span class="badge bg-secondary me-1 border border-white">Disabled</span>' : ''}
-                            <span class="text-white-50">${address}</span>
+                        <div class="mb-2">
+                            ${statusBadge}
+                        </div>
+                        <p class="card-text small mb-0 ${subTextClass}">
+                            ${address}
                         </p>
-                        <p class="card-text mt-2 mb-0" style="font-size: 0.75rem; opacity: 0.8;">
+                        <p class="card-text mt-2 mb-0 ${subTextClass}" style="font-size: 0.75rem;">
                             ${lastChangedText}
                         </p>
                     </div>
@@ -712,6 +777,8 @@ $(document).on('click', '.btn-edit', function() {
         $('#disabledEnabled').prop('checked', entity.disabled);
         $('#id').val(entity.name);
         $('#entityModal').modal('show');
+    }).fail(function() {
+        showError("Failed to load entity details.");
     });
 });
 
@@ -766,21 +833,26 @@ $(document).on('click', '.btn-delete', function() {
 });
 
 $('#confirmDeleteButton').click(function() {
-    if (!entityToDelete) {
+    const $btn = $(this);
+    if (!entityToDelete || $btn.prop('disabled')) {
         return;
     }
 
+    $btn.prop('disabled', true).text('Deleting...');
+    const targetName = entityToDelete;
+
     $.ajax({
-        url: `/api/monitoredentity/${encodeURIComponent(entityToDelete)}`,
+        url: `/api/monitoredentity/${encodeURIComponent(targetName)}`,
         type: 'DELETE',
         success: function(result) {
             loadEntities();
-            showSuccess(`"${entityToDelete}" has been removed.`);
+            showSuccess(`"${targetName}" has been removed.`);
         },
         error: function(xhr) {
             showError("Error: " + xhr.responseText);
         }
     }).always(function() {
+        $btn.prop('disabled', false).text('Delete');
         $('#deleteConfirmModal').modal('hide');
         $('#deleteEntityNameDisplay').text('');
         entityToDelete = "";
@@ -1291,6 +1363,16 @@ $('#terminalLogLevel').on('change', function() {
 $('#filterAll').click(() => { currentFilter = 'ALL'; renderEntities(); });
 $('#filterOnline').click(() => { currentFilter = 'ONLINE'; renderEntities(); });
 $('#filterOffline').click(() => { currentFilter = 'OFFLINE'; renderEntities(); });
+
+$(document).on('click', '#emptyAddButton', () => {
+    updateIconPreview();
+    $('#entityModal').modal('show');
+});
+
+$(document).on('click', '#emptyShowAllButton', () => {
+    currentFilter = 'ALL';
+    renderEntities();
+});
 
 $('#sysinfoModal').on('show.bs.modal', function() {
     loadDetailedSysinfo();
