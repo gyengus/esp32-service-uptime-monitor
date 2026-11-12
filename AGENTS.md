@@ -37,7 +37,7 @@ All core subsystems follow singleton or repository patterns with controlled life
 | `MonitoringService` | `include/MonitoringService.h` | Periodic HTTP HEAD checks on Core 0; manages failure counters and Discord alert triggers |
 | `NotificationService`| `include/NotificationService.h` | HTTPS POST requests to Discord webhooks via `WiFiClientSecure` |
 | `NetworkContext` | `lib/NetworkContext/` | Standalone Wi-Fi manager (STA & AP mode, non-blocking scan, auto-reconnect watchdog) |
-| `FileManager` | `lib/FileManager/` | Generic AsyncWebServer file manager supporting any `fs::FS` (SD_MMC, LittleFS) |
+| `FileManager` | `lib/FileManager/` | Generic AsyncWebServer file manager supporting any `fs::FS` (SD_MMC, LittleFS); optional compile-time toggle (`DISABLE_FILE_MANAGER`) |
 | `Config` | `include/Config.h` | Manages `/config.json` serialization and deserialization |
 | `MonitoredEntityRepository` | `include/MonitoredEntityRepository.h` | Thread-safe entity storage protected by FreeRTOS mutex semaphore; manages `/monitored_entities.json` |
 | `Storage` | `include/Storage.h` | Unified filesystem abstraction returning `storage.getFS()` (`SD_MMC` or `LittleFS`) |
@@ -53,6 +53,17 @@ All core subsystems follow singleton or repository patterns with controlled life
 - `volatile bool shouldRestart`: Flag for scheduled reboots.
 - `TaskHandle_t MonitoringTaskHandle`: Task handle for FreeRTOS task running on Core 0.
 - `temperature_sensor_handle_t temp_sensor`: ESP32-S3 on-chip temperature sensor driver handle.
+
+### Feature Flags & Compile-Time Toggles
+- `DISABLE_FILE_MANAGER`: Completely excludes `FileManager` and its HTTP routes (`/fileManager`, `/list`, `/upload`, `/delete`, `/mkdir`, `/download`) from compilation. When active:
+  - `lib/FileManager` source and headers compile to empty translation units.
+  - `web/fileManager.html` is omitted from `web.zip` and PROGMEM `EmbeddedWebArchive.cpp`.
+  - Stored `fileManager.html` is deleted from flash/SD storage on boot if previously present.
+  - Saves ~15 KB Flash code/data and RAM runtime buffers.
+  - Toggle via:
+    - Command-line: `DISABLE_FILE_MANAGER=1 pio run` (builds all default envs for release without modifying files)
+    - PlatformIO build flags: `PLATFORMIO_BUILD_FLAGS="-D DISABLE_FILE_MANAGER" pio run` or in `platformio.ini` `build_flags`
+    - C++ header: `#define DISABLE_FILE_MANAGER` in `include/Config.h`
 
 ---
 

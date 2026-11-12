@@ -1,5 +1,7 @@
 #include "FileManager.h"
 
+#ifndef DISABLE_FILE_MANAGER
+
 FileManager::FileManager(fs::FS &fs, const String &basePath)
     : _fs(&fs), _basePath(basePath), _logHandler(nullptr), _availabilityCheck(nullptr), _authCheck(nullptr) {
 }
@@ -539,3 +541,5 @@ void registerFileHandlers(AsyncWebServer &server,
     }
     fileManager.registerHandlers(server);
 }
+
+#endif // DISABLE_FILE_MANAGER

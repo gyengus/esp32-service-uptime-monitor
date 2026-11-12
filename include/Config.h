@@ -28,6 +28,16 @@
 
 #define HTTP_REQUEST_RETRIES 3
 
+// ==============================================================================
+// Feature Flags
+// ==============================================================================
+// Define DISABLE_FILE_MANAGER to completely strip File Manager from the firmware.
+// When defined, all File Manager routes (/fileManager, /list, /upload, /delete,
+// /mkdir, /download) are omitted, no code is compiled in, and fileManager.html is
+// excluded from web.zip / flash storage.
+// Can also be set in platformio.ini build_flags: -D DISABLE_FILE_MANAGER
+// #define DISABLE_FILE_MANAGER
+
 #include "devices.h"
 
 // Discord embed colors

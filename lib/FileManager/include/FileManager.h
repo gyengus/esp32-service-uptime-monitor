@@ -1,6 +1,12 @@
 #ifndef _FILE_MANAGER_H_
 #define _FILE_MANAGER_H_
 
+#if __has_include("Config.h")
+#include "Config.h"
+#endif
+
+#ifndef DISABLE_FILE_MANAGER
+
 #include <Arduino.h>
 #include <FS.h>
 #include <ESPAsyncWebServer.h>
@@ -42,5 +48,7 @@ void registerFileHandlers(AsyncWebServer &server,
                           const String &basePath = "/web",
                           FileManager::AvailabilityCheck check = nullptr,
                           FileManager::LogHandler logHandler = nullptr);
+
+#endif // DISABLE_FILE_MANAGER
 
 #endif // _FILE_MANAGER_H_

@@ -158,10 +158,60 @@ def process_file_content(full_path, rel_path, project_dir):
             return raw_bytes
     return raw_bytes
 
-def get_web_files(web_dir):
+def is_file_manager_disabled(project_dir, env=None):
+    # 1. Check OS environment variables
+    env_var = os.environ.get("DISABLE_FILE_MANAGER", "").strip().lower()
+    if env_var in ("1", "true", "yes", "on"):
+        return True
+
+    pio_flags = os.environ.get("PLATFORMIO_BUILD_FLAGS", "")
+    if "DISABLE_FILE_MANAGER" in pio_flags:
+        return True
+
+    # 2. Check SCons env if provided
+    if env is not None:
+        try:
+            cppdefines = env.get("CPPDEFINES", [])
+            if isinstance(cppdefines, (list, tuple)):
+                for d in cppdefines:
+                    if isinstance(d, (list, tuple)) and len(d) > 0 and d[0] == "DISABLE_FILE_MANAGER":
+                        return True
+                    elif d == "DISABLE_FILE_MANAGER":
+                        return True
+            elif "DISABLE_FILE_MANAGER" in str(cppdefines):
+                return True
+        except Exception:
+            pass
+
+        try:
+            build_flags = env.subst("$BUILD_FLAGS")
+            if "DISABLE_FILE_MANAGER" in build_flags:
+                return True
+        except Exception:
+            pass
+
+    # 3. Check include/Config.h
+    config_path = os.path.join(project_dir, "include", "Config.h")
+    if os.path.isfile(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    stripped = line.strip()
+                    if stripped.startswith("//") or stripped.startswith("/*"):
+                        continue
+                    if re.match(r'^#define\s+DISABLE_FILE_MANAGER\b', stripped):
+                        return True
+        except Exception:
+            pass
+
+    return False
+
+def get_web_files(web_dir, disable_file_manager=False):
     skip_dirs = {"node_modules", "tests", "coverage", ".git", ".vite"}
     skip_exts = {".map", ".test.js", ".md"}
     skip_files = {"package.json", "package-lock.json", "vitest.config.js", ".version"}
+    if disable_file_manager:
+        skip_files.add("fileManager.html")
     
     file_list = []
     for root, dirs, files in os.walk(web_dir):
@@ -176,12 +226,12 @@ def get_web_files(web_dir):
             file_list.append((full_path, rel_path))
     return file_list
 
-def create_web_zip_bytes(web_dir, project_dir, verbose=False):
+def create_web_zip_bytes(web_dir, project_dir, verbose=False, disable_file_manager=False):
     buf = io.BytesIO()
     total_orig = 0
     total_mini = 0
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for full_path, rel_path in sorted(get_web_files(web_dir), key=lambda x: x[1]):
+        for full_path, rel_path in sorted(get_web_files(web_dir, disable_file_manager=disable_file_manager), key=lambda x: x[1]):
             orig_size = os.path.getsize(full_path)
             content = process_file_content(full_path, rel_path, project_dir)
             zinfo = zipfile.ZipInfo(filename=rel_path, date_time=(2026, 1, 1, 0, 0, 0))
@@ -239,12 +289,15 @@ def create_web_zip_bytes(web_dir, project_dir, verbose=False):
         print(f"[PACK_WEB] Total assets size: {total_orig} -> {total_mini} bytes")
     return buf.getvalue()
 
-def ensure_embedded_web_archive(project_dir):
+def ensure_embedded_web_archive(project_dir, env=None, disable_file_manager=None):
+    if disable_file_manager is None:
+        disable_file_manager = is_file_manager_disabled(project_dir, env)
+
     web_dir = os.path.join(project_dir, "web")
     header_path = os.path.join(project_dir, "include", "EmbeddedWebArchive.h")
     source_path = os.path.join(project_dir, "src", "EmbeddedWebArchive.cpp")
 
-    zip_bytes = create_web_zip_bytes(web_dir, project_dir, verbose=False)
+    zip_bytes = create_web_zip_bytes(web_dir, project_dir, verbose=False, disable_file_manager=disable_file_manager)
     md5 = hashlib.md5(zip_bytes).hexdigest()
 
     # Always ensure standalone web.zip matches the embedded archive byte-for-byte

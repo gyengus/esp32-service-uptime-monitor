@@ -21,7 +21,9 @@
 #include "Api.h"
 #include "LedService.h"
 
+#ifndef DISABLE_FILE_MANAGER
 #include "FileManager.h"
+#endif
 #include "WebArchiveExtractor.h"
 #include "MonitoringService.h"
 #include "MonitoredEntityRepository.h"
@@ -35,7 +37,9 @@ Ticker restartTicker;
 DNSServer dnsServer;
 AsyncWebServer server(80);
 Api api = Api(server);
+#ifndef DISABLE_FILE_MANAGER
 FileManager fileManager(storage.getFS(), WEB_UI_PATH);
+#endif
 
 volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;
@@ -94,6 +98,7 @@ void setup() {
         }
     });
 
+#ifndef DISABLE_FILE_MANAGER
     fileManager.setLogger([](const char* level, const char* msg) {
         if (strcasecmp(level, "error") == 0) {
             Logger.error(MAINLOG, "%s", msg);
@@ -111,6 +116,7 @@ void setup() {
     fileManager.setAuthCheck([](AsyncWebServerRequest *request) {
         return isConfigFunctionsEnabled || isAPMode;
     });
+#endif
 
     Logger.info(MAINLOG, "ESP32 Service Uptime Monitor v%s", FIRMWARE_VERSION);
     Logger.info(MAINLOG, "Commit hash: %s, Build date: %s", COMMIT_HASH, BUILD_TIMESTAMP);
@@ -168,7 +174,9 @@ void setup() {
 
     if (!storage.fileExists(String(WEB_UI_PATH) + "/index.html") || 
         !storage.fileExists(String(WEB_UI_PATH) + "/config.html") ||
+#ifndef DISABLE_FILE_MANAGER
         !storage.fileExists(String(WEB_UI_PATH) + "/fileManager.html") ||
+#endif
         !storage.fileExists(versionFilePath)) {
         shouldExtractWeb = true;
     } else {
@@ -196,6 +204,13 @@ void setup() {
     } else {
         Logger.info(MAINLOG, "Web UI up to date (version: %s)", currentVersion.c_str());
     }
+
+#ifdef DISABLE_FILE_MANAGER
+    if (storage.fileExists(String(WEB_UI_PATH) + "/fileManager.html")) {
+        storage.deleteFile(String(WEB_UI_PATH) + "/fileManager.html");
+        Logger.info(MAINLOG, "File Manager disabled: removed %s/fileManager.html from storage", WEB_UI_PATH);
+    }
+#endif
 
     if (!storage.fileExists(CONFIG_FILE_PATH)) {
         Logger.warning(MAINLOG, "Config file not found, entering configuration mode");
@@ -440,7 +455,9 @@ void commonWebServerSettings() {
             request->send(404, "text/plain", "Not found");
         }
     });
+#ifndef DISABLE_FILE_MANAGER
     fileManager.registerHandlers(server);
+#endif
 }
 
 void onSntpSyncSchedule() {

@@ -30,6 +30,9 @@ pio run -e esp32-c3       # ESP32-C3 SuperMini (LittleFS, 4MB)
 pio run -e esp32-c6       # ESP32-C6 DevKit (LittleFS, 4MB)
 pio run -e esp32-c5       # ESP32-C5 DevKit (LittleFS, 4MB)
 
+# Build with File Manager excluded for release (omits fileManager.html, saves ~15 KB flash)
+DISABLE_FILE_MANAGER=1 pio run
+
 # Flash via USB and monitor serial output (115200 8N1)
 pio run -e esp32-s3-cam --target upload
 pio device monitor

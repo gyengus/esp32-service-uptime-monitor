@@ -70,15 +70,16 @@ def resolve_ota_token(project_dir):
                 pass
     return ""
 
-def create_web_zip_bytes(web_dir, project_dir):
-    return web_packer.create_web_zip_bytes(web_dir, project_dir, verbose=True)
+def create_web_zip_bytes(web_dir, project_dir, env=None):
+    disable_file_manager = web_packer.is_file_manager_disabled(project_dir, env)
+    return web_packer.create_web_zip_bytes(web_dir, project_dir, verbose=True, disable_file_manager=disable_file_manager)
 
 def pack_web_action(source, target, env):
     project_dir = env.get("PROJECT_DIR", ".")
     web_dir = os.path.join(project_dir, "web")
     out_zip = os.path.join(project_dir, "web.zip")
     print(f"\n[PACK_WEB] Packaging web assets from {web_dir} -> {out_zip}")
-    zip_bytes = create_web_zip_bytes(web_dir, project_dir)
+    zip_bytes = create_web_zip_bytes(web_dir, project_dir, env)
     with open(out_zip, "wb") as f:
         f.write(zip_bytes)
     print(f"[PACK_WEB] Created {out_zip} ({len(zip_bytes)} bytes)\n")
@@ -91,7 +92,7 @@ def upload_web_action(source, target, env):
 
     print(f"\n[UPLOAD_WEB] Target host: {esp_host}")
     print(f"[UPLOAD_WEB] Packaging and uploading web assets to: {url}")
-    zip_bytes = create_web_zip_bytes(web_dir, project_dir)
+    zip_bytes = create_web_zip_bytes(web_dir, project_dir, env)
     print(f"[UPLOAD_WEB] Archive size: {len(zip_bytes)} bytes")
 
     boundary = "----WebKitFormBoundaryPlatformIO7MA4YWxkTrZu0gW"

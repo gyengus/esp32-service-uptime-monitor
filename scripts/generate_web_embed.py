@@ -8,4 +8,4 @@ if scripts_dir not in sys.path:
     sys.path.insert(0, scripts_dir)
 
 import web_packer
-web_packer.ensure_embedded_web_archive(project_dir)
+web_packer.ensure_embedded_web_archive(project_dir, env=env)
