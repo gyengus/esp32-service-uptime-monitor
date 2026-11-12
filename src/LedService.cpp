@@ -45,7 +45,7 @@ void LedService::updateMonitoringLed(uint32_t offlineCount) {
 
     if (offlineCount > 0) {
         const int pulseSpeed = 1500; // ms
-        uint8_t configuredBrightness = config.getConfig().ledBrightness;
+        uint8_t configuredBrightness = config.getLedBrightness();
         uint8_t maxBrightness = (uint8_t)((255ULL * configuredBrightness) / 100);
 
         if (maxBrightness == 0) {
@@ -70,7 +70,7 @@ void LedService::updateApModeLed() {
     }
 
     const int pulseSpeed = 2000; // ms
-    uint8_t configuredBrightness = config.getConfig().ledBrightness;
+    uint8_t configuredBrightness = config.getLedBrightness();
     uint8_t maxBrightness = (uint8_t)((255ULL * configuredBrightness) / 100);
 
     if (maxBrightness == 0) {
@@ -86,7 +86,7 @@ void LedService::updateApModeLed() {
 
 void LedService::updateErrorLed() {
     const int pulseSpeed = 4000; // ms
-    uint8_t configuredBrightness = config.getConfig().ledBrightness;
+    uint8_t configuredBrightness = config.getLedBrightness();
     uint8_t maxBrightness = (uint8_t)((255ULL * configuredBrightness) / 100);
 
     if (maxBrightness == 0) {

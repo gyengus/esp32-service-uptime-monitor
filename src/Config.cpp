@@ -49,6 +49,7 @@ void Config::fillJson(JsonObject& doc, config_t config) const {
     doc["logLevel"] = config.logLevel;
     doc["logLevelName"] = logLevelToString(config.logLevel);
     doc["ledBrightness"] = config.ledBrightness;
+    doc["otaToken"] = config.otaToken;
 }
 
 String Config::toJson() {
@@ -83,6 +84,7 @@ config_t Config::fromJsonObject(const JsonObject& doc) {
     config.checkInterval = doc["checkInterval"] | DEFAULT_CHECK_INTERVAL_SECONDS;
     config.discordWebhookURL = doc["discordWebhookURL"] | "";
     config.hostname = doc["hostname"] | DEFAULT_HOSTNAME;
+    config.otaToken = doc["otaToken"] | "";
 
     if (doc["ledBrightness"].is<uint8_t>() || doc["ledBrightness"].is<int>()) {
         int brightness = doc["ledBrightness"].as<int>();

@@ -213,8 +213,17 @@ String Storage::readFile(const String &path) {
     }
 
     String content;
-    while (file.available()) {
-        content += char(file.read());
+    size_t size = file.size();
+    if (size > 0) {
+        content.reserve(size + 1);
+        char buf[256];
+        while (file.available()) {
+            size_t toRead = sizeof(buf) - 1;
+            int bytesRead = file.readBytes(buf, toRead);
+            if (bytesRead <= 0) break;
+            buf[bytesRead] = '\0';
+            content += buf;
+        }
     }
     file.close();
     return content;

@@ -307,6 +307,21 @@ void test_api_monitoredentity_crud(void) {
     AsyncWebServerRequest reqDel404;
     testServer->dispatch("/api/monitoredentity/TestNode", HTTP_DELETE, &reqDel404);
     TEST_ASSERT_EQUAL_INT(404, reqDel404.lastCode);
+
+    // 7. URL-encoded name CRUD with spaces (%20)
+    String spaceEntityJson = "{\"name\":\"Home Router\",\"address\":\"http://router.home\",\"icon\":\"router\",\"notification\":true,\"disabled\":false}";
+    AsyncWebServerRequest reqPostSpace;
+    TEST_ASSERT_TRUE(testServer->dispatch("/api/monitoredentity", HTTP_POST, &reqPostSpace, spaceEntityJson));
+    TEST_ASSERT_EQUAL_INT(201, reqPostSpace.lastCode);
+
+    AsyncWebServerRequest reqGetSpace;
+    TEST_ASSERT_TRUE(testServer->dispatch("/api/monitoredentity/Home%20Router", HTTP_GET, &reqGetSpace));
+    TEST_ASSERT_EQUAL_INT(200, reqGetSpace.lastCode);
+
+    AsyncWebServerRequest reqDelSpace;
+    TEST_ASSERT_TRUE(testServer->dispatch("/api/monitoredentity/Home%20Router", HTTP_DELETE, &reqDelSpace));
+    TEST_ASSERT_EQUAL_INT(200, reqDelSpace.lastCode);
+    TEST_ASSERT_FALSE(monitoredEntityRepository.hasEntity("Home Router"));
 }
 
 void test_api_ap_mode_excludes_service_endpoints(void) {
@@ -385,21 +400,41 @@ void test_api_ota_start_forbidden_and_authorized(void) {
     TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &forbiddenReq));
     TEST_ASSERT_EQUAL_INT(403, forbiddenReq.lastCode);
 
+    // Request with arbitrary header without configured token is forbidden
+    AsyncWebServerRequest forbiddenPioReq;
+    forbiddenPioReq.setHeader("X-PlatformIO-Upload", "1");
+    TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &forbiddenPioReq));
+    TEST_ASSERT_EQUAL_INT(403, forbiddenPioReq.lastCode);
+
+    // Configure OTA token
+    config_t cfg = config.getConfig();
+    cfg.otaToken = "test_ota_secret_token";
+    config.saveConfig(cfg);
+
+    // Request with wrong token is forbidden
+    AsyncWebServerRequest wrongTokenReq;
+    wrongTokenReq.setHeader("X-PlatformIO-Upload", "wrong_token");
+    wrongTokenReq.setParam("mode", "fr");
+    wrongTokenReq.setParam("hash", "D41D8CD98F00B204E9800998ECF8427E");
+    TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &wrongTokenReq));
+    TEST_ASSERT_EQUAL_INT(403, wrongTokenReq.lastCode);
+
+    // Request with valid token is authorized
     AsyncWebServerRequest pioReq;
-    pioReq.setHeader("X-PlatformIO-Upload", "1");
+    pioReq.setHeader("X-PlatformIO-Upload", "test_ota_secret_token");
     pioReq.setParam("mode", "fr");
     pioReq.setParam("hash", "D41D8CD98F00B204E9800998ECF8427E");
     TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &pioReq));
     TEST_ASSERT_EQUAL_INT(200, pioReq.lastCode);
 
     AsyncWebServerRequest badModeReq;
-    badModeReq.setHeader("X-PlatformIO-Upload", "1");
+    badModeReq.setHeader("X-PlatformIO-Upload", "test_ota_secret_token");
     badModeReq.setParam("mode", "invalid");
     TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &badModeReq));
     TEST_ASSERT_EQUAL_INT(400, badModeReq.lastCode);
 
     AsyncWebServerRequest badHashReq;
-    badHashReq.setHeader("X-PlatformIO-Upload", "1");
+    badHashReq.setHeader("X-PlatformIO-Upload", "test_ota_secret_token");
     badHashReq.setParam("hash", "not-an-md5");
     TEST_ASSERT_TRUE(testServer->dispatch("/ota/start", HTTP_GET, &badHashReq));
     TEST_ASSERT_EQUAL_INT(400, badHashReq.lastCode);

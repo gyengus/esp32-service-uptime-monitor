@@ -25,10 +25,48 @@ def get_git_commit_hash(project_dir):
     except Exception:
         return "unknown"
 
-def minify_html(text):
+def minify_html(text, project_dir=None):
     text = re.sub(r'<!--(?!\s*\[if).*?-->', '', text, flags=re.DOTALL)
+
+    def process_script(match):
+        open_tag = match.group(1)
+        body = match.group(2)
+        close_tag = match.group(3)
+        if re.search(r'\bsrc\s*=', open_tag, re.IGNORECASE):
+            return match.group(0)
+        type_m = re.search(r'\btype\s*=\s*["\']?([^"\'\s>]+)', open_tag, re.IGNORECASE)
+        if type_m and "javascript" not in type_m.group(1).lower() and "ecmascript" not in type_m.group(1).lower():
+            return match.group(0)
+        if not body.strip():
+            return match.group(0)
+        min_body = minify_js(body, project_dir) if project_dir else minify_js_fallback(body)
+        return f"{open_tag}{min_body}{close_tag}"
+
+    def process_style(match):
+        open_tag = match.group(1)
+        body = match.group(2)
+        close_tag = match.group(3)
+        min_body = minify_css(body)
+        return f"{open_tag}{min_body}{close_tag}"
+
+    placeholders = []
+    def save_script(m):
+        placeholders.append(process_script(m))
+        return f"___BLOCK_PLACEHOLDER_{len(placeholders)-1}___"
+
+    def save_style(m):
+        placeholders.append(process_style(m))
+        return f"___BLOCK_PLACEHOLDER_{len(placeholders)-1}___"
+
+    text = re.sub(r'(<script[^>]*>)([\s\S]*?)(</script>)', save_script, text, flags=re.IGNORECASE)
+    text = re.sub(r'(<style[^>]*>)([\s\S]*?)(</style>)', save_style, text, flags=re.IGNORECASE)
+
     text = re.sub(r'>\s+<', '><', text)
     text = re.sub(r'\s+', ' ', text)
+
+    for idx, repl in enumerate(placeholders):
+        text = text.replace(f"___BLOCK_PLACEHOLDER_{idx}___", repl)
+
     return text.strip()
 
 def minify_css(text):
@@ -82,7 +120,7 @@ def minify_js(text, project_dir):
         if cmd == "terser" or os.path.isfile(cmd):
             try:
                 proc = subprocess.run(
-                    [cmd, "--compress", "toplevel=true", "--mangle", "toplevel=true"],
+                    [cmd, "--compress", "--mangle"],
                     input=text.encode("utf-8"),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -102,7 +140,7 @@ def process_file_content(full_path, rel_path, project_dir):
     lower = rel_path.lower()
     if lower.endswith(".html"):
         try:
-            minified = minify_html(raw_bytes.decode("utf-8"))
+            minified = minify_html(raw_bytes.decode("utf-8"), project_dir)
             return minified.encode("utf-8")
         except Exception:
             return raw_bytes

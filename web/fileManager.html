@@ -112,9 +112,24 @@
             if(e.which === 13) createDir();
         });
 
-        // Törlés megerősítése
         $('#btnConfirmDelete').on('click', function() {
             executeDelete(itemToDelete);
+        });
+
+        $('#fileList').on('click', '.btn-download', function() {
+            window.downloadItem($(this).data('name'));
+        });
+
+        $('#fileList').on('click', '.btn-delete', function() {
+            window.confirmDelete($(this).data('name'));
+        });
+
+        $('#fileList').on('click', '.folder-link', function() {
+            window.changeDirectory($(this).data('folder'));
+        });
+
+        $('#fileList').on('click', '.btn-parent-dir', function() {
+            window.goBack();
         });
     });
 
@@ -145,7 +160,7 @@
                 $tbody.append(`
                     <tr>
                         <td colspan="3">
-                            <button class="btn btn-sm btn-link text-decoration-none d-flex align-items-center" onclick="goBack()">
+                            <button class="btn btn-sm btn-link text-decoration-none d-flex align-items-center btn-parent-dir">
                                 <span class="mdi mdi-arrow-up-bold-level me-2"></span>.. [Parent Directory]
                             </button>
                         </td>
@@ -159,19 +174,19 @@
                 const sizeDisplay = file.isDir ? '<span class="text-muted small">DIR</span>' : (file.size / 1024).toFixed(1) + ' KB';
                 
                 let nameHtml = file.isDir 
-                    ? `<span class="folder-link" onclick="changeDirectory('${file.name}')">${icon}${file.name}</span>`
+                    ? `<span class="folder-link" data-folder="${file.name}">${icon}${file.name}</span>`
                     : `<span class="d-flex align-items-center">${icon}${file.name}</span>`;
 
                 let actionButtons = '';
                 if (!file.isDir) {
                     actionButtons = `
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadItem('${file.name}')" title="Download">
+                        <button class="btn btn-sm btn-outline-primary me-1 btn-download" data-name="${file.name}" title="Download">
                             <span class="mdi mdi-download"></span>
                         </button>
                     `;
                 }
                 actionButtons += `
-                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('${file.name}')" title="Delete">
+                    <button class="btn btn-sm btn-outline-danger btn-delete" data-name="${file.name}" title="Delete">
                         <span class="mdi mdi-delete"></span>
                     </button>
                 `;
@@ -268,6 +283,16 @@
         const url = `/download?file=${encodeURIComponent(name)}&path=${encodeURIComponent(currentPath)}`;
         window.location.href = url;
     }
+
+    window.showToast = showToast;
+    window.loadFiles = loadFiles;
+    window.uploadFile = uploadFile;
+    window.createDir = createDir;
+    window.confirmDelete = confirmDelete;
+    window.executeDelete = executeDelete;
+    window.changeDirectory = changeDirectory;
+    window.goBack = goBack;
+    window.downloadItem = downloadItem;
 </script>
 
 </body>

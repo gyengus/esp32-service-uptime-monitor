@@ -108,6 +108,9 @@ void setup() {
     fileManager.setAvailabilityCheck([]() {
         return storage.isAvailable();
     });
+    fileManager.setAuthCheck([](AsyncWebServerRequest *request) {
+        return isConfigFunctionsEnabled || isAPMode;
+    });
 
     Logger.info(MAINLOG, "ESP32 Service Uptime Monitor v%s", FIRMWARE_VERSION);
     Logger.info(MAINLOG, "Commit hash: %s, Build date: %s", COMMIT_HASH, BUILD_TIMESTAMP);
@@ -165,6 +168,7 @@ void setup() {
 
     if (!storage.fileExists(String(WEB_UI_PATH) + "/index.html") || 
         !storage.fileExists(String(WEB_UI_PATH) + "/config.html") ||
+        !storage.fileExists(String(WEB_UI_PATH) + "/fileManager.html") ||
         !storage.fileExists(versionFilePath)) {
         shouldExtractWeb = true;
     } else {
@@ -184,9 +188,7 @@ void setup() {
         }
 
         if (WebArchiveExtractor::extractEmbeddedArchive(WEB_UI_PATH)) {
-            if (!storage.fileExists(versionFilePath)) {
-                storage.writeFile(versionFilePath, currentVersion);
-            }
+            storage.writeFile(versionFilePath, currentVersion);
             Logger.info(MAINLOG, "Embedded Web UI successfully extracted to %s (version: %s)", WEB_UI_PATH, currentVersion.c_str());
         } else {
             Logger.error(MAINLOG, "Failed to extract embedded Web UI archive");
@@ -386,7 +388,7 @@ void initNormalMode() {
 void commonWebServerSettings() {
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type, X-PlatformIO-Upload");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Private-Network", "true");
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(storage.getFS(), (String(WEB_UI_PATH) + "/static/favicon.ico"), "image/x-icon");
@@ -536,7 +538,7 @@ void IRAM_ATTR handleButtonInterrupt() {
 
 void monitoringTaskLoop(void * pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(5000));
-    Logger.info(MAINLOG, "Started monitoring task on core: %d", xPortGetCoreID);
+    Logger.info(MAINLOG, "Started monitoring task on core: %d", xPortGetCoreID());
     for(;;) {
         if (isOtaUpdating) {
             vTaskDelay(pdMS_TO_TICKS(1000));

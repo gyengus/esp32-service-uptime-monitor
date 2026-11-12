@@ -11,6 +11,7 @@ class FileManager {
 public:
     using LogHandler = std::function<void(const char* level, const char* msg)>;
     using AvailabilityCheck = std::function<bool()>;
+    using AuthCheck = std::function<bool(AsyncWebServerRequest *request)>;
 
     explicit FileManager(fs::FS &fs, const String &basePath = "/web");
 
@@ -18,6 +19,7 @@ public:
     void setBasePath(const String &basePath);
     void setLogger(LogHandler handler);
     void setAvailabilityCheck(AvailabilityCheck check);
+    void setAuthCheck(AuthCheck check);
 
     void registerHandlers(AsyncWebServer &server);
 
@@ -28,6 +30,7 @@ private:
     String _basePath;
     LogHandler _logHandler;
     AvailabilityCheck _availabilityCheck;
+    AuthCheck _authCheck;
 
     void log(const char* level, const char* msg);
     String buildFullPath(const String &pathParam, const String &fileName = "") const;

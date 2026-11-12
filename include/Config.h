@@ -45,6 +45,7 @@ typedef struct {
     String hostname = DEFAULT_HOSTNAME;
     uint8_t logLevel = DEFAULT_LOG_LEVEL;
     uint8_t ledBrightness = DEFAULT_LED_BRIGHTNESS;
+    String otaToken;
 } config_t;
 
 class Config {
@@ -57,6 +58,8 @@ public:
     bool saveConfig(const config_t& config);
     bool updateLogLevel(uint8_t newLevel);
     config_t getConfig();
+    uint8_t getLedBrightness() const { return currentConfig.ledBrightness; }
+    String getOtaToken() const { return currentConfig.otaToken; }
     void fillJson(JsonObject& doc) const;
     void fillJson(JsonObject& doc, config_t config) const;
     config_t fromJsonObject(const JsonObject& doc);

@@ -24,7 +24,33 @@
 static PSRAMAllocator psramAllocator;
 
 static bool isUploadAuthorized(AsyncWebServerRequest *request) {
-    return isConfigFunctionsEnabled || isAPMode || request->hasHeader("X-PlatformIO-Upload");
+    if (isConfigFunctionsEnabled || isAPMode) {
+        return true;
+    }
+    String otaToken = config.getOtaToken();
+    if (otaToken.length() >= 8 && request->hasHeader("X-PlatformIO-Upload")) {
+        const AsyncWebHeader *h = request->getHeader("X-PlatformIO-Upload");
+        return (h != nullptr) && h->value().equals(otaToken);
+    }
+    return false;
+}
+
+static String urlDecode(const String &input) {
+    String decoded = "";
+    decoded.reserve(input.length());
+    for (size_t i = 0; i < input.length(); i++) {
+        if (input[i] == '%' && i + 2 < input.length()) {
+            char a = input[++i];
+            char b = input[++i];
+            decoded += (char)((std::isdigit(static_cast<unsigned char>(a)) ? a - '0' : std::toupper(static_cast<unsigned char>(a)) - 'A' + 10) * 16 +
+                             (std::isdigit(static_cast<unsigned char>(b)) ? b - '0' : std::toupper(static_cast<unsigned char>(b)) - 'A' + 10));
+        } else if (input[i] == '+') {
+            decoded += ' ';
+        } else {
+            decoded += input[i];
+        }
+    }
+    return decoded;
 }
 
 static bool isValidMd5Hex(const String &hash) {
@@ -474,10 +500,21 @@ void Api::registerConfigEndpoints() {
 
         if (index == 0) request->_tempObject = new String("");
         String* body = (String*)request->_tempObject;
-        for (size_t i = 0; i < len; i++) *body += (char)data[i];
+        if (body) {
+            for (size_t i = 0; i < len; i++) *body += (char)data[i];
+        }
 
         if (index + len == total) {
-            Logger.debug(MAINLOG, "Received new config: %s", body);
+            if (!body || body->length() == 0) {
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No body provided\"}");
+                if (body) {
+                    delete body;
+                    request->_tempObject = nullptr;
+                }
+                return;
+            }
+
+            Logger.debug(MAINLOG, "Received new config: %s", body->c_str());
             JsonDocument doc(&psramAllocator);
             deserializeJson(doc, *body);
 
@@ -518,8 +555,6 @@ void Api::registerConfigEndpoints() {
             }
 
             delete body; request->_tempObject = nullptr;
-        } else {
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No body provided\"}");
         }
     });
 
@@ -1002,7 +1037,7 @@ void Api::registerServicesEndpoints() {
      *               $ref: '#/components/schemas/ErrorResponse'
      */
     server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String name = request->pathArg(0);
+        String name = urlDecode(request->pathArg(0));
         MonitoredEntity entity;
         
         if (monitoredEntityRepository.getEntity(name, entity)) {
@@ -1048,7 +1083,7 @@ void Api::registerServicesEndpoints() {
      *               $ref: '#/components/schemas/ErrorResponse'
      */
     server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_DELETE, [](AsyncWebServerRequest *request) {
-        String name = request->pathArg(0);
+        String name = urlDecode(request->pathArg(0));
         
         if (monitoredEntityRepository.removeEntity(name)) {
             wsService.broadcastEntityDeleted(name);
@@ -1158,9 +1193,7 @@ void Api::registerServicesEndpoints() {
         for (size_t i = 0; i < len; i++) *buffer += (char)data[i];
 
         if (index + len == total) {
-            String oldName = request->pathArg(0);
-            oldName.replace("%20", " "); 
-            oldName.replace("+", " ");
+            String oldName = urlDecode(request->pathArg(0));
 
             JsonDocument doc(&psramAllocator);
             deserializeJson(doc, *buffer);

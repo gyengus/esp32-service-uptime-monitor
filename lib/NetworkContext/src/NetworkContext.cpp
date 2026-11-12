@@ -128,7 +128,7 @@ void NetworkContext::checkConnection() {
 
 void NetworkContext::startAPMode(const String &ssid, const String &password, uint8_t channel, uint8_t maxConnections) {
     char logBuf[128];
-    snprintf(logBuf, sizeof(logBuf), "Starting AP mode, SSID: %s, Password: %s", ssid.c_str(), password.c_str());
+    snprintf(logBuf, sizeof(logBuf), "Starting AP mode, SSID: %s, Security: %s", ssid.c_str(), password.length() > 0 ? "WPA2-PSK" : "Open");
     log("INFO", logBuf);
 
     WiFi.mode(WIFI_AP_STA);

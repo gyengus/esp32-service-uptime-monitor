@@ -50,6 +50,26 @@ def resolve_target_host(env):
 
     return "esp32-service-uptime-monitor.local"
 
+def resolve_ota_token(project_dir):
+    for var in ("ESP_OTA_TOKEN", "OTA_TOKEN"):
+        val = os.environ.get(var)
+        if val and val.strip():
+            return val.strip()
+
+    for candidate in ("config.json", os.path.join("data", "config.json")):
+        cfg_path = os.path.join(project_dir, candidate)
+        if os.path.isfile(cfg_path):
+            try:
+                import json
+                with open(cfg_path, "r", encoding="utf-8") as f:
+                    cfg_data = json.load(f)
+                    tok = cfg_data.get("otaToken")
+                    if tok and isinstance(tok, str) and tok.strip():
+                        return tok.strip()
+            except Exception:
+                pass
+    return ""
+
 def create_web_zip_bytes(web_dir, project_dir):
     return web_packer.create_web_zip_bytes(web_dir, project_dir, verbose=True)
 
@@ -85,7 +105,9 @@ def upload_web_action(source, target, env):
     req = urllib.request.Request(url, data=bytes(body), method="POST")
     req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
     req.add_header("Content-Length", str(len(body)))
-    req.add_header("X-PlatformIO-Upload", "1")
+    ota_token = resolve_ota_token(project_dir)
+    if ota_token:
+        req.add_header("X-PlatformIO-Upload", ota_token)
 
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
@@ -123,7 +145,10 @@ def upload_firmware_ota_action(source, target, env):
         from requests_toolbelt import MultipartEncoder
         import requests
 
-    ota_headers = {"X-PlatformIO-Upload": "1"}
+    ota_token = resolve_ota_token(project_dir)
+    ota_headers = {}
+    if ota_token:
+        ota_headers["X-PlatformIO-Upload"] = ota_token
     start_url = f"http://{esp_host}/ota/start?mode=fr&hash={md5}"
     try:
         resp = requests.get(start_url, headers=ota_headers, timeout=15)
@@ -147,8 +172,9 @@ def upload_firmware_ota_action(source, target, env):
             headers = {
                 "Content-Type": encoder.content_type,
                 "Content-Length": str(encoder.len),
-                "X-PlatformIO-Upload": "1"
             }
+            if ota_token:
+                headers["X-PlatformIO-Upload"] = ota_token
             resp = requests.post(upload_url, data=encoder, headers=headers, timeout=90)
             if resp.status_code != 200:
                 print(f"[OTA_UPLOAD] Upload failed: {resp.status_code} {resp.text}")

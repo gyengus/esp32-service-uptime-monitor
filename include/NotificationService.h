@@ -16,10 +16,7 @@ public:
     bool send(const String& url, const String& message, uint32_t color = DISCORD_COLOR_BLUE);
 
 private:
-    NotificationService() {  };
-    WiFiClientSecure* client;
-    HTTPClient* http;
-    void initContext();
+    NotificationService() {}
 };
 
 extern NotificationService& notificationService;

@@ -88,6 +88,16 @@ public:
     const String& value() const { return _value; }
 };
 
+class AsyncWebHeader {
+public:
+    AsyncWebHeader(const String& name, const String& value) : _name(name), _value(value) {}
+    const String& name() const { return _name; }
+    const String& value() const { return _value; }
+private:
+    String _name;
+    String _value;
+};
+
 class AsyncWebServerRequest {
 public:
     void* _tempObject = nullptr;
@@ -120,6 +130,20 @@ public:
 
     bool hasHeader(const String& name) const {
         return _headers.find(name) != _headers.end();
+    }
+
+    const AsyncWebHeader* getHeader(const char* name) const {
+        auto it = _headers.find(String(name));
+        if (it != _headers.end()) {
+            static AsyncWebHeader h("", "");
+            h = AsyncWebHeader(it->first, it->second);
+            return &h;
+        }
+        return nullptr;
+    }
+
+    const AsyncWebHeader* getHeader(const String& name) const {
+        return getHeader(name.c_str());
     }
 
     void setHeader(const String& name, const String& val) {

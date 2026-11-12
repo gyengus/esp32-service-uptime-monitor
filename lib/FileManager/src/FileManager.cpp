@@ -1,7 +1,7 @@
 #include "FileManager.h"
 
 FileManager::FileManager(fs::FS &fs, const String &basePath)
-    : _fs(&fs), _basePath(basePath), _logHandler(nullptr), _availabilityCheck(nullptr) {
+    : _fs(&fs), _basePath(basePath), _logHandler(nullptr), _availabilityCheck(nullptr), _authCheck(nullptr) {
 }
 
 void FileManager::setFileSystem(fs::FS &fs) {
@@ -18,6 +18,10 @@ void FileManager::setLogger(LogHandler handler) {
 
 void FileManager::setAvailabilityCheck(AvailabilityCheck check) {
     _availabilityCheck = check;
+}
+
+void FileManager::setAuthCheck(AuthCheck check) {
+    _authCheck = check;
 }
 
 bool FileManager::isStorageAvailable() const {
@@ -92,6 +96,10 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
      *         description: Storage not available
      */
     server.on("/fileManager", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        if (_authCheck && !_authCheck(request)) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
             request->send(500, "text/plain", "Storage not available");
@@ -136,6 +144,10 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
      *         description: Storage not available or creation failed
      */
     server.on("/mkdir", HTTP_POST, [this](AsyncWebServerRequest *request) {
+        if (_authCheck && !_authCheck(request)) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
             request->send(500, "text/plain", "Storage not available");
@@ -215,9 +227,19 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
      *       '500':
      *         description: Storage not available
      */
-    server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/upload", HTTP_POST, [this](AsyncWebServerRequest *request) {
+        if (_authCheck && !_authCheck(request)) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
         request->send(200, "text/plain", "OK");
     }, [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+        if (_authCheck && !_authCheck(request)) {
+            if (index == 0) {
+                request->send(403, "text/plain", "Forbidden");
+            }
+            return;
+        }
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
             request->send(500, "text/plain", "Storage not available");
@@ -289,6 +311,10 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
      *         description: Storage not available
      */
     server.on("/list", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        if (_authCheck && !_authCheck(request)) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
             request->send(500, "text/plain", "Storage not available");
@@ -367,6 +393,10 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
      *         description: Storage not available or deletion failed
      */
     server.on("/delete", HTTP_DELETE, [this](AsyncWebServerRequest *request) {
+        if (_authCheck && !_authCheck(request)) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
             request->send(500, "text/plain", "Storage not available");
@@ -454,6 +484,10 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
      *         description: Storage not available
      */
     server.on("/download", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        if (_authCheck && !_authCheck(request)) {
+            request->send(403, "text/plain", "Forbidden");
+            return;
+        }
         if (!isStorageAvailable() || !_fs) {
             log("error", "Storage not available");
             request->send(500, "text/plain", "Storage not available");

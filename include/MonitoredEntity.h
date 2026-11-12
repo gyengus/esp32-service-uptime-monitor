@@ -19,9 +19,9 @@ public:
     time_t getLastChanged() const;
 
     // Setters
-    void setName(String &name);
-    void setAddress(String &addr);
-    void setIcon(String &icon);
+    void setName(const String &name);
+    void setAddress(const String &addr);
+    void setIcon(const String &icon);
     void setNotification(bool notify);
     void setDisabled(bool disabled);
     void setOnlineStatus(bool online);

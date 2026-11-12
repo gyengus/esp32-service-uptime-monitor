@@ -201,7 +201,7 @@ bool MonitoredEntityRepository::updateCheckResult(const String& name, bool succe
     return statusChanged;
 }
 
-void MonitoredEntityRepository::getCounts(uint8_t& online, uint8_t& offline, unsigned int& total) {
+void MonitoredEntityRepository::getCounts(unsigned int& online, unsigned int& offline, unsigned int& total) {
     online = 0;
     offline = 0;
     total = 0;
@@ -217,6 +217,13 @@ void MonitoredEntityRepository::getCounts(uint8_t& online, uint8_t& offline, uns
         }
         xSemaphoreGive(_mutex);
     }
+}
+
+void MonitoredEntityRepository::getCounts(uint8_t& online, uint8_t& offline, unsigned int& total) {
+    unsigned int on = 0, off = 0;
+    getCounts(on, off, total);
+    online = (on > 255) ? 255 : (uint8_t)on;
+    offline = (off > 255) ? 255 : (uint8_t)off;
 }
 
 unsigned int MonitoredEntityRepository::size() {

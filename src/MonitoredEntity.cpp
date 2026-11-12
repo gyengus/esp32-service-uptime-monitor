@@ -16,15 +16,15 @@ bool MonitoredEntity::isDisabled() const { return _disabled; }
 time_t MonitoredEntity::getLastChanged() const { return _lastChanged; }
 
 // --- Setters ---
-void MonitoredEntity::setName(String &name) { _name = name; }
-void MonitoredEntity::setAddress(String &addr) { _address = addr; }
-void MonitoredEntity::setIcon(String &icon) { _icon = icon; }
+void MonitoredEntity::setName(const String &name) { _name = name; }
+void MonitoredEntity::setAddress(const String &addr) { _address = addr; }
+void MonitoredEntity::setIcon(const String &icon) { _icon = icon; }
 void MonitoredEntity::setNotification(bool notify) { _notification = notify; }
 void MonitoredEntity::setDisabled(bool disabled) { _disabled = disabled; }
 void MonitoredEntity::setLastChanged(time_t lastChanged) { _lastChanged = lastChanged; }
 
 void MonitoredEntity::setOnlineStatus(bool online) {
-    if (_isOnline != online) {
+    if (_isOnline != online || _lastChanged == 0) {
         _isOnline = online;
         _lastChanged = time(NULL);
         if (online) _failCount = 0;
@@ -47,7 +47,7 @@ void MonitoredEntity::fillJson(JsonObject& doc) const {
     doc["isOnline"] = _isOnline;
     doc["notification"] = _notification;
     doc["disabled"] = _disabled;
-    doc["lastChanged"] = (uint32_t)_lastChanged;
+    doc["lastChanged"] = (uint64_t)_lastChanged;
 }
 
 bool MonitoredEntity::fromJsonObject(const JsonObject& doc) {
@@ -65,8 +65,8 @@ bool MonitoredEntity::fromJsonObject(const JsonObject& doc) {
     if (doc["disabled"].is<bool>()) _disabled = doc["disabled"].as<bool>();
     if (doc["isOnline"].is<bool>()) _isOnline = doc["isOnline"].as<bool>();
 
-    if (doc["lastChanged"].is<uint32_t>()) {
-        _lastChanged = (time_t)doc["lastChanged"].as<uint32_t>();
+    if (doc["lastChanged"].is<uint64_t>() || doc["lastChanged"].is<uint32_t>()) {
+        _lastChanged = (time_t)doc["lastChanged"].as<uint64_t>();
     }
 
     return true;

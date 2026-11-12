@@ -2,17 +2,20 @@
 #include "WsService.h"
 #include <cstring>
 
-WsLogStream::WsLogStream() : _pos(0), _overflow(false) {
+WsLogStream::WsLogStream() : _pos(0), _overflow(false), _mutex(xSemaphoreCreateMutex()) {
     memset(_buffer, 0, sizeof(_buffer));
 }
 
 void WsLogStream::clearBuffer() {
-    _pos = 0;
-    _overflow = false;
-    _buffer[0] = '\0';
+    if (_mutex && xSemaphoreTake(_mutex, portMAX_DELAY)) {
+        _pos = 0;
+        _overflow = false;
+        _buffer[0] = '\0';
+        xSemaphoreGive(_mutex);
+    }
 }
 
-size_t WsLogStream::write(uint8_t c) {
+void WsLogStream::writeInternal(uint8_t c) {
     if (c == '\n') {
         if (!_overflow && _pos > 0) {
             if (_pos > 0 && _buffer[_pos - 1] == '\r') {
@@ -26,16 +29,16 @@ size_t WsLogStream::write(uint8_t c) {
         }
         _pos = 0;
         _overflow = false;
-        return 1;
+        return;
     }
 
     if (c == '\r') {
-        return 1;
+        return;
     }
 
     if (_overflow) {
         // Discard rest of overflowing line until \n
-        return 1;
+        return;
     }
 
     if (_pos < sizeof(_buffer) - 1) {
@@ -53,16 +56,27 @@ size_t WsLogStream::write(uint8_t c) {
         _pos = 0;
         _overflow = true;
     }
+}
 
-    return 1;
+size_t WsLogStream::write(uint8_t c) {
+    if (_mutex && xSemaphoreTake(_mutex, portMAX_DELAY)) {
+        writeInternal(c);
+        xSemaphoreGive(_mutex);
+        return 1;
+    }
+    return 0;
 }
 
 size_t WsLogStream::write(const uint8_t *buffer, size_t size) {
     if (!buffer || size == 0) return 0;
-    for (size_t i = 0; i < size; ++i) {
-        write(buffer[i]);
+    if (_mutex && xSemaphoreTake(_mutex, portMAX_DELAY)) {
+        for (size_t i = 0; i < size; ++i) {
+            writeInternal(buffer[i]);
+        }
+        xSemaphoreGive(_mutex);
+        return size;
     }
-    return size;
+    return 0;
 }
 
 WsLogStream wsLogStream;

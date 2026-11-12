@@ -3,6 +3,11 @@
 
 #include <Arduino.h>
 
+#ifdef UNIT_TEST
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#endif
+
 class WsLogStream : public Stream {
 public:
     WsLogStream();
@@ -22,6 +27,8 @@ private:
     char _buffer[384];
     size_t _pos;
     bool _overflow;
+    SemaphoreHandle_t _mutex;
+    void writeInternal(uint8_t c);
 };
 
 extern WsLogStream wsLogStream;

@@ -26,6 +26,7 @@ public:
     std::vector<MonitoredEntity> getEntitiesSnapshot();
     std::vector<MonitoredEntity> getEntities() { return getEntitiesSnapshot(); }
     bool updateCheckResult(const String& name, bool success, bool& statusChanged, bool& newStatus, bool& notify);
+    void getCounts(unsigned int& online, unsigned int& offline, unsigned int& total);
     void getCounts(uint8_t& online, uint8_t& offline, unsigned int& total);
     unsigned int size();
     void fillJsonArray(JsonArray& array);
