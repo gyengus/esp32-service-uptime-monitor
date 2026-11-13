@@ -69,7 +69,8 @@ All core subsystems follow singleton or repository patterns with controlled life
     - Command-line: `DISABLE_MEM_STATS_LOGGING=1 pio run`
     - PlatformIO build flags: `PLATFORMIO_BUILD_FLAGS="-D DISABLE_MEM_STATS_LOGGING" pio run` or in `platformio.ini` `build_flags`
     - C++ header: `#define DISABLE_MEM_STATS_LOGGING` in `include/Config.h`
-- `RELEASE=1`: Convenience shorthand that enables all production flags (`DISABLE_FILE_MANAGER` and `DISABLE_MEM_STATS_LOGGING`) simultaneously:
+- `MIN_LOG_LEVEL`: Configures early boot and default compilation log level (`ELOG_LEVEL_DEBUG` by default). Automatically switches to `ELOG_LEVEL_INFO` when building in release mode (`RELEASE=1`), or can be overridden via `MIN_LOG_LEVEL=INFO pio run`, `-D MIN_LOG_LEVEL=ELOG_LEVEL_INFO`, or `#define MIN_LOG_LEVEL ELOG_LEVEL_INFO`.
+- `RELEASE=1`: Convenience shorthand that enables all production flags simultaneously: excludes `FileManager` (`DISABLE_FILE_MANAGER`), disables memory stats logging (`DISABLE_MEM_STATS_LOGGING`), and switches log level to `ELOG_LEVEL_INFO` (`MIN_LOG_LEVEL=ELOG_LEVEL_INFO`):
   - Command-line: `RELEASE=1 pio run`
 
 ---

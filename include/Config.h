@@ -11,7 +11,13 @@
 #define DEFAULT_TIMEZONE_OFFSET_HOURS 1
 #define DEFAULT_CHECK_INTERVAL_SECONDS 60
 #define DEFAULT_LED_BRIGHTNESS 50
-#define DEFAULT_LOG_LEVEL 8 // ELOG_LEVEL_DEBUG
+#include <Elog.h>
+
+#ifdef MIN_LOG_LEVEL
+#define DEFAULT_LOG_LEVEL MIN_LOG_LEVEL
+#else
+#define DEFAULT_LOG_LEVEL ELOG_LEVEL_DEBUG
+#endif
 
 #define CONFIG_FILE_PATH "/config.json"
 #define WEB_UI_PATH "/web"
@@ -43,6 +49,12 @@
 // Can also be set in platformio.ini build_flags: -D DISABLE_MEM_STATS_LOGGING
 // or via command-line: DISABLE_MEM_STATS_LOGGING=1 pio run
 // #define DISABLE_MEM_STATS_LOGGING
+
+// Define MIN_LOG_LEVEL to override compilation log level (e.g. ELOG_LEVEL_INFO).
+// Automatically set to ELOG_LEVEL_INFO when building with RELEASE=1.
+// Can also be set in platformio.ini build_flags: -D MIN_LOG_LEVEL=ELOG_LEVEL_INFO
+// or via command-line: MIN_LOG_LEVEL=INFO pio run
+// #define MIN_LOG_LEVEL ELOG_LEVEL_INFO
 
 #include "devices.h"
 

@@ -36,7 +36,7 @@ DISABLE_FILE_MANAGER=1 pio run
 # Build with periodic memory statistics logging excluded
 DISABLE_MEM_STATS_LOGGING=1 pio run
 
-# Build release versions (disables both File Manager and memory stats logging)
+# Build release versions (disables File Manager and memory stats logging, sets log level to INFO)
 RELEASE=1 pio run
 
 # Flash via USB and monitor serial output (115200 8N1)

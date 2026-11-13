@@ -40,7 +40,7 @@ The project uses [`include/devices.h`](include/devices.h) to define board pins a
 pio run -e esp32-s3-cam --target upload
 # Or: esp32-s3 | esp32 | esp32-c3 | esp32-c6 | esp32-c5
 
-# Production release build (disables File Manager & memory stats logging):
+# Production release build (disables File Manager & memory stats logging, sets log level to INFO):
 # RELEASE=1 pio run -e esp32-s3-cam --target upload
 
 # Monitor serial output (115200 8N1)
