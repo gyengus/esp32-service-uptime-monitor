@@ -125,8 +125,8 @@
                         <li class="d-md-none"><hr class="dropdown-divider"></li>
                         <li class="d-md-none">
                             <div class="dropdown-item-text small text-secondary d-flex gap-3 align-items-center text-nowrap">
-                                <span>v<b id="menuVersionVal" class="text-light">--</b></span>
-                                <span>Hash: <code id="menuCommitVal" class="text-info">--</code></span>
+                                <span><a id="menuVersionLink" href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-secondary version-commit-link" title="View releases on GitHub">v<b id="menuVersionVal" class="text-light">--</b></a></span>
+                                <span>Hash: <a id="menuCommitLink" href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener noreferrer" class="text-decoration-none version-commit-link" title="View commit on GitHub"><code id="menuCommitVal" class="text-info">--</code></a></span>
                             </div>
                         </li>
                     </ul>
@@ -484,11 +484,11 @@
                                 <div class="card-body py-2 px-3 small">
                                     <dl class="row mb-0 sysinfo-dl">
                                         <dt class="col-5 text-muted">Firmware</dt>
-                                        <dd class="col-7 text-end fw-medium" id="sysFwVersion">--</dd>
+                                        <dd class="col-7 text-end fw-medium"><a id="sysFwVersionLink" href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-reset version-commit-link" title="View release on GitHub"><span id="sysFwVersion">--</span></a></dd>
                                         <dt class="col-5 text-muted">Web UI</dt>
                                         <dd class="col-7 text-end" id="sysUiVersion">--</dd>
                                         <dt class="col-5 text-muted">Commit</dt>
-                                        <dd class="col-7 text-end font-monospace" id="sysCommit">--</dd>
+                                        <dd class="col-7 text-end font-monospace"><a id="sysCommitLink" href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-info version-commit-link" title="View commit on GitHub"><code id="sysCommit" class="text-info">--</code></a></dd>
                                         <dt class="col-5 text-muted">Build Date</dt>
                                         <dd class="col-7 text-end" id="sysBuildDate">--</dd>
                                         <dt class="col-5 text-muted">OTA Partition</dt>
@@ -582,8 +582,8 @@
             </div>
             
             <div class="small text-secondary text-end d-none d-md-flex gap-3 align-items-center">
-                <span>v<b id="versionVal" class="text-light">--</b></span>
-                <span>Hash: <code id="commitVal" class="text-info">--</code></span>
+                <span><a id="versionLink" href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-secondary version-commit-link" title="View releases on GitHub">v<b id="versionVal" class="text-light">--</b></a></span>
+                <span>Hash: <a id="commitLink" href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener noreferrer" class="text-decoration-none version-commit-link" title="View commit on GitHub"><code id="commitVal" class="text-info">--</code></a></span>
                 <span>Build: <span id="buildDateVal">--</span></span>
             </div>
         </div>

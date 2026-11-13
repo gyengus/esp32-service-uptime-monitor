@@ -434,6 +434,10 @@ div#mainContainer {
     letter-spacing: 0.02em;
 }
 
+.version-commit-link:hover {
+    text-decoration: underline !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;

@@ -899,10 +899,67 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#headerConfigBadge').hasClass('d-none')).toBe(false);
       expect($('#menuVersionVal').text()).toBe('1.2.3');
       expect($('#menuCommitVal').text()).toBe('#abc1234');
+      expect($('#versionVal').text()).toBe('1.2.3');
+      expect($('#commitVal').text()).toBe('#abc1234');
+
+      // Check footer links
+      expect($('#versionLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/releases/tag/v1.2.3');
+      expect($('#commitLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/commit/abc1234');
+      expect($('#versionLink').attr('target')).toBe('_blank');
+      expect($('#commitLink').attr('target')).toBe('_blank');
+
+      // Check mobile menu links
+      expect($('#menuVersionLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/releases/tag/v1.2.3');
+      expect($('#menuCommitLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/commit/abc1234');
+      expect($('#menuVersionLink').attr('target')).toBe('_blank');
+      expect($('#menuCommitLink').attr('target')).toBe('_blank');
+
+      // Check system metrics modal links
+      expect($('#sysFwVersionLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/releases/tag/v1.2.3');
+      expect($('#sysCommitLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/commit/abc1234');
+      expect($('#sysFwVersionLink').attr('target')).toBe('_blank');
+      expect($('#sysCommitLink').attr('target')).toBe('_blank');
+      expect($('#sysFwVersionLink').hasClass('text-light')).toBe(false);
+      expect($('#sysFwVersionLink').hasClass('text-reset')).toBe(true);
 
       window.updateSysinfoUI({ configEnabled: false });
       expect($('#configButton').css('display')).toBe('none');
       expect($('#headerConfigBadge').hasClass('d-none')).toBe(true);
+    });
+
+    it('generates GitHub release and commit URLs correctly', () => {
+      const repoUrl = window.GITHUB_REPO_URL;
+      expect(repoUrl).toBe('https://github.com/gyengus/esp32-service-uptime-monitor');
+
+      expect(window.getGithubReleaseUrl('1.2.3')).toBe(`${repoUrl}/releases/tag/v1.2.3`);
+      expect(window.getGithubReleaseUrl('v1.2.3')).toBe(`${repoUrl}/releases/tag/v1.2.3`);
+      expect(window.getGithubReleaseUrl('0.0.1-SNAPSHOT')).toBe(`${repoUrl}/releases/tag/v0.0.1-SNAPSHOT`);
+      expect(window.getGithubReleaseUrl('--')).toBe(`${repoUrl}/releases`);
+      expect(window.getGithubReleaseUrl('')).toBe(`${repoUrl}/releases`);
+      expect(window.getGithubReleaseUrl(null)).toBe(`${repoUrl}/releases`);
+
+      expect(window.getGithubCommitUrl('abc1234')).toBe(`${repoUrl}/commit/abc1234`);
+      expect(window.getGithubCommitUrl('#abc1234')).toBe(`${repoUrl}/commit/abc1234`);
+      expect(window.getGithubCommitUrl('--')).toBe(repoUrl);
+      expect(window.getGithubCommitUrl('')).toBe(repoUrl);
+      expect(window.getGithubCommitUrl(null)).toBe(repoUrl);
+    });
+
+    it('renders detailed sysinfo modal with release and commit links', () => {
+      window.renderDetailedSysinfoModal({
+        firmware: {
+          version: '2.0.1',
+          commit: 'fedcba9',
+          uiVersion: '2.0.1-fedcba9',
+          expectedUiVersion: '2.0.1-fedcba9',
+          buildDate: '2026-11-13'
+        }
+      });
+
+      expect($('#sysFwVersion').text()).toBe('2.0.1');
+      expect($('#sysFwVersionLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/releases/tag/v2.0.1');
+      expect($('#sysCommit').text()).toBe('#fedcba9');
+      expect($('#sysCommitLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor/commit/fedcba9');
     });
 
     it('sets aria-label alongside title on wsStatusDot', () => {

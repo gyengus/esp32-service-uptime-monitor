@@ -17,10 +17,34 @@ const DASHBOARD_ICONS_CDN = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-i
 const DASHBOARD_ICONS_TREE_URL = `${DASHBOARD_ICONS_CDN}/tree.json`;
 const MDI_CSS_URL = 'https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css';
 const ICON_SUGGESTIONS_LIMIT = 48;
+const GITHUB_REPO_URL = 'https://github.com/gyengus/esp32-service-uptime-monitor';
 let dashboardIconsCatalog = null;
 let dashboardIconsLoading = false;
 let mdiIconsCatalog = null;
 let mdiIconsLoading = false;
+
+function getGithubReleaseUrl(version) {
+    if (!version || version === '--') {
+        return `${GITHUB_REPO_URL}/releases`;
+    }
+    const cleanVer = String(version).trim();
+    if (!cleanVer || cleanVer === '--') {
+        return `${GITHUB_REPO_URL}/releases`;
+    }
+    const tag = cleanVer.startsWith('v') ? cleanVer : `v${cleanVer}`;
+    return `${GITHUB_REPO_URL}/releases/tag/${encodeURIComponent(tag)}`;
+}
+
+function getGithubCommitUrl(commit) {
+    if (!commit || commit === '--') {
+        return GITHUB_REPO_URL;
+    }
+    const cleanCommit = String(commit).replace(/^#/, '').trim();
+    if (!cleanCommit || cleanCommit === '--') {
+        return GITHUB_REPO_URL;
+    }
+    return `${GITHUB_REPO_URL}/commit/${encodeURIComponent(cleanCommit)}`;
+}
 
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -911,10 +935,21 @@ function updateSysinfoUI(data) {
     if (data.version !== undefined) {
         $("#versionVal").text(data.version);
         $("#menuVersionVal").text(data.version);
+        $("#sysFwVersion").text(data.version);
+        const releaseUrl = getGithubReleaseUrl(data.version);
+        $("#versionLink").attr('href', releaseUrl);
+        $("#menuVersionLink").attr('href', releaseUrl);
+        $("#sysFwVersionLink").attr('href', releaseUrl);
     }
     if (data.commit !== undefined) {
-        $("#commitVal").text('#' + data.commit);
-        $("#menuCommitVal").text('#' + data.commit);
+        const commitText = '#' + data.commit;
+        $("#commitVal").text(commitText);
+        $("#menuCommitVal").text(commitText);
+        $("#sysCommit").text(commitText);
+        const commitUrl = getGithubCommitUrl(data.commit);
+        $("#commitLink").attr('href', commitUrl);
+        $("#menuCommitLink").attr('href', commitUrl);
+        $("#sysCommitLink").attr('href', commitUrl);
     }
     if (data.buildDate !== undefined) $("#buildDateVal").text(data.buildDate);
 
@@ -1195,7 +1230,9 @@ function renderDetailedSysinfoModal(data) {
 
     // Firmware & Build
     const fw = data.firmware || {};
-    $('#sysFwVersion').text(fw.version || data.version || '--');
+    const fwVer = fw.version || data.version;
+    $('#sysFwVersion').text(fwVer || '--');
+    $('#sysFwVersionLink').attr('href', getGithubReleaseUrl(fwVer));
     if (fw.uiVersion) {
         const mismatch = fw.expectedUiVersion && fw.uiVersion !== fw.expectedUiVersion;
         const $ui = $('#sysUiVersion').empty().text(fw.uiVersion);
@@ -1205,7 +1242,9 @@ function renderDetailedSysinfoModal(data) {
     } else {
         $('#sysUiVersion').text('Unknown');
     }
-    $('#sysCommit').text(fw.commit ? `#${fw.commit}` : '--');
+    const commitHash = fw.commit || (data.commit ? data.commit : null);
+    $('#sysCommit').text(commitHash ? `#${commitHash}` : '--');
+    $('#sysCommitLink').attr('href', getGithubCommitUrl(commitHash));
     $('#sysBuildDate').text(fw.buildDate || '--');
     $('#sysOtaPartition').text(fw.otaPartition || '--');
     $('#sysSdk').text(fw.coreVersion ? `${fw.coreVersion} / ${fw.sdkVersion || ''}` : (fw.sdkVersion || '--'));
@@ -1443,6 +1482,9 @@ if (typeof window !== 'undefined') {
     window.get_currentFilter = () => currentFilter;
     window.set_currentFilter = (v) => { currentFilter = v; };
     window.get_entityToDelete = () => entityToDelete;
+    window.GITHUB_REPO_URL = GITHUB_REPO_URL;
+    window.getGithubReleaseUrl = getGithubReleaseUrl;
+    window.getGithubCommitUrl = getGithubCommitUrl;
     window.set_entityToDelete = (v) => { entityToDelete = v; };
     window.resolveIconConfig = resolveIconConfig;
     window.renderIconHtml = renderIconHtml;
