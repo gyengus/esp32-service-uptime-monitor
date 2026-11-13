@@ -40,6 +40,9 @@ The project uses [`include/devices.h`](include/devices.h) to define board pins a
 pio run -e esp32-s3-cam --target upload
 # Or: esp32-s3 | esp32 | esp32-c3 | esp32-c6 | esp32-c5
 
+# Production release build (disables File Manager & memory stats logging):
+# RELEASE=1 pio run -e esp32-s3-cam --target upload
+
 # Monitor serial output (115200 8N1)
 pio device monitor
 ```
@@ -70,7 +73,7 @@ Access the dashboard at `http://<hostname>.local/` (default: `http://esp32-servi
 - **Main Dashboard (`/`)**: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature) and device log terminal.
 - **Configuration Page (`/config`)**: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.
 - **Interactive API Documentation (`/api/docs` or `/swagger`)**: On-device Swagger UI backed by `/api/openapi.yaml` (also deployable statically to GitHub Pages from [`docs/api/`](docs/api/index.html)).
-- **File Manager (`/fileManager`)**: Browse directories, upload files, download files, delete items, and create folders. Can be completely disabled in production releases from the command line (`DISABLE_FILE_MANAGER=1 pio run`), via `#define DISABLE_FILE_MANAGER` in `include/Config.h`, or `-D DISABLE_FILE_MANAGER` in `platformio.ini`, omitting `fileManager.html` from storage and saving ~15 KB flash.
+- **File Manager (`/fileManager`)**: Browse directories, upload files, download files, delete items, and create folders. Can be completely disabled in production releases from the command line (`DISABLE_FILE_MANAGER=1 pio run` or `RELEASE=1 pio run`), via `#define DISABLE_FILE_MANAGER` in `include/Config.h`, or `-D DISABLE_FILE_MANAGER` in `platformio.ini`, omitting `fileManager.html` from storage and saving ~15 KB flash.
 
 ### Configuration Protection Toggle
 

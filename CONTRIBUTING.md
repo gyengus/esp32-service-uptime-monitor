@@ -33,6 +33,12 @@ pio run -e esp32-c5       # ESP32-C5 DevKit (LittleFS, 4MB)
 # Build with File Manager excluded for release (omits fileManager.html, saves ~15 KB flash)
 DISABLE_FILE_MANAGER=1 pio run
 
+# Build with periodic memory statistics logging excluded
+DISABLE_MEM_STATS_LOGGING=1 pio run
+
+# Build release versions (disables both File Manager and memory stats logging)
+RELEASE=1 pio run
+
 # Flash via USB and monitor serial output (115200 8N1)
 pio run -e esp32-s3-cam --target upload
 pio device monitor

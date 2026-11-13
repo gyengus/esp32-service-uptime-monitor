@@ -36,7 +36,13 @@
 // /mkdir, /download) are omitted, no code is compiled in, and fileManager.html is
 // excluded from web.zip / flash storage.
 // Can also be set in platformio.ini build_flags: -D DISABLE_FILE_MANAGER
+// or via command-line: DISABLE_FILE_MANAGER=1 pio run
 // #define DISABLE_FILE_MANAGER
+
+// Define DISABLE_MEM_STATS_LOGGING to disable periodic heap/PSRAM memory statistics logging.
+// Can also be set in platformio.ini build_flags: -D DISABLE_MEM_STATS_LOGGING
+// or via command-line: DISABLE_MEM_STATS_LOGGING=1 pio run
+// #define DISABLE_MEM_STATS_LOGGING
 
 #include "devices.h"
 

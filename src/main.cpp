@@ -262,7 +262,7 @@ void loop() {
             }
         }
 
-#ifdef MEM_STATS_LOGGING
+#if defined(MEM_STATS_LOGGING) && !defined(DISABLE_MEM_STATS_LOGGING)
         static unsigned long lastMemCheck = 0;
         if (millis() - lastMemCheck > 10000) {
             lastMemCheck = millis();

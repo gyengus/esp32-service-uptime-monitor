@@ -64,6 +64,13 @@ All core subsystems follow singleton or repository patterns with controlled life
     - Command-line: `DISABLE_FILE_MANAGER=1 pio run` (builds all default envs for release without modifying files)
     - PlatformIO build flags: `PLATFORMIO_BUILD_FLAGS="-D DISABLE_FILE_MANAGER" pio run` or in `platformio.ini` `build_flags`
     - C++ header: `#define DISABLE_FILE_MANAGER` in `include/Config.h`
+- `DISABLE_MEM_STATS_LOGGING`: Disables periodic heap and PSRAM statistics logging (10-second interval) in the main loop (`src/main.cpp`).
+  - Toggle via:
+    - Command-line: `DISABLE_MEM_STATS_LOGGING=1 pio run`
+    - PlatformIO build flags: `PLATFORMIO_BUILD_FLAGS="-D DISABLE_MEM_STATS_LOGGING" pio run` or in `platformio.ini` `build_flags`
+    - C++ header: `#define DISABLE_MEM_STATS_LOGGING` in `include/Config.h`
+- `RELEASE=1`: Convenience shorthand that enables all production flags (`DISABLE_FILE_MANAGER` and `DISABLE_MEM_STATS_LOGGING`) simultaneously:
+  - Command-line: `RELEASE=1 pio run`
 
 ---
 

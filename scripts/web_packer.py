@@ -160,6 +160,9 @@ def process_file_content(full_path, rel_path, project_dir):
 
 def is_file_manager_disabled(project_dir, env=None):
     # 1. Check OS environment variables
+    if os.environ.get("RELEASE", "").strip().lower() in ("1", "true", "yes", "on"):
+        return True
+
     env_var = os.environ.get("DISABLE_FILE_MANAGER", "").strip().lower()
     if env_var in ("1", "true", "yes", "on"):
         return True
