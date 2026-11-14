@@ -8,7 +8,7 @@ void initNormalMode();
 void commonWebServerSettings();
 void onSntpSyncSchedule();
 void errorMode();
-void IRAM_ATTR handleButtonInterrupt();
+void handleButton();
 void monitoringTaskLoop(void * pvParameters);
 #ifdef HAS_RGB_LED
 void monitoringLEDTask(void * pvParameters);

@@ -24,10 +24,13 @@ bool Config::saveConfig(const config_t& newConfig) {
     return storage.writeFile(CONFIG_FILE_PATH, toJson(newConfig));
 }
 
-bool Config::updateLogLevel(uint8_t newLevel) {
+bool Config::updateLogLevel(uint8_t newLevel, bool persist) {
     if (newLevel > 11) newLevel = DEFAULT_LOG_LEVEL;
     currentConfig.logLevel = newLevel;
-    return saveConfig(currentConfig);
+    if (persist) {
+        return saveConfig(currentConfig);
+    }
+    return true;
 }
 
 config_t Config::getConfig() {

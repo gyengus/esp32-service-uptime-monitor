@@ -34,6 +34,7 @@ void setUp(void) {
     testServer = new AsyncWebServer(80);
     wsService.init(*testServer);
     wsService.closeAll();
+    wsService.setLogLevel(DEFAULT_LOG_LEVEL);
 }
 
 void tearDown(void) {
@@ -143,6 +144,7 @@ void test_ws_broadcast_sysinfo(void) {
     TEST_ASSERT_EQUAL_UINT(1, doc["data"]["wsClients"].as<size_t>());
     TEST_ASSERT_TRUE(doc["data"]["stackHighWaterBytes"].is<uint32_t>());
     TEST_ASSERT_TRUE(doc["data"]["configEnabled"].as<bool>());
+    TEST_ASSERT_TRUE(doc["data"]["configTimeoutRemaining"].is<uint32_t>());
 }
 
 void test_ws_queue_and_process_events(void) {
@@ -212,17 +214,152 @@ void test_ws_set_log_level(void) {
     AsyncWebSocketClient* client = wsService.getWebSocket().mockConnect(21);
     client->sentMessages.clear();
 
+    // 1. In AP mode: rejected because AP mode only serves config.html (no log viewer/modification)
+    isAPMode = true;
     String setMsg = "{\"type\":\"set_log_level\",\"level\":\"WARNING\"}";
     wsService.getWebSocket().mockData(client, setMsg);
+    TEST_ASSERT_EQUAL_UINT8(8, config.getConfig().logLevel);
+    TEST_ASSERT_EQUAL_size_t(0, client->sentMessages.size());
+    isAPMode = false;
 
+    // 2. In normal STA mode (dev build): set_log_level is accepted
+    wsService.getWebSocket().mockData(client, setMsg);
     TEST_ASSERT_EQUAL_UINT8(5, config.getConfig().logLevel);
-
     TEST_ASSERT_TRUE(client->sentMessages.size() > 0);
     JsonDocument doc;
     deserializeJson(doc, client->sentMessages.back());
     TEST_ASSERT_EQUAL_STRING("log_level", doc["type"]);
     TEST_ASSERT_EQUAL_UINT8(5, doc["level"].as<uint8_t>());
     TEST_ASSERT_EQUAL_STRING("WARNING", doc["name"]);
+
+    // 3. Switch back to DEBUG: fully accepted in dev mode
+    client->sentMessages.clear();
+    String setDebugMsg = "{\"type\":\"set_log_level\",\"level\":\"DEBUG\"}";
+    wsService.getWebSocket().mockData(client, setDebugMsg);
+    TEST_ASSERT_EQUAL_UINT8(8, config.getConfig().logLevel);
+    TEST_ASSERT_TRUE(client->sentMessages.size() > 0);
+    deserializeJson(doc, client->sentMessages.back());
+    TEST_ASSERT_EQUAL_STRING("log_level", doc["type"]);
+    TEST_ASSERT_EQUAL_UINT8(8, doc["level"].as<uint8_t>());
+    TEST_ASSERT_EQUAL_STRING("DEBUG", doc["name"]);
+}
+
+void test_ws_log_subscriber_limit(void) {
+    wsService.closeAll();
+    TEST_ASSERT_FALSE(wsService.hasLogSubscribers());
+
+    auto c1 = wsService.getWebSocket().mockConnect(31);
+    auto c2 = wsService.getWebSocket().mockConnect(32);
+    auto c3 = wsService.getWebSocket().mockConnect(33);
+    auto c4 = wsService.getWebSocket().mockConnect(34);
+
+    c1->sentMessages.clear();
+    c2->sentMessages.clear();
+    c3->sentMessages.clear();
+    c4->sentMessages.clear();
+
+    String subMsg = "{\"type\":\"subscribe_logs\",\"enabled\":true}";
+    wsService.getWebSocket().mockData(c1, subMsg);
+    wsService.getWebSocket().mockData(c2, subMsg);
+    wsService.getWebSocket().mockData(c3, subMsg);
+    // 4th subscriber attempt should be rejected due to MAX 3 limit
+    wsService.getWebSocket().mockData(c4, subMsg);
+
+    // Verify only 3 are subscribed by sending a log message
+    const char* logMsg = "2026-11-14 [INFO] Hello subscribers\n";
+    wsLogStream.write((const uint8_t*)logMsg, strlen(logMsg));
+    wsService.processEvents();
+
+    TEST_ASSERT_EQUAL_size_t(1, c1->sentMessages.size());
+    TEST_ASSERT_EQUAL_size_t(1, c2->sentMessages.size());
+    TEST_ASSERT_EQUAL_size_t(1, c3->sentMessages.size());
+    TEST_ASSERT_EQUAL_size_t(0, c4->sentMessages.size());
+}
+
+void test_ws_debug_log_filtered_without_config_mode(void) {
+    wsService.closeAll();
+    auto client = wsService.getWebSocket().mockConnect(40);
+    client->sentMessages.clear();
+
+    String subMsg = "{\"type\":\"subscribe_logs\",\"enabled\":true}";
+    wsService.getWebSocket().mockData(client, subMsg);
+
+    // In dev mode (RELEASE not defined): DEBUG and INFO logs are broadcast even outside config mode
+    isConfigFunctionsEnabled = false;
+    isAPMode = false;
+
+    const char* debugMsg = "2026-11-14 [DEBUG] Internal detail message\n";
+    wsLogStream.write((const uint8_t*)debugMsg, strlen(debugMsg));
+    wsService.processEvents();
+    TEST_ASSERT_EQUAL_size_t(1, client->sentMessages.size());
+
+    // INFO log should also pass
+    const char* infoMsg = "2026-11-14 [INFO] Normal status message\n";
+    wsLogStream.write((const uint8_t*)infoMsg, strlen(infoMsg));
+    wsService.processEvents();
+    TEST_ASSERT_EQUAL_size_t(2, client->sentMessages.size());
+}
+
+void test_ws_handshake_origin_validation(void) {
+    AsyncWebServerRequest evilReq;
+    evilReq.setHeader("Host", "localhost");
+    evilReq.setHeader("Origin", "http://evil.com");
+    auto evilClient = wsService.getWebSocket().mockConnect(50, &evilReq);
+    TEST_ASSERT_NULL(evilClient);
+
+    AsyncWebServerRequest validReq;
+    validReq.setHeader("Host", "localhost");
+    validReq.setHeader("Origin", "http://localhost");
+    auto validClient = wsService.getWebSocket().mockConnect(51, &validReq);
+    TEST_ASSERT_NOT_NULL(validClient);
+
+    AsyncWebServerRequest noOriginReq;
+    noOriginReq.setHeader("Host", "localhost");
+    auto noOriginClient = wsService.getWebSocket().mockConnect(52, &noOriginReq);
+    TEST_ASSERT_NOT_NULL(noOriginClient);
+}
+
+void test_ws_log_stream_operations(void) {
+    wsLogStream.clearBuffer();
+
+    // 1. Null buffer and zero size
+    TEST_ASSERT_EQUAL_size_t(0, wsLogStream.write(nullptr, 10));
+    TEST_ASSERT_EQUAL_size_t(0, wsLogStream.write((const uint8_t*)"test", 0));
+
+    // 2. Single character writes and CRLF handling
+    auto client = wsService.getWebSocket().mockConnect(60);
+    client->sentMessages.clear();
+    String subMsg = "{\"type\":\"subscribe_logs\",\"enabled\":true}";
+    wsService.getWebSocket().mockData(client, subMsg);
+
+    wsLogStream.write('H');
+    wsLogStream.write('i');
+    wsLogStream.write('\r'); // Ignored in buffer
+    wsLogStream.write('\n'); // Commits line
+    wsService.processEvents();
+
+    TEST_ASSERT_EQUAL_size_t(1, client->sentMessages.size());
+    JsonDocument doc;
+    deserializeJson(doc, client->sentMessages.back());
+    TEST_ASSERT_EQUAL_STRING("Hi", doc["line"]);
+
+    // 3. Clear buffer
+    wsLogStream.clearBuffer();
+
+    // 4. Buffer overflow handling (> 512 characters without \n)
+    client->sentMessages.clear();
+    char longLine[600];
+    memset(longLine, 'A', sizeof(longLine) - 2);
+    longLine[sizeof(longLine) - 2] = '\n';
+    longLine[sizeof(longLine) - 1] = '\0';
+
+    wsLogStream.write((const uint8_t*)longLine, sizeof(longLine) - 1);
+    wsService.processEvents();
+
+    TEST_ASSERT_TRUE(client->sentMessages.size() >= 1);
+    deserializeJson(doc, client->sentMessages[0]);
+    String line = doc["line"].as<String>();
+    TEST_ASSERT_TRUE(line.endsWith("..."));
 }
 
 int main(int argc, char **argv) {
@@ -236,5 +373,9 @@ int main(int argc, char **argv) {
     RUN_TEST(test_ws_queue_and_process_events);
     RUN_TEST(test_ws_log_subscribe_and_streaming);
     RUN_TEST(test_ws_set_log_level);
+    RUN_TEST(test_ws_log_subscriber_limit);
+    RUN_TEST(test_ws_debug_log_filtered_without_config_mode);
+    RUN_TEST(test_ws_handshake_origin_validation);
+    RUN_TEST(test_ws_log_stream_operations);
     return UNITY_END();
 }

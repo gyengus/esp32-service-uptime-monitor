@@ -493,12 +493,23 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#terminalLineCount').text()).toBe('0 lines');
     });
 
-    it('handles log_level message and sends set_log_level on dropdown change', () => {
+    it('handles log_level message and sends set_log_level on dropdown change, disabled when locked in release', () => {
       // Remote device informs about log level
       window.handleWsMessage({ type: 'log_level', name: 'WARNING', level: 5 });
       expect($('#terminalLogLevel').val()).toBe('WARNING');
 
-      // User changes dropdown
+      // Disabled in release build where canChangeLogLevel is false
+      window.handleWsMessage({ type: 'init', canChangeLogLevel: false, logLevelName: 'INFO' });
+      expect($('#terminalLogLevel').prop('disabled')).toBe(true);
+      expect($('#terminalLogLevel').val()).toBe('INFO');
+      mockWs.send.mockClear();
+      $('#terminalLogLevel').val('DEBUG').trigger('change');
+      expect(mockWs.send).not.toHaveBeenCalled();
+
+      // Enabled in dev mode where canChangeLogLevel is true
+      window.handleWsMessage({ type: 'init', canChangeLogLevel: true, logLevelName: 'DEBUG' });
+      expect($('#terminalLogLevel').prop('disabled')).toBe(false);
+      expect($('#terminalLogLevel').val()).toBe('DEBUG');
       $('#terminalLogLevel').val('ERROR').trigger('change');
       expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: 'set_log_level', level: 'ERROR' }));
     });
@@ -925,6 +936,29 @@ describe('Uptime Monitor Web UI - app.js', () => {
       window.updateSysinfoUI({ configEnabled: false });
       expect($('#configButton').css('display')).toBe('none');
       expect($('#headerConfigBadge').hasClass('d-none')).toBe(true);
+      expect($('#configCountdownBadge').hasClass('d-none')).toBe(true);
+    });
+
+    it('manages config mode countdown badge and transitions to danger style when <= 60s', () => {
+      vi.useFakeTimers();
+
+      window.updateSysinfoUI({ configEnabled: true, configTimeoutRemaining: 120 });
+      expect($('#configButton').css('display')).not.toBe('none');
+      expect($('#headerConfigBadge').hasClass('d-none')).toBe(false);
+      expect($('#configCountdownBadge').hasClass('d-none')).toBe(false);
+      expect($('#configCountdownTime').text()).toBe('02:00');
+      expect($('#configMenuCountdown').text()).toBe('02:00');
+      expect($('#configCountdownBadge').hasClass('bg-warning')).toBe(true);
+
+      vi.advanceTimersByTime(61000); // 120 - 61 = 59s
+      expect($('#configCountdownTime').text()).toBe('00:59');
+      expect($('#configCountdownBadge').hasClass('bg-danger')).toBe(true);
+
+      vi.advanceTimersByTime(59000); // 0s
+      expect($('#configCountdownBadge').hasClass('d-none')).toBe(true);
+      expect($('#configButton').css('display')).toBe('none');
+
+      vi.useRealTimers();
     });
 
     it('generates GitHub release and commit URLs correctly', () => {
@@ -968,6 +1002,190 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#wsStatusDot').attr('aria-label')).toBe('Live (WebSocket connected)');
       window.setWsStatus(false);
       expect($('#wsStatusDot').attr('aria-label')).toBe('Disconnected (Reconnecting...)');
+    });
+  });
+
+  describe('UI Event Handlers and Interactive Controls', () => {
+    it('handles filter buttons click and updates active entity view', () => {
+      $('#filterOffline').trigger('click');
+      expect(window.get_currentFilter()).toBe('OFFLINE');
+
+      $('#filterOnline').trigger('click');
+      expect(window.get_currentFilter()).toBe('ONLINE');
+
+      $('#filterAll').trigger('click');
+      expect(window.get_currentFilter()).toBe('ALL');
+    });
+
+    it('handles empty state buttons to add entity or reset filter', () => {
+      const origModal = $.fn.modal;
+      $.fn.modal = vi.fn();
+
+      $('<button id="emptyShowAllButton"></button>').appendTo('body').trigger('click').remove();
+      expect(window.get_currentFilter()).toBe('ALL');
+
+      $('<button id="emptyAddButton"></button>').appendTo('body').trigger('click').remove();
+      expect($.fn.modal).toHaveBeenCalledWith('show');
+
+      $.fn.modal = origModal;
+    });
+
+    it('toggles and manages terminal drawer through UI buttons and controls', () => {
+      // Toggle button
+      $('#btnToggleTerminal').trigger('click');
+      expect(window.get_terminalOpen()).toBe(true);
+
+      // Close button
+      $('#btnTerminalClose').trigger('click');
+      expect(window.get_terminalOpen()).toBe(false);
+
+      // Clear button
+      window.appendLogLine('Test log line 1');
+      window.appendLogLine('Test log line 2');
+      expect(window.get_terminalLogsBuffer().length).toBe(2);
+
+      $('#btnTerminalClear').trigger('click');
+      expect(window.get_terminalLogsBuffer().length).toBe(0);
+      expect($('#terminalLineCount').text()).toBe('0 lines');
+
+      // Autoscroll checkbox
+      $('#terminalAutoScroll').prop('checked', false).trigger('change');
+      $('#terminalAutoScroll').prop('checked', true).trigger('change');
+
+      // Log level change
+      const mockWs = { send: vi.fn(), readyState: 1 };
+      window.set_ws(mockWs);
+
+      $('#terminalLogLevel').prop('disabled', false).val('DEBUG').trigger('change');
+      expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify({ type: 'set_log_level', level: 'DEBUG' }));
+
+      // When disabled, change is ignored
+      mockWs.send.mockClear();
+      $('#terminalLogLevel').prop('disabled', true).val('INFO').trigger('change');
+      expect(mockWs.send).not.toHaveBeenCalled();
+    });
+
+    it('closes header menu on Escape keydown', () => {
+      window.toggleHeaderMenu(true);
+      expect($('#headerMenuDropdown').hasClass('show')).toBe(true);
+
+      $(document).trigger($.Event('keydown', { key: 'Escape' }));
+      expect($('#headerMenuDropdown').hasClass('show')).toBe(false);
+    });
+
+    it('manages sysinfo modal lifecycle and auto-refresh timer', () => {
+      vi.useFakeTimers();
+      $.getJSON = vi.fn().mockImplementation((url, cb) => {
+        if (cb) cb({ system: {}, firmware: {} });
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn().mockReturnThis() };
+      });
+
+      $('#sysinfoModal').trigger('show.bs.modal');
+      expect($.getJSON).toHaveBeenCalledWith('/api/sysinfo/details', expect.any(Function));
+
+      // Auto-refresh interval (30000ms)
+      vi.advanceTimersByTime(30000);
+      expect($.getJSON).toHaveBeenCalledTimes(2);
+
+      // Refresh button click
+      $('#btnRefreshSysinfo').trigger('click');
+      expect($.getJSON).toHaveBeenCalledTimes(3);
+
+      // Hide modal clears timer
+      $('#sysinfoModal').trigger('hidden.bs.modal');
+      vi.advanceTimersByTime(30000);
+      expect($.getJSON).toHaveBeenCalledTimes(3);
+
+      vi.useRealTimers();
+    });
+
+    it('copies diagnostics to clipboard with success or error fallback', async () => {
+      vi.useRealTimers();
+      window.set_lastDetailedSysinfo({ system: { freeHeap: 50000 } });
+
+      // 1. Success path
+      const writeTextMock = vi.fn().mockResolvedValue();
+      const origClipboard = navigator.clipboard;
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: writeTextMock },
+        configurable: true,
+        writable: true
+      });
+
+      $('#btnCopySysinfo').trigger('click');
+      await new Promise(r => setTimeout(r, 30));
+      expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('50000'));
+      expect($('#successToast .toast-body').text()).toContain('copied to clipboard');
+
+      // 2. Clipboard writeText rejection
+      writeTextMock.mockRejectedValueOnce(new Error('Permission denied'));
+      $('#btnCopySysinfo').trigger('click');
+      await new Promise(r => setTimeout(r, 30));
+      expect($('#errorToast .toast-body').text()).toBe('Failed to copy diagnostics');
+
+      // 3. Clipboard API unavailable
+      navigator.clipboard = undefined;
+      $('#btnCopySysinfo').trigger('click');
+      expect($('#errorToast .toast-body').text()).toBe('Clipboard API unavailable');
+
+      Object.defineProperty(navigator, 'clipboard', {
+        value: origClipboard,
+        configurable: true,
+        writable: true
+      });
+      vi.useFakeTimers();
+    });
+
+    it('formats bytes across various units and boundary cases', () => {
+      expect(window.formatBytes(0)).toBe('0 B');
+      expect(window.formatBytes(-50)).toBe('--');
+      expect(window.formatBytes(null)).toBe('--');
+      expect(window.formatBytes(500)).toBe('500 B');
+      expect(window.formatBytes(1024)).toBe('1.0 KB');
+      expect(window.formatBytes(1048576)).toBe('1.00 MB');
+      expect(window.formatBytes(1073741824)).toBe('1.00 GB');
+    });
+
+    it('formats uptime seconds correctly for short and zero intervals', () => {
+      expect(window.formatUptime(0)).toBe('0m');
+      expect(window.formatUptime(45)).toBe('0m');
+      expect(window.formatUptime(-1)).toBe('--');
+      expect(window.formatUptime(NaN)).toBe('--');
+      expect(window.formatUptime(86400)).toBe('1d 0h 0m');
+      expect(window.formatUptime(3600)).toBe('1h 0m');
+      expect(window.formatUptime(120)).toBe('2m');
+      expect(window.formatUptime(86400 + 7200 + 180)).toBe('1d 2h 3m');
+    });
+
+    it('determines progress bar class based on thresholds', () => {
+      expect(window.getUsageBarClass(90)).toBe('bg-danger');
+      expect(window.getUsageBarClass(85)).toBe('bg-danger');
+      expect(window.getUsageBarClass(75)).toBe('bg-warning');
+      expect(window.getUsageBarClass(70)).toBe('bg-warning');
+      expect(window.getUsageBarClass(50)).toBe('bg-success');
+    });
+
+    it('sets progress bar accurately including zero or invalid totals', () => {
+      const $bar = $('<div></div>');
+      window.setProgressBar($bar, 0, 0);
+      expect($bar.css('width')).toBe('0%');
+      expect($bar.hasClass('bg-secondary')).toBe(true);
+
+      window.setProgressBar($bar, 50, 100);
+      expect($bar.css('width')).toBe('50%');
+      expect($bar.hasClass('bg-success')).toBe(true);
+
+      window.setProgressBar($bar, 90, 100);
+      expect($bar.css('width')).toBe('90%');
+      expect($bar.hasClass('bg-danger')).toBe(true);
+    });
+
+    it('formats RSSI HTML with signal icons and labels', () => {
+      expect(window.formatRssiHtml(null)).toBe('--');
+      expect(window.formatRssiHtml(NaN)).toBe('--');
+      expect(window.formatRssiHtml(-55)).toContain('-55 dBm');
+      expect(window.formatRssiHtml(-75)).toContain('-75 dBm');
+      expect(window.formatRssiHtml(-90)).toContain('-90 dBm');
     });
   });
 });

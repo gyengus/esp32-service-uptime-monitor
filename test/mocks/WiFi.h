@@ -52,6 +52,8 @@ public:
     static String lastSSID;
     static String lastPassword;
     static String lastHostname;
+    static bool mockConnectFails;
+    static bool mockSetHostnameFails;
 
     static void resetMock() {
         mockStatus = WL_DISCONNECTED;
@@ -62,12 +64,15 @@ public:
         lastSSID = "";
         lastPassword = "";
         lastHostname = "";
+        mockConnectFails = false;
+        mockSetHostnameFails = false;
     }
 
     void mode(wifi_mode_t m) { mockMode = m; }
     wifi_mode_t getMode() { return mockMode; }
 
     bool setHostname(const char* name) {
+        if (mockSetHostnameFails) return false;
         lastHostname = name;
         return true;
     }
@@ -76,7 +81,7 @@ public:
         lastSSID = ssid;
         lastPassword = passphrase ? passphrase : "";
         mockMode = WIFI_STA;
-        mockStatus = WL_CONNECTED;
+        mockStatus = mockConnectFails ? WL_DISCONNECTED : WL_CONNECTED;
         return mockStatus;
     }
 
@@ -134,6 +139,8 @@ inline int MockWiFiClass::hostByNameCalls = 0;
 inline String MockWiFiClass::lastSSID = "";
 inline String MockWiFiClass::lastPassword = "";
 inline String MockWiFiClass::lastHostname = "";
+inline bool MockWiFiClass::mockConnectFails = false;
+inline bool MockWiFiClass::mockSetHostnameFails = false;
 
 inline MockWiFiClass WiFi;
 

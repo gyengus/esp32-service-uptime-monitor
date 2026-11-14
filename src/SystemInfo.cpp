@@ -153,6 +153,7 @@ void SystemInfo::fillBasicSysinfo(JsonObject& doc) {
     doc["buildDate"] = BUILD_TIMESTAMP;
     doc["commit"] = COMMIT_HASH;
     doc["configEnabled"] = isConfigFunctionsEnabled;
+    doc["configTimeoutRemaining"] = getConfigModeRemainingSeconds();
 }
 
 void SystemInfo::fillDetailedSysinfo(JsonObject& doc) {

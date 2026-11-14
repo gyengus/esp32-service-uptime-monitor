@@ -52,6 +52,28 @@ void FileManager::log(const char* level, const char* msg) {
 #endif
 }
 
+static bool isSafeFilename(const String& name) {
+    if (name.length() == 0 || name.length() > 64) return false;
+    for (size_t i = 0; i < name.length(); i++) {
+        char c = name[i];
+        if (!isalnum((unsigned char)c) && c != '.' && c != '_' && c != '-') {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool isProtectedSystemFile(const String& name) {
+    String lower = name;
+    lower.toLowerCase();
+    if (lower == "index.html" || lower == "config.html" || lower == "app.js" ||
+        lower == "app.config.js" || lower == ".version" || lower == "config.json" ||
+        lower == "monitored_entities.json" || lower.endsWith(".bin")) {
+        return true;
+    }
+    return false;
+}
+
 String FileManager::buildFullPath(const String &pathParam, const String &fileName) const {
     String fullPath = _basePath;
     if (fullPath.endsWith("/")) {
@@ -159,7 +181,7 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
         if (request->hasParam("dir")) {
             String dirname = request->getParam("dir")->value();
 
-            if (dirname.indexOf("..") != -1 || dirname.indexOf('/') != -1 || dirname.indexOf('\\') != -1) {
+            if (dirname.indexOf("..") != -1 || dirname.indexOf('/') != -1 || dirname.indexOf('\\') != -1 || !isSafeFilename(dirname)) {
                 request->send(403, "text/plain", "Invalid characters in directory name");
                 return;
             }
@@ -248,9 +270,10 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
             return;
         }
 
-        if (filename.indexOf("..") != -1 || filename.indexOf('/') != -1 || filename.indexOf('\\') != -1) {
-            log("error", "Invalid filename for upload");
-            request->send(403, "text/plain", "Invalid filename");
+        if (filename.indexOf("..") != -1 || filename.indexOf('/') != -1 || filename.indexOf('\\') != -1 ||
+            !isSafeFilename(filename) || isProtectedSystemFile(filename)) {
+            log("error", "Invalid or protected filename for upload");
+            request->send(403, "text/plain", "Invalid or protected filename");
             return;
         }
 
@@ -408,8 +431,9 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
         if (request->hasParam("file")) {
             String filename = request->getParam("file")->value();
 
-            if (filename.indexOf("..") != -1 || filename.indexOf('/') != -1 || filename.indexOf('\\') != -1) {
-                request->send(403, "text/plain", "Invalid filename");
+            if (filename.indexOf("..") != -1 || filename.indexOf('/') != -1 || filename.indexOf('\\') != -1 ||
+                !isSafeFilename(filename) || isProtectedSystemFile(filename)) {
+                request->send(403, "text/plain", "Invalid or protected filename");
                 return;
             }
 

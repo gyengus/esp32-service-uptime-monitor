@@ -5,6 +5,8 @@ import path from 'path';
 describe('Uptime Monitor Web UI - app.config.js', () => {
   let $;
   let mockGetConfigResponse;
+  let initialGetConfigSuccess;
+  let initialGetConfigError;
 
   function setupMocks() {
     mockGetConfigResponse = {
@@ -15,11 +17,16 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       checkInterval: 45,
       discordWebhookURL: 'https://discord.com/api/webhooks/123/abc',
       hostname: 'esp32-monitor',
-      ledBrightness: 40
+      ledBrightness: 40,
+      otaToken: '******'
     };
 
     $.ajax = vi.fn().mockImplementation((options) => {
       if (options.url === '/api/config' && (options.type === 'GET' || !options.type)) {
+        if (!initialGetConfigSuccess && options.success) {
+          initialGetConfigSuccess = options.success;
+          initialGetConfigError = options.error;
+        }
         if (mockGetConfigResponse === null) {
           if (options.error) {
             options.error({ responseText: JSON.stringify({ message: 'Failed to fetch config' }) }, 500, 'Error');
@@ -36,6 +43,9 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       } else if (options.url === '/api/config/factoryReset') {
         if (options.success) {
           options.success({ message: 'Factory reset initiated' });
+        }
+        if (options.complete) {
+          options.complete();
         }
       } else if (options.url === '/api/config/backup') {
         if (options.success) {
@@ -122,6 +132,9 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     setupMocks();
+    $('#configForm :input').prop('disabled', false);
+    $('#configExpiredAlert').addClass('d-none');
+    $('#saveButton').prop('disabled', false);
   });
 
   afterEach(() => {
@@ -138,6 +151,7 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       expect($('#checkInterval').val()).toBe('45');
       expect($('#discordWebhookURL').val()).toBe('https://discord.com/api/webhooks/123/abc');
       expect($('#hostname').val()).toBe('esp32-monitor');
+      expect($('#otaToken').val()).toBe('******');
       expect($('#ledBrightness').val()).toBe('40');
       expect($('#ledBrightnessVal').text()).toBe('40%');
 
@@ -158,6 +172,80 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
 
       expect($('#errorToast .toast-body').text()).toBe('Failed to fetch config');
       expect($('#errorToast').hasClass('show')).toBe(true);
+    });
+
+    it('triggers onConfigExpired when GET /api/config returns 403 status', () => {
+      const expiredSpy = vi.spyOn(window, 'onConfigExpired');
+      // Trigger error callback with 403
+      window.showError({ status: 403, responseText: JSON.stringify({ message: 'Forbidden' }) }, "Can't fetch configuration");
+      window.onConfigExpired();
+      expect(expiredSpy).toHaveBeenCalled();
+      expiredSpy.mockRestore();
+    });
+
+    it('handles config with custom timeout and empty ssid', () => {
+      expect(initialGetConfigSuccess).toBeDefined();
+      $('#factoryResetRow').hide();
+      $('#backupRow').hide();
+
+      initialGetConfigSuccess({
+        wifiSSID: '',
+        wifiPassword: '',
+        sntpServer: 'pool.ntp.org',
+        offsetHours: 0,
+        checkInterval: 60,
+        discordWebhookURL: '',
+        hostname: 'esp32',
+        configTimeoutRemaining: 250
+      });
+
+      expect($('#wifiSSID').val()).toBe('');
+      expect($('#ledBrightness').val()).toBe('50'); // default when undefined
+      expect($('#ledBrightnessVal').text()).toBe('50%');
+      expect($('#factoryResetRow').is(':visible')).toBe(false);
+      expect($('#backupRow').is(':visible')).toBe(false);
+      expect(window.get_remainingSeconds()).toBe(250);
+    });
+
+    it('handles config with configEnabled true and missing timeout', () => {
+      expect(initialGetConfigSuccess).toBeDefined();
+
+      initialGetConfigSuccess({
+        wifiSSID: 'MyWiFi',
+        wifiPassword: 'pass',
+        sntpServer: 'pool.ntp.org',
+        offsetHours: 0,
+        checkInterval: 60,
+        discordWebhookURL: '',
+        hostname: 'esp32',
+        configEnabled: true
+      });
+
+      expect($('#factoryResetRow').css('display')).not.toBe('none');
+      expect($('#backupRow').css('display')).not.toBe('none');
+      expect(window.get_remainingSeconds()).toBe(600);
+    });
+
+    it('handles initial config error with 403 calling onConfigExpired', () => {
+      expect(initialGetConfigError).toBeDefined();
+      $('#configExpiredAlert').addClass('d-none');
+      $('#saveButton').prop('disabled', false);
+
+      initialGetConfigError({ status: 403, responseText: JSON.stringify({ message: 'Forbidden' }) }, 'error', 'Forbidden');
+
+      expect($('#configExpiredAlert').hasClass('d-none')).toBe(false);
+      expect($('#saveButton').prop('disabled')).toBe(true);
+    });
+
+    it('handles initial config error with 500 without calling onConfigExpired', () => {
+      expect(initialGetConfigError).toBeDefined();
+      $('#configExpiredAlert').addClass('d-none');
+      $('#saveButton').prop('disabled', false);
+
+      initialGetConfigError({ status: 500, responseText: JSON.stringify({ message: 'Internal Server Error' }) }, 'error', 'Error');
+
+      expect($('#configExpiredAlert').hasClass('d-none')).toBe(true);
+      expect($('#saveButton').prop('disabled')).toBe(false);
     });
   });
 
@@ -181,6 +269,7 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       $('#checkInterval').val('60');
       $('#discordWebhookURL').val('https://discord.com/api/webhooks/999/xyz');
       $('#hostname').val('service-monitor');
+      $('#otaToken').val('newSecureOtaToken123');
       $('#ledBrightness').val('75');
 
       $('#saveButton').trigger('click');
@@ -197,7 +286,8 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
         checkInterval: 60,
         discordWebhookURL: 'https://discord.com/api/webhooks/999/xyz',
         hostname: 'service-monitor',
-        ledBrightness: 75
+        ledBrightness: 75,
+        otaToken: 'newSecureOtaToken123'
       });
 
       expect($('#successToast .toast-body').text()).toContain('The device will restart.');
@@ -265,6 +355,17 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
     it('handles empty scan results', () => {
       $.getJSON = vi.fn().mockImplementation((url, cb) => {
         cb({ status: 'done', networks: [] });
+        return { fail: vi.fn().mockReturnThis() };
+      });
+
+      $('#scanWifiButton').trigger('click');
+
+      expect($('#wifiNetworksContainer').text()).toContain('No networks found');
+    });
+
+    it('handles scan done with missing networks array property', () => {
+      $.getJSON = vi.fn().mockImplementation((url, cb) => {
+        cb({ status: 'done' }); // networks undefined
         return { fail: vi.fn().mockReturnThis() };
       });
 
@@ -540,6 +641,432 @@ describe('Uptime Monitor Web UI - app.config.js', () => {
       expect($('#testLedButton').prop('disabled')).toBe(false);
       expect($('#testLedFeedback').text()).toContain('Failed to start LED test');
       expect($('#testLedFeedback').hasClass('text-danger')).toBe(true);
+    });
+  });
+
+  describe('Configuration Timeout and Countdown', () => {
+    it('formats countdown seconds correctly', () => {
+      expect(window.formatConfigCountdown(600)).toBe('10:00');
+      expect(window.formatConfigCountdown(599)).toBe('09:59');
+      expect(window.formatConfigCountdown(59)).toBe('00:59');
+      expect(window.formatConfigCountdown(0)).toBe('00:00');
+      expect(window.formatConfigCountdown(-1)).toBe('00:00');
+    });
+
+    it('starts countdown and updates UI every second', () => {
+      vi.useFakeTimers();
+      window.startConfigCountdown(120);
+
+      expect($('#configCountdownBadge').hasClass('d-none')).toBe(false);
+      expect($('#configCountdownTime').text()).toBe('02:00');
+      expect($('#configCountdownBadge').hasClass('bg-warning')).toBe(true);
+
+      vi.advanceTimersByTime(61000); // 120 - 61 = 59 seconds left
+      expect($('#configCountdownTime').text()).toBe('00:59');
+      expect($('#configCountdownBadge').hasClass('bg-danger')).toBe(true);
+
+      vi.advanceTimersByTime(59000); // Reaches 0
+      expect($('#configCountdownTime').text()).toBe('00:00');
+      expect($('#configExpiredAlert').hasClass('d-none')).toBe(false);
+      expect($('#saveButton').prop('disabled')).toBe(true);
+
+      vi.useRealTimers();
+    });
+
+    it('triggers onConfigExpired directly on 403 response', () => {
+      window.onConfigExpired();
+      expect($('#configExpiredAlert').hasClass('d-none')).toBe(false);
+      expect($('#configCountdownBadge').hasClass('bg-danger')).toBe(true);
+      expect($('#wifiSSID').prop('disabled')).toBe(true);
+      expect($('#saveButton').prop('disabled')).toBe(true);
+    });
+
+    it('redirects to home page 3 seconds after config expires', () => {
+      vi.useFakeTimers();
+      const origLocation = window.location;
+      delete window.location;
+      window.location = { href: '/config.html' };
+
+      window.onConfigExpired();
+      vi.advanceTimersByTime(3100);
+      expect(window.location.href).toBe('/');
+
+      window.location = origLocation;
+      vi.useRealTimers();
+    });
+
+    it('initializes WebSocket and updates countdown on sysinfo message', () => {
+      let mockWsInstance = null;
+      class MockWS {
+        constructor(url) {
+          this.url = url;
+          mockWsInstance = this;
+        }
+      }
+      const origWS = globalThis.WebSocket;
+      globalThis.WebSocket = MockWS;
+
+      window.initConfigWebSocket();
+      expect(mockWsInstance).not.toBeNull();
+      expect(mockWsInstance.url).toContain('/ws');
+
+      // 1. Message with configTimeoutRemaining updates remaining seconds
+      mockWsInstance.onmessage({
+        data: JSON.stringify({
+          type: 'sysinfo',
+          data: { configEnabled: true, configTimeoutRemaining: 400 }
+        })
+      });
+      expect(window.get_remainingSeconds()).toBe(400);
+      expect($('#configCountdownTime').text()).toBe('06:40');
+
+      // 2. Message with init type containing sysinfo
+      mockWsInstance.onmessage({
+        data: JSON.stringify({
+          type: 'init',
+          sysinfo: { configEnabled: true, configTimeoutRemaining: 250 }
+        })
+      });
+      expect(window.get_remainingSeconds()).toBe(250);
+      expect($('#configCountdownTime').text()).toBe('04:10');
+
+      // 3. Message with configEnabled: false triggers onConfigExpired
+      mockWsInstance.onmessage({
+        data: JSON.stringify({
+          type: 'sysinfo',
+          data: { configEnabled: false }
+        })
+      });
+      expect($('#configExpiredAlert').hasClass('d-none')).toBe(false);
+
+      // 4. Malformed JSON message is safely ignored
+      expect(() => {
+        mockWsInstance.onmessage({ data: 'invalid json' });
+      }).not.toThrow();
+
+      globalThis.WebSocket = origWS;
+    });
+  });
+
+  describe('Additional Edge Cases and Failure Handling', () => {
+    it('validates OTA token length and sets custom validity', () => {
+      $('#otaToken').val('short'); // < 8 characters and not ******
+      $('#saveButton').trigger('click');
+      expect($('#otaToken')[0].validity.customError).toBe(true);
+
+      $('#otaToken').val('validLengthToken123');
+      $('#saveButton').trigger('click');
+      expect($('#otaToken')[0].validity.customError).toBe(false);
+
+      $('#otaToken').val('******');
+      $('#saveButton').trigger('click');
+      expect($('#otaToken')[0].validity.customError).toBe(false);
+    });
+
+    it('handles save success when restart is not required', () => {
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.success) {
+          options.success({ restarting: false });
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+
+      $('#wifiSSID').val('SameNetwork');
+      $('#saveButton').trigger('click');
+      expect($('#successToast .toast-body').text()).toBe('Configuration saved successfully.');
+    });
+
+    it('handles Wi-Fi scan retry on failure and unknown scan status', () => {
+      let failCount = 0;
+      $.getJSON = vi.fn().mockImplementation((url, cb) => {
+        failCount++;
+        const deferred = {
+          fail: vi.fn().mockImplementation((failCb) => {
+            if (failCount === 1) {
+              failCb();
+            }
+            return deferred;
+          })
+        };
+        if (failCount === 2) {
+          cb({ status: 'unknown_status' });
+        }
+        return deferred;
+      });
+
+      $('#scanWifiButton').trigger('click');
+      expect($('#scanWifiButton').prop('disabled')).toBe(true);
+
+      // Advance timer for retry after fail (2000ms)
+      vi.advanceTimersByTime(2100);
+      expect($('#scanWifiButton').prop('disabled')).toBe(false);
+      expect($('#btnText').text()).toBe('Scan');
+    });
+
+    it('ignores clicks on confirm factory reset when already disabled', () => {
+      const origAjax = $.ajax;
+      $.ajax = vi.fn();
+      $('#confirmFactoryResetButton').prop('disabled', true);
+      $('#confirmFactoryResetButton').trigger('click');
+      expect($.ajax).not.toHaveBeenCalled();
+      $('#confirmFactoryResetButton').prop('disabled', false);
+      $.ajax = origAjax;
+    });
+
+    it('handles factory reset error and backup error', () => {
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.url === '/api/config/factoryReset' && options.error) {
+          options.error({ responseText: 'Server Error' }, 500, 'Error');
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+      $('#confirmFactoryResetButton').trigger('click');
+      expect($('#errorToast .toast-body').text()).toBe('Factory reset failed');
+
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.url === '/api/config/backup' && options.error) {
+          options.error({ responseText: 'Backup Error' }, 500, 'Error');
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+      $('#backupButton').trigger('click');
+      expect($('#errorToast .toast-body').text()).toBe('Backup failed');
+    });
+
+    it('ignores file change events when no file is selected', () => {
+      const origAjax = $.ajax;
+      $.ajax = vi.fn();
+
+      $('#restoreFile').trigger($.Event('change', { target: { files: [] } }));
+      $('#webArchiveFile').trigger($.Event('change', { target: { files: [] } }));
+      $('#firmwareBinaryFile').trigger($.Event('change', { target: { files: [] } }));
+
+      expect($.ajax).not.toHaveBeenCalled();
+      $.ajax = origAjax;
+    });
+
+    it('handles restore error and web archive error', () => {
+      vi.useFakeTimers();
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.url === '/api/config/restore' && options.error) {
+          options.error({ responseText: 'Restore Corrupt' }, 400, 'Error');
+        }
+        if (options.complete) options.complete();
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+      const file = new File(['bad'], 'bad.json', { type: 'application/json' });
+      $('#restoreFile').trigger($.Event('change', { target: { files: [file] } }));
+      expect($('#errorToast .toast-body').text()).toBe('Restore failed');
+
+      // Web archive error
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.url === '/api/web/upload-archive' && options.error) {
+          options.error({ responseText: 'Archive Error' }, 500, 'Error');
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+      const zipFile = new File(['badzip'], 'bad.zip', { type: 'application/zip' });
+      $('#webArchiveFile').trigger($.Event('change', { target: { files: [zipFile] } }));
+      expect($('#errorToast .toast-body').text()).toBe('Web UI update failed');
+
+      // Web archive success triggers reload after 3000ms
+      const origLocation = window.location;
+      delete window.location;
+      window.location = { reload: vi.fn(), href: '/config.html' };
+
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.url === '/api/web/upload-archive' && options.success) {
+          options.success({ status: 'success' });
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+      $('#webArchiveFile').trigger($.Event('change', { target: { files: [zipFile] } }));
+      expect($('#successToast .toast-body').text()).toContain('Web UI updated successfully');
+      vi.advanceTimersByTime(3100);
+      expect(window.location.reload).toHaveBeenCalled();
+      window.location = origLocation;
+      vi.useRealTimers();
+    });
+
+    it('handles firmware upload error and upload progress event', () => {
+      vi.useFakeTimers();
+      let capturedProgress = null;
+      let capturedOnload = null;
+      let capturedOnerror = null;
+
+      const mockXHR = {
+        open: vi.fn(),
+        send: vi.fn().mockImplementation(function() {
+          capturedOnload = this.onload;
+          capturedOnerror = this.onerror;
+        }),
+        upload: {
+          set onprogress(cb) {
+            capturedProgress = cb;
+          }
+        }
+      };
+      const origXHR = globalThis.XMLHttpRequest;
+      globalThis.XMLHttpRequest = vi.fn().mockImplementation(function() { return mockXHR; });
+
+      const mockBin = new File(['binary'], 'fw.bin', { type: 'application/octet-stream' });
+      $('#firmwareBinaryFile').trigger($.Event('change', { target: { files: [mockBin] } }));
+
+      // 1. Progress event
+      if (capturedProgress) {
+        capturedProgress({ lengthComputable: true, loaded: 1024, total: 2048 });
+        expect($('#firmwareProgressBar').css('width')).toBe('50%');
+        expect($('#firmwareProgressText').text()).toContain('50%');
+      }
+
+      // 2. Upload error status 500
+      mockXHR.status = 500;
+      mockXHR.responseText = 'Internal Flash Error';
+      if (capturedOnload) capturedOnload.call(mockXHR);
+
+      expect($('#firmwareProgressBar').hasClass('bg-danger')).toBe(true);
+      expect($('#errorToast .toast-body').text()).toContain('Internal Flash Error');
+
+      // 3. Network error
+      $('#firmwareBinaryFile').trigger($.Event('change', { target: { files: [mockBin] } }));
+      if (capturedOnerror) capturedOnerror();
+      expect($('#errorToast .toast-body').text()).toContain('Network error occurred during firmware upload');
+
+      // 4. OTA start error
+      $.ajax.mockImplementationOnce((options) => {
+        if (options.url === '/ota/start?mode=fr' && options.error) {
+          options.error({ responseText: 'Session locked' });
+        }
+        return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+      });
+      $('#firmwareBinaryFile').trigger($.Event('change', { target: { files: [mockBin] } }));
+      expect($('#errorToast .toast-body').text()).toContain('Session locked');
+
+      globalThis.XMLHttpRequest = origXHR;
+      vi.useRealTimers();
+    });
+
+    it('resets firmware UI hiding progress container when no error is provided', () => {
+      const mockBin = new File(['firmware'], 'firmware.bin', { type: 'application/octet-stream' });
+      $('#firmwareBinaryFile').trigger($.Event('change', { target: { files: [mockBin] } }));
+      expect(window._resetFirmwareUI).toBeDefined();
+
+      $('#firmwareProgressContainer').removeClass('d-none');
+      window._resetFirmwareUI();
+      expect($('#firmwareProgressContainer').hasClass('d-none')).toBe(true);
+      expect($('#updateFirmwareButton').prop('disabled')).toBe(false);
+    });
+
+    it('handles health check timeout reaching maximum attempts', () => {
+      vi.useFakeTimers();
+      const origLocation = window.location;
+      delete window.location;
+      window.location = { href: '/config.html' };
+
+      $.ajax = vi.fn().mockImplementation((options) => {
+        if (options.url === '/api/health') {
+          if (options.error) options.error();
+          return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+        }
+        if (options.url === '/ota/start?mode=fr') {
+          if (options.success) options.success();
+          return { fail: vi.fn().mockReturnThis(), always: vi.fn() };
+        }
+      });
+
+      const mockXHR = {
+        open: vi.fn(),
+        send: vi.fn().mockImplementation(function() {
+          this.status = 200;
+          if (this.onload) this.onload();
+        }),
+        upload: { onprogress: null }
+      };
+      const origXHR = globalThis.XMLHttpRequest;
+      globalThis.XMLHttpRequest = vi.fn().mockImplementation(function() { return mockXHR; });
+
+      const mockBin = new File(['firmware'], 'firmware.bin', { type: 'application/octet-stream' });
+      $('#firmwareBinaryFile').trigger($.Event('change', { target: { files: [mockBin] } }));
+
+      // Complete 6s reboot timer
+      vi.advanceTimersByTime(6000);
+
+      // Advance through 21 failed health check attempts (each 1500ms)
+      for (let i = 0; i < 22; i++) {
+        vi.advanceTimersByTime(1500);
+      }
+
+      expect(window.location.href).toBe('/');
+
+      globalThis.XMLHttpRequest = origXHR;
+      window.location = origLocation;
+      vi.useRealTimers();
+    });
+
+    it('handles showError with unparseable responseText', () => {
+      window.showError({ responseText: 'Plain text error without JSON' }, 'Fallback Error Message');
+      expect($('#errorToast .toast-body').text()).toBe('Fallback Error Message');
+    });
+
+    it('covers countdown, websocket https, led brightness bounds, and empty wifi config', () => {
+      // 1. formatConfigCountdown with negative seconds
+      expect(window.formatConfigCountdown(-10)).toBe('00:00');
+
+      // 2. startConfigCountdown when interval already active
+      window.startConfigCountdown(300);
+      window.startConfigCountdown(150);
+      expect(window.get_remainingSeconds()).toBe(150);
+
+      // updateCountdownDisplay branches: <= 60 (danger) and > 60 (warning)
+      window.set_remainingSeconds(45);
+      window.updateCountdownDisplay();
+      expect($('#configCountdownBadge').hasClass('bg-danger')).toBe(true);
+
+      window.set_remainingSeconds(120);
+      window.updateCountdownDisplay();
+      expect($('#configCountdownBadge').hasClass('bg-warning')).toBe(true);
+
+      // 3. Scan in progress early return
+      $.getJSON = vi.fn().mockImplementation((url, cb) => {
+        return { fail: vi.fn().mockReturnThis() };
+      });
+      $('#scanWifiButton').trigger('click');
+      expect($('#scanWifiButton').prop('disabled')).toBe(true);
+      $('#scanWifiButton').trigger('click'); // hits wifiScanInProgress === true early return
+
+      // 3. LED brightness bounds: < 0 clamped to 0, > 100 clamped to 100, NaN clamped to 0
+      $('#ledBrightness').val('-5');
+      $('#testLedButton').trigger('click');
+      let testCall = $.ajax.mock.calls[$.ajax.mock.calls.length - 1][0];
+      expect(JSON.parse(testCall.data).brightness).toBe(0);
+
+      $('#ledBrightness').val('150');
+      $('#testLedButton').trigger('click');
+      testCall = $.ajax.mock.calls[$.ajax.mock.calls.length - 1][0];
+      expect(JSON.parse(testCall.data).brightness).toBe(100);
+
+      // 4. WebSocket over HTTPS
+      const origLocation = window.location;
+      delete window.location;
+      window.location = { protocol: 'https:', host: 'localhost', href: '/config.html' };
+
+      let createdUrl = null;
+      class MockSecureWS {
+        constructor(url) {
+          createdUrl = url;
+        }
+      }
+      const origWS = globalThis.WebSocket;
+      globalThis.WebSocket = MockSecureWS;
+      window.initConfigWebSocket();
+      expect(createdUrl).toContain('wss://localhost/ws');
+
+      // When WebSocket is undefined
+      globalThis.WebSocket = undefined;
+      expect(() => window.initConfigWebSocket()).not.toThrow();
+
+      globalThis.WebSocket = origWS;
+      window.location = origLocation;
     });
   });
 });

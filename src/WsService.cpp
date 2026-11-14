@@ -11,6 +11,7 @@
 #include "SystemInfo.h"
 #include "globals.h"
 #include "version.h"
+#include "WebSecurity.h"
 
 static PSRAMAllocator psramAllocator;
 
@@ -48,6 +49,10 @@ void WsService::init(AsyncWebServer& server) {
         this->onEvent(server, client, type, arg, data, len);
     });
 
+    _ws.setFilter([](AsyncWebServerRequest *request) -> bool {
+        return WebSecurity::isRequestOriginTrusted(request);
+    });
+
     server.addHandler(&_ws);
     _initialized = true;
     Logger.info(MAINLOG, "WebSocket service initialized at /ws");
@@ -60,6 +65,7 @@ void WsService::cleanupClients() {
 }
 
 void WsService::closeAll() {
+    _logSubscribers.clear();
     if (_initialized) {
         _ws.closeAll();
     }
@@ -313,8 +319,17 @@ void WsService::sendInitState(AsyncWebSocketClient* client) {
     JsonObject sys = doc["sysinfo"].to<JsonObject>();
     SystemInfo::fillBasicSysinfo(sys);
 
-    doc["logLevel"] = config.getConfig().logLevel;
-    doc["logLevelName"] = Config::logLevelToString(config.getConfig().logLevel);
+    uint8_t currentLogLevel = config.getConfig().logLevel;
+#if defined(RELEASE) || defined(DISABLE_DEBUG_LOGGING)
+    if (currentLogLevel > ELOG_LEVEL_INFO && currentLogLevel != ELOG_LEVEL_NOLOG) {
+        currentLogLevel = ELOG_LEVEL_INFO;
+    }
+    doc["canChangeLogLevel"] = false;
+#else
+    doc["canChangeLogLevel"] = true;
+#endif
+    doc["logLevel"] = currentLogLevel;
+    doc["logLevelName"] = Config::logLevelToString(currentLogLevel);
 
     String out;
     serializeJson(doc, out);
@@ -324,6 +339,12 @@ void WsService::sendInitState(AsyncWebSocketClient* client) {
 
 void WsService::broadcastLogLine(const char* line) {
     if (!line || _logSubscribers.empty()) return;
+
+#if defined(RELEASE) || defined(DISABLE_DEBUG_LOGGING)
+    if (strstr(line, "[DEBUG]") != nullptr || strstr(line, "[TRACE]") != nullptr || strstr(line, "[VERBOSE]") != nullptr) {
+        return;
+    }
+#endif
 
     JsonDocument doc;
     doc["type"] = "log";
@@ -347,6 +368,10 @@ void WsService::addLogSubscriber(uint32_t clientId) {
     for (uint32_t id : _logSubscribers) {
         if (id == clientId) return;
     }
+    if (_logSubscribers.size() >= 3) {
+        Logger.warning(MAINLOG, "Max log subscribers (3) reached, rejecting client #%u", clientId);
+        return;
+    }
     _logSubscribers.push_back(clientId);
 }
 
@@ -366,11 +391,20 @@ bool WsService::hasLogSubscribers() const {
 void WsService::setLogLevel(uint8_t level) {
     if (level > 11) level = DEFAULT_LOG_LEVEL;
 
+#if defined(RELEASE) || defined(DISABLE_DEBUG_LOGGING)
+    if (level > ELOG_LEVEL_INFO && level != ELOG_LEVEL_NOLOG) {
+        level = ELOG_LEVEL_INFO;
+    }
+#endif
+
     Logger.info(MAINLOG, "Changing log level to %s (%u)", Config::logLevelToString(level), level);
     Logger.setSerialLogLevel(MAINLOG, level, Serial);
+#if defined(ARDUINO_USB_CDC_ON_BOOT) && ARDUINO_USB_CDC_ON_BOOT
+    Logger.setSerialLogLevel(MAINLOG, level, Serial0);
+#endif
     Logger.setSerialLogLevel(MAINLOG, level, wsLogStream);
 
-    config.updateLogLevel(level);
+    config.updateLogLevel(level, true);
 
     JsonDocument doc;
     doc["type"] = "log_level";
@@ -402,6 +436,24 @@ void WsService::handleIncomingData(AsyncWebSocketClient* client, uint8_t* data, 
             Logger.debug(MAINLOG, "WS client #%u unsubscribed from logs", client->id());
         }
     } else if (strcmp(type, "set_log_level") == 0) {
+        if (isAPMode) {
+            Logger.warning(MAINLOG, "Unauthorized set_log_level attempt in AP mode from WS client #%u", client->id());
+            return;
+        }
+#if defined(RELEASE) || defined(DISABLE_DEBUG_LOGGING)
+        Logger.warning(MAINLOG, "set_log_level rejected in release build from WS client #%u", client->id());
+        JsonDocument rejDoc;
+        rejDoc["type"] = "log_level";
+        rejDoc["level"] = ELOG_LEVEL_INFO;
+        rejDoc["name"] = "INFO";
+        String rejOut;
+        serializeJson(rejDoc, rejOut);
+        client->text(rejOut);
+        return;
+#endif
+        if (isConfigFunctionsEnabled) {
+            resetConfigModeActivity();
+        }
         uint8_t newLevel = config.getConfig().logLevel;
         if (doc["level"].is<int>() || doc["level"].is<uint8_t>()) {
             newLevel = doc["level"].as<uint8_t>();

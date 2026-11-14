@@ -20,19 +20,71 @@
 #include "PSRAMAllocator.h"
 #include "SystemInfo.h"
 #include "WebArchiveExtractor.h"
+#include "WebSecurity.h"
 
 static PSRAMAllocator psramAllocator;
 
+static const size_t MAX_CONFIG_BODY_SIZE = 4096;
+static const size_t MAX_ENTITY_BODY_SIZE = 4096;
+static const size_t MAX_RESTORE_BODY_SIZE = 32768;
+
+static uint8_t failedOtaAttempts = 0;
+static uint32_t otaLockoutUntil = 0;
+
+static bool constantTimeCompare(const String &a, const String &b) {
+    if (a.length() != b.length()) return false;
+    volatile uint8_t result = 0;
+    for (size_t i = 0; i < a.length(); i++) {
+        result |= (a[i] ^ b[i]);
+    }
+    return result == 0;
+}
+
+static bool isConfigAuthorized(AsyncWebServerRequest *request = nullptr) {
+    if (!isConfigFunctionsEnabled && !isAPMode) {
+        return false;
+    }
+    if (request != nullptr && !WebSecurity::isRequestOriginTrusted(request)) {
+        return false;
+    }
+    if (isConfigFunctionsEnabled) {
+        resetConfigModeActivity();
+    }
+    return true;
+}
+
 static bool isUploadAuthorized(AsyncWebServerRequest *request) {
-    if (isConfigFunctionsEnabled || isAPMode) {
-        return true;
+    if (isAPMode) {
+        return false;
     }
-    String otaToken = config.getOtaToken();
-    if (otaToken.length() >= 8 && request->hasHeader("X-PlatformIO-Upload")) {
-        const AsyncWebHeader *h = request->getHeader("X-PlatformIO-Upload");
-        return (h != nullptr) && h->value().equals(otaToken);
+    if (request && request->hasHeader("X-PlatformIO-Upload")) {
+        uint32_t now = millis();
+        if (failedOtaAttempts >= 5) {
+            if ((int32_t)(now - otaLockoutUntil) < 0) {
+                Logger.warning(MAINLOG, "OTA token verification locked out due to repeated failures");
+                return false;
+            }
+            failedOtaAttempts = 0;
+        }
+
+        String otaToken = config.getOtaToken();
+        if (otaToken.length() >= 8) {
+            const AsyncWebHeader *h = request->getHeader("X-PlatformIO-Upload");
+            if (h != nullptr && constantTimeCompare(h->value(), otaToken)) {
+                failedOtaAttempts = 0;
+                return true;
+            }
+        }
+        failedOtaAttempts++;
+        if (failedOtaAttempts >= 5) {
+            otaLockoutUntil = millis() + 60000;
+            Logger.warning(MAINLOG, "OTA token verification failed (attempt %u/5), locking out for 60s", failedOtaAttempts);
+        } else {
+            Logger.warning(MAINLOG, "OTA token verification failed (attempt %u/5)", failedOtaAttempts);
+        }
+        return false;
     }
-    return false;
+    return isConfigAuthorized(request);
 }
 
 static String urlDecode(const String &input) {
@@ -95,7 +147,7 @@ void Api::registerConfigEndpoints() {
      *         description: Failed to read or parse config files
      */
     server.on("/api/config/backup", HTTP_GET, [](AsyncWebServerRequest* request) {
-        if (!isConfigFunctionsEnabled && !isAPMode) {
+        if (!isConfigAuthorized(request)) {
             request->send(403, "text/plain", "Forbidden");
             return;
         }
@@ -122,6 +174,7 @@ void Api::registerConfigEndpoints() {
         serializeJson(doc, backupJson);
 
         AsyncResponseStream *response = request->beginResponseStream("application/json");
+        response->addHeader("Cache-Control", "no-store");
         response->print(backupJson);
         request->send(response);
     });
@@ -160,21 +213,35 @@ void Api::registerConfigEndpoints() {
      */
     server.on("/api/config/restore", HTTP_POST, [](AsyncWebServerRequest *request) {
     }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-        if (!isConfigFunctionsEnabled && !isAPMode) {
-            request->send(403, "text/plain", "Forbidden");
+        if (!isConfigAuthorized(request)) {
+            if (index == 0) request->send(403, "text/plain", "Forbidden");
             return;
         }
 
         if (!storage.isAvailable()) {
             Logger.error(MAINLOG, "Storage not available");
-            request->send(500, "text/plain", "Storage not available");
+            if (index == 0) request->send(500, "text/plain", "Storage not available");
             return;
         }
 
-        if (index == 0) request->_tempObject = new String("");
+        if (index == 0) {
+            request->_tempObject = new String("");
+            request->onDisconnect([request]() {
+                if (request->_tempObject) {
+                    delete (String*)request->_tempObject;
+                    request->_tempObject = nullptr;
+                }
+            });
+        }
 
         String* body = (String*)request->_tempObject;
         if (body) {
+            if (body->length() + len > MAX_RESTORE_BODY_SIZE) {
+                request->send(413, "application/json", "{\"status\":\"error\",\"message\":\"Payload Too Large\"}");
+                delete body;
+                request->_tempObject = nullptr;
+                return;
+            }
             for (size_t i = 0; i < len; i++) *body += (char)data[i];
         }
 
@@ -197,11 +264,60 @@ void Api::registerConfigEndpoints() {
                 return;
             }
 
+            if (!root["entities"].is<JsonArray>() || !root["config"].is<JsonObject>()) {
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid structure in backup\"}");
+                delete body; request->_tempObject = nullptr;
+                return;
+            }
+
+            config_t restoredCfg = config.fromJsonObject(root["config"].as<JsonObject>());
+            restoredCfg.hostname = Api::cleanHostname(restoredCfg.hostname);
+            if (restoredCfg.sntpServer.length() == 0 || restoredCfg.sntpServer.length() > 64) {
+                restoredCfg.sntpServer = DEFAULT_SNTP_SERVER;
+            }
+            if (restoredCfg.checkInterval < 5 || restoredCfg.checkInterval > 86400) {
+                restoredCfg.checkInterval = DEFAULT_CHECK_INTERVAL_SECONDS;
+            }
+            if (restoredCfg.offsetHours < -12 || restoredCfg.offsetHours > 14) {
+                restoredCfg.offsetHours = DEFAULT_TIMEZONE_OFFSET_HOURS;
+            }
+            if (restoredCfg.logLevel > 11) {
+                restoredCfg.logLevel = DEFAULT_LOG_LEVEL;
+            }
+
+            JsonDocument validEntitiesDoc(&psramAllocator);
+            JsonArray validEntities = validEntitiesDoc.to<JsonArray>();
+            JsonArray entitiesArr = root["entities"].as<JsonArray>();
+
+            for (JsonObject eObj : entitiesArr) {
+                MonitoredEntity entity;
+                if (entity.fromJsonObject(eObj) && entity.isValidForUserInput()) {
+                    JsonObject outObj = validEntities.add<JsonObject>();
+                    entity.fillJson(outObj);
+                } else {
+                    const char* nameStr = eObj["name"] | "unnamed";
+                    Logger.warning(MAINLOG, "Restore: skipped invalid entity '%s'", nameStr);
+                }
+            }
+
+            JsonDocument cleanConfigDoc(&psramAllocator);
+            JsonObject cleanCfgObj = cleanConfigDoc.to<JsonObject>();
+            cleanCfgObj["wifiSSID"] = restoredCfg.wifiSSID;
+            cleanCfgObj["wifiPassword"] = restoredCfg.wifiPassword;
+            cleanCfgObj["sntpServer"] = restoredCfg.sntpServer;
+            cleanCfgObj["offsetHours"] = restoredCfg.offsetHours;
+            cleanCfgObj["checkInterval"] = restoredCfg.checkInterval;
+            cleanCfgObj["discordWebhookURL"] = restoredCfg.discordWebhookURL;
+            cleanCfgObj["hostname"] = restoredCfg.hostname;
+            cleanCfgObj["ledBrightness"] = restoredCfg.ledBrightness;
+            cleanCfgObj["otaToken"] = restoredCfg.otaToken;
+            cleanCfgObj["logLevel"] = restoredCfg.logLevel;
+            cleanCfgObj["logLevelName"] = Config::logLevelToString(restoredCfg.logLevel);
+
             String configJson;
             String entitiesJson;
-
-            serializeJson(root["config"], configJson);
-            serializeJson(root["entities"], entitiesJson);
+            serializeJson(cleanCfgObj, configJson);
+            serializeJson(validEntities, entitiesJson);
 
             bool configSaved = storage.writeFile(CONFIG_FILE_PATH, configJson);
             bool entitiesSaved = storage.writeFile(ENTITIES_FILE_PATH, entitiesJson);
@@ -236,7 +352,7 @@ void Api::registerConfigEndpoints() {
      *         description: Configuration mode disabled
      */
     server.on("/api/config/factoryReset", HTTP_POST, [this](AsyncWebServerRequest* request) {
-        if (!isConfigFunctionsEnabled) {
+        if (!isConfigAuthorized(request)) {
             request->send(403, "text/plain", "Forbidden");
             return;
         }
@@ -277,7 +393,7 @@ void Api::registerConfigEndpoints() {
      *         description: Configuration mode disabled
      */
     server.on("/api/wifiscan", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (!isConfigFunctionsEnabled && !isAPMode) {
+        if (!isConfigAuthorized(request)) {
             request->send(403, "text/plain", "Forbidden");
             return;
         }
@@ -317,13 +433,23 @@ void Api::registerConfigEndpoints() {
      *         description: Webhook request failed
      */
     server.on("/api/testDiscord", HTTP_POST, [this](AsyncWebServerRequest* request) {
-        if (!isConfigFunctionsEnabled && !isAPMode) {
+        if (!isConfigAuthorized(request)) {
             request->send(403, "text/plain", "Forbidden");
             return;
         }
 
         if (request->hasParam("url", true)) {
             String testUrl = request->getParam("url", true)->value();
+            testUrl.trim();
+            if (testUrl.length() == 0 || testUrl.indexOf("******") != -1) {
+                testUrl = config.getConfig().discordWebhookURL;
+            }
+
+            if (!testUrl.startsWith("https://discord.com/api/webhooks/") &&
+                !testUrl.startsWith("https://discordapp.com/api/webhooks/")) {
+                request->send(400, "text/plain", "Invalid Discord webhook URL");
+                return;
+            }
 
             bool success = notificationService.send(testUrl, "Your Discord integration is working perfectly!");
 
@@ -372,12 +498,19 @@ void Api::registerConfigEndpoints() {
     server.on("/api/config/test-led", HTTP_POST, [this](AsyncWebServerRequest *request) {
         String* body = (String*)request->_tempObject;
 
-        if (!isConfigFunctionsEnabled && !isAPMode) {
+        if (!isConfigAuthorized(request)) {
             if (body) {
                 delete body;
                 request->_tempObject = nullptr;
             }
             request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            return;
+        }
+
+        if (body && body->length() > 0 && !WebSecurity::isJsonContentType(request)) {
+            delete body;
+            request->_tempObject = nullptr;
+            request->send(415, "application/json", "{\"status\":\"error\",\"message\":\"Unsupported Media Type: application/json required\"}");
             return;
         }
 
@@ -421,7 +554,16 @@ void Api::registerConfigEndpoints() {
         request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"RGB LED not supported on this board\"}");
 #endif
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        if (index == 0) request->_tempObject = new String("");
+        if (total > 1024) return;
+        if (index == 0) {
+            request->_tempObject = new String("");
+            request->onDisconnect([request]() {
+                if (request->_tempObject) {
+                    delete (String*)request->_tempObject;
+                    request->_tempObject = nullptr;
+                }
+            });
+        }
         String* body = (String*)request->_tempObject;
         if (body) {
             for (size_t i = 0; i < len; i++) *body += (char)data[i];
@@ -445,13 +587,30 @@ void Api::registerConfigEndpoints() {
      *         description: Configuration mode disabled
      */
     server.on("/api/config", HTTP_GET, [this](AsyncWebServerRequest* request) {
-        if (!isConfigFunctionsEnabled && !isAPMode) {
+        if (!isConfigAuthorized(request)) {
             request->send(403, "text/plain", "Forbidden");
             return;
         }
         AsyncJsonResponse *response = new AsyncJsonResponse(false);
         JsonObject root = response->getRoot().to<JsonObject>();
         config.fillJson(root);
+        root["configEnabled"] = isConfigFunctionsEnabled;
+        root["configTimeoutRemaining"] = getConfigModeRemainingSeconds();
+
+        if (root["wifiPassword"].as<String>().length() > 0) {
+            root["wifiPassword"] = "******";
+        }
+        if (root["otaToken"].as<String>().length() > 0) {
+            root["otaToken"] = "******";
+        }
+        String webhook = root["discordWebhookURL"].as<String>();
+        if (webhook.length() > 0) {
+            int lastSlash = webhook.lastIndexOf('/');
+            if (lastSlash > 0 && lastSlash + 1 < (int)webhook.length()) {
+                root["discordWebhookURL"] = webhook.substring(0, lastSlash + 1) + "******";
+            }
+        }
+
         response->setLength();
         request->send(response);
     });
@@ -493,12 +652,36 @@ void Api::registerConfigEndpoints() {
     server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, 
         [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
 
-        if (!isConfigFunctionsEnabled && !isAPMode) {
-            request->send(403, "text/plain", "Forbidden");
+        if (!isConfigAuthorized(request)) {
+            if (index == 0) {
+                request->send(403, "text/plain", "Forbidden");
+            }
             return;
         }
 
-        if (index == 0) request->_tempObject = new String("");
+        if (!WebSecurity::isJsonContentType(request)) {
+            if (index == 0) {
+                request->send(415, "application/json", "{\"status\":\"error\",\"message\":\"Unsupported Media Type: application/json required\"}");
+            }
+            return;
+        }
+
+        if (total > MAX_CONFIG_BODY_SIZE) {
+            if (index == 0) {
+                request->send(413, "application/json", "{\"status\":\"error\",\"message\":\"Payload Too Large\"}");
+            }
+            return;
+        }
+
+        if (index == 0) {
+            request->_tempObject = new String("");
+            request->onDisconnect([request]() {
+                if (request->_tempObject) {
+                    delete (String*)request->_tempObject;
+                    request->_tempObject = nullptr;
+                }
+            });
+        }
         String* body = (String*)request->_tempObject;
         if (body) {
             for (size_t i = 0; i < len; i++) *body += (char)data[i];
@@ -514,13 +697,29 @@ void Api::registerConfigEndpoints() {
                 return;
             }
 
-            Logger.debug(MAINLOG, "Received new config: %s", body->c_str());
+            Logger.debug(MAINLOG, "Received new config (%u bytes)", (unsigned int)body->length());
             JsonDocument doc(&psramAllocator);
-            deserializeJson(doc, *body);
+            DeserializationError error = deserializeJson(doc, *body);
+            if (error) {
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+                delete body;
+                request->_tempObject = nullptr;
+                return;
+            }
 
             config_t newConfig = config.fromJsonObject(doc.as<JsonObject>());
             
             config_t currentConfig = config.getConfig();
+
+            if (newConfig.wifiPassword.length() == 0 || newConfig.wifiPassword.equals("******")) {
+                newConfig.wifiPassword = currentConfig.wifiPassword;
+            }
+            if (newConfig.otaToken.length() == 0 || newConfig.otaToken.equals("******")) {
+                newConfig.otaToken = currentConfig.otaToken;
+            }
+            if (newConfig.discordWebhookURL.indexOf("******") != -1) {
+                newConfig.discordWebhookURL = currentConfig.discordWebhookURL;
+            }
 
             bool wifiChanged = (!newConfig.wifiSSID.equals(currentConfig.wifiSSID) || !newConfig.wifiPassword.equals(currentConfig.wifiPassword)) 
                 && newConfig.wifiSSID.length() > 0 && newConfig.wifiPassword.length() > 0;
@@ -610,26 +809,27 @@ void Api::registerConfigEndpoints() {
 
         wsService.closeAll();
 
+        xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY);
         if (MonitoringTaskHandle != NULL) {
             vTaskSuspend(MonitoringTaskHandle);
         }
-        xSemaphoreTake(monitoredEntityRepository.getMutex(), portMAX_DELAY);
 
         bool success = WebArchiveExtractor::extractZipArchive("/web_update_tmp.zip", WEB_UI_PATH);
         if (success) {
-            if (!storage.fileExists(String(WEB_UI_PATH) + "/.version")) {
-                storage.writeFile(String(WEB_UI_PATH) + "/.version", String(FIRMWARE_VERSION) + "-" + String(COMMIT_HASH));
-            }
+            storage.writeFile(String(WEB_UI_PATH) + "/.version", String(FIRMWARE_VERSION) + "-" + String(COMMIT_HASH));
+            isConfigFunctionsEnabled = true;
+            resetConfigModeActivity();
         }
 
         storage.deleteFile("/web_update_tmp.zip");
 
-        xSemaphoreGive(monitoredEntityRepository.getMutex());
         if (MonitoringTaskHandle != NULL) {
             vTaskResume(MonitoringTaskHandle);
         }
+        xSemaphoreGive(monitoredEntityRepository.getMutex());
 
         if (success) {
+            wsService.broadcastSysinfo();
             request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Web UI updated successfully\"}");
         } else {
             request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to extract web archive\"}");
@@ -1036,7 +1236,7 @@ void Api::registerServicesEndpoints() {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("^\\/api\\/monitoredentity\\/([^\\/]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
         String name = urlDecode(request->pathArg(0));
         MonitoredEntity entity;
         
@@ -1082,7 +1282,11 @@ void Api::registerServicesEndpoints() {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_DELETE, [](AsyncWebServerRequest *request) {
+    server.on("^\\/api\\/monitoredentity\\/([^\\/]+)$", HTTP_DELETE, [](AsyncWebServerRequest *request) {
+        if (!isConfigAuthorized(request)) {
+            request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            return;
+        }
         String name = urlDecode(request->pathArg(0));
         
         if (monitoredEntityRepository.removeEntity(name)) {
@@ -1124,16 +1328,49 @@ void Api::registerServicesEndpoints() {
      */
     server.on("/api/monitoredentity", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        if (index == 0) request->_tempObject = new String("");
+        if (!isConfigAuthorized(request)) {
+            if (index == 0) {
+                request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            }
+            return;
+        }
+
+        if (!WebSecurity::isJsonContentType(request)) {
+            if (index == 0) {
+                request->send(415, "application/json", "{\"error\":\"Unsupported Media Type: application/json required\"}");
+            }
+            return;
+        }
+
+        if (total > MAX_ENTITY_BODY_SIZE) {
+            if (index == 0) {
+                request->send(413, "application/json", "{\"error\":\"Payload Too Large\"}");
+            }
+            return;
+        }
+
+        if (index == 0) {
+            request->_tempObject = new String("");
+            request->onDisconnect([request]() {
+                if (request->_tempObject) {
+                    delete (String*)request->_tempObject;
+                    request->_tempObject = nullptr;
+                }
+            });
+        }
         String* buffer = (String*)request->_tempObject;
-        for (size_t i = 0; i < len; i++) *buffer += (char)data[i];
+        if (buffer) {
+            for (size_t i = 0; i < len; i++) *buffer += (char)data[i];
+        }
 
         if (index + len == total) {
             JsonDocument doc(&psramAllocator);
             deserializeJson(doc, *buffer);
+            delete buffer;
+            request->_tempObject = nullptr;
             
             MonitoredEntity newEntity;
-            if (newEntity.fromJsonObject(doc.as<JsonObject>())) {
+            if (newEntity.fromJsonObject(doc.as<JsonObject>()) && newEntity.isValidForUserInput()) {
                 if (!monitoredEntityRepository.hasEntity(newEntity.getName())) {
                     monitoredEntityRepository.addEntity(newEntity);
                     wsService.broadcastEntityUpdate(newEntity);
@@ -1143,10 +1380,8 @@ void Api::registerServicesEndpoints() {
                     request->send(409, "application/json", "{\"error\":\"Already exists\"}");
                 }
             } else {
-                request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+                request->send(400, "application/json", "{\"error\":\"Invalid JSON, name or address\"}");
             }
-            delete buffer;
-            request->_tempObject = nullptr;
         }
     });
 
@@ -1185,12 +1420,42 @@ void Api::registerServicesEndpoints() {
      *       '404':
      *         description: Entity not found
      */
-    server.on("^\\/api\\/monitoredentity\\/([a-zA-Z0-9 _\\-%]+)$", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL,
+    server.on("^\\/api\\/monitoredentity\\/([^\\/]+)$", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL,
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        
-        if (index == 0) request->_tempObject = new String("");
+        if (!isConfigAuthorized(request)) {
+            if (index == 0) {
+                request->send(403, "application/json", "{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            }
+            return;
+        }
+
+        if (!WebSecurity::isJsonContentType(request)) {
+            if (index == 0) {
+                request->send(415, "application/json", "{\"error\":\"Unsupported Media Type: application/json required\"}");
+            }
+            return;
+        }
+
+        if (total > MAX_ENTITY_BODY_SIZE) {
+            if (index == 0) {
+                request->send(413, "application/json", "{\"error\":\"Payload Too Large\"}");
+            }
+            return;
+        }
+
+        if (index == 0) {
+            request->_tempObject = new String("");
+            request->onDisconnect([request]() {
+                if (request->_tempObject) {
+                    delete (String*)request->_tempObject;
+                    request->_tempObject = nullptr;
+                }
+            });
+        }
         String* buffer = (String*)request->_tempObject;
-        for (size_t i = 0; i < len; i++) *buffer += (char)data[i];
+        if (buffer) {
+            for (size_t i = 0; i < len; i++) *buffer += (char)data[i];
+        }
 
         if (index + len == total) {
             String oldName = urlDecode(request->pathArg(0));
@@ -1201,7 +1466,7 @@ void Api::registerServicesEndpoints() {
             request->_tempObject = nullptr;
             
             MonitoredEntity updatedData;
-            if (updatedData.fromJsonObject(doc.as<JsonObject>())) {
+            if (updatedData.fromJsonObject(doc.as<JsonObject>()) && updatedData.isValidForUserInput()) {
                 MonitoredEntity existingEntity;
                 if (!monitoredEntityRepository.getEntity(oldName, existingEntity)) {
                     request->send(404, "application/json", "{\"error\":\"Entity not found\"}");
@@ -1221,7 +1486,7 @@ void Api::registerServicesEndpoints() {
                     request->send(404, "application/json", "{\"error\":\"Error when saving entity\"}");
                 }
             } else {
-                request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+                request->send(400, "application/json", "{\"error\":\"Invalid JSON, name or address\"}");
             }
         }
     });

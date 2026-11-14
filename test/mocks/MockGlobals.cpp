@@ -13,3 +13,7 @@ volatile bool shouldRestart = false;
 volatile bool isOtaUpdating = false;
 TaskHandle_t MonitoringTaskHandle = nullptr;
 temperature_sensor_handle_t temp_sensor = (temperature_sensor_handle_t)0x1;
+unsigned long configModeLastActivity = 0;
+void resetConfigModeActivity() {
+    configModeLastActivity = millis();
+}

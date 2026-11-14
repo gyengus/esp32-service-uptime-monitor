@@ -19,17 +19,37 @@ typedef uint8_t WebRequestMethodComposite;
 
 class AsyncWebServerRequest;
 
+class DefaultHeaders {
+private:
+    std::map<String, String> _headers;
+    DefaultHeaders() = default;
+public:
+    static DefaultHeaders& Instance() {
+        static DefaultHeaders instance;
+        return instance;
+    }
+    void addHeader(const String& name, const String& value) {
+        _headers[name] = value;
+    }
+    const std::map<String, String>& getHeaders() const {
+        return _headers;
+    }
+};
+
 class AsyncWebServerResponse {
 protected:
     int _code = 200;
     String _contentType;
     String _body;
+    std::map<String, String> _headers;
 public:
     virtual ~AsyncWebServerResponse() = default;
     int getCode() const { return _code; }
     const String& getContentType() const { return _contentType; }
     const String& getBody() const { return _body; }
     void setCode(int c) { _code = c; }
+    void addHeader(const String& name, const String& value) { _headers[name] = value; }
+    String getHeader(const String& name) const { auto it = _headers.find(name); return it == _headers.end() ? String("") : it->second; }
 };
 
 class AsyncResponseStream : public AsyncWebServerResponse, public Print {
@@ -105,6 +125,7 @@ public:
     int lastCode = 0;
     String lastContentType;
     String lastBody;
+    String lastCacheControl;
     std::vector<String> _pathArgs;
     std::map<String, String> _params;
     std::map<String, String> _headers;
@@ -146,6 +167,26 @@ public:
         return getHeader(name.c_str());
     }
 
+    String host() const {
+        auto it = _headers.find("Host");
+        if (it != _headers.end()) {
+            return it->second;
+        }
+        return "localhost";
+    }
+
+    String contentType() const {
+        auto it = _headers.find("Content-Type");
+        if (it != _headers.end()) {
+            return it->second;
+        }
+        return "application/json";
+    }
+
+    void addHeader(const String& name, const String& val) {
+        _headers[name] = val;
+    }
+
     void setHeader(const String& name, const String& val) {
         _headers[name] = val;
     }
@@ -161,6 +202,7 @@ public:
             lastCode = response->getCode();
             lastContentType = response->getContentType();
             lastBody = response->getBody();
+            lastCacheControl = response->getHeader("Cache-Control");
             delete response;
         }
     }
@@ -194,10 +236,21 @@ public:
 typedef std::function<void(AsyncWebServerRequest *request)> ArRequestHandlerFunction;
 typedef std::function<void(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)> ArUploadHandlerFunction;
 typedef std::function<void(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)> ArBodyHandlerFunction;
+typedef std::function<bool(AsyncWebServerRequest *request)> ArRequestFilterFunction;
 
 class AsyncWebHandler {
+protected:
+    ArRequestFilterFunction _filter;
 public:
     virtual ~AsyncWebHandler() = default;
+    AsyncWebHandler& setFilter(ArRequestFilterFunction fn) {
+        _filter = fn;
+        return *this;
+    }
+    bool filter(AsyncWebServerRequest *request) const {
+        if (_filter) return _filter(request);
+        return true;
+    }
 };
 
 #ifndef WS_CONNECTED
@@ -259,7 +312,10 @@ public:
         _clients.clear();
     }
 
-    AsyncWebSocketClient* mockConnect(uint32_t id = 1) {
+    AsyncWebSocketClient* mockConnect(uint32_t id = 1, AsyncWebServerRequest* req = nullptr) {
+        if (req && !filter(req)) {
+            return nullptr;
+        }
         auto c = new AsyncWebSocketClient(id);
         _clients.push_back(c);
         if (_handler) {

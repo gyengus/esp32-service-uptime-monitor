@@ -56,6 +56,10 @@ def append_define_if_missing(env, define_name):
 if check_flag("DISABLE_FILE_MANAGER", ["DISABLE_FILE_MANAGER"], "DISABLE_FILE_MANAGER"):
     append_define_if_missing(env, "DISABLE_FILE_MANAGER")
 
+if is_release:
+    append_define_if_missing(env, "RELEASE")
+    append_define_if_missing(env, "DISABLE_DEBUG_LOGGING")
+
 # 2. Memory statistics logging toggle
 if check_flag("DISABLE_MEM_STATS_LOGGING", ["DISABLE_MEM_STATS_LOGGING", "DISABLE_MEM_STATS"], "DISABLE_MEM_STATS_LOGGING"):
     append_define_if_missing(env, "DISABLE_MEM_STATS_LOGGING")
@@ -121,3 +125,6 @@ if target_log_level:
 
     if not found_in_build_flags and not found_in_cppdefines:
         env.Append(CPPDEFINES=[("MIN_LOG_LEVEL", target_log_level)])
+
+    if target_log_level == "ELOG_LEVEL_INFO":
+        append_define_if_missing(env, "DISABLE_DEBUG_LOGGING")

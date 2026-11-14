@@ -149,6 +149,16 @@
         toast.show();
     }
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function loadFiles() {
         const url = `/list?path=${encodeURIComponent(currentPath)}`;
         
@@ -172,21 +182,22 @@
                 const iconClass = file.isDir ? 'mdi-folder folder-icon' : 'mdi-file-document-outline file-icon';
                 const icon = `<span class="mdi ${iconClass}"></span>`;
                 const sizeDisplay = file.isDir ? '<span class="text-muted small">DIR</span>' : (file.size / 1024).toFixed(1) + ' KB';
+                const safeName = escapeHtml(file.name);
                 
                 let nameHtml = file.isDir 
-                    ? `<span class="folder-link" data-folder="${file.name}">${icon}${file.name}</span>`
-                    : `<span class="d-flex align-items-center">${icon}${file.name}</span>`;
+                    ? `<span class="folder-link" data-folder="${safeName}">${icon}${safeName}</span>`
+                    : `<span class="d-flex align-items-center">${icon}${safeName}</span>`;
 
                 let actionButtons = '';
                 if (!file.isDir) {
                     actionButtons = `
-                        <button class="btn btn-sm btn-outline-primary me-1 btn-download" data-name="${file.name}" title="Download">
+                        <button class="btn btn-sm btn-outline-primary me-1 btn-download" data-name="${safeName}" title="Download">
                             <span class="mdi mdi-download"></span>
                         </button>
                     `;
                 }
                 actionButtons += `
-                    <button class="btn btn-sm btn-outline-danger btn-delete" data-name="${file.name}" title="Delete">
+                    <button class="btn btn-sm btn-outline-danger btn-delete" data-name="${safeName}" title="Delete">
                         <span class="mdi mdi-delete"></span>
                     </button>
                 `;

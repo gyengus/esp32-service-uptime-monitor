@@ -8,6 +8,7 @@
 #include "NotificationService.h"
 #include "WsService.h"
 #include "globals.h"
+#include "AddressValidator.h"
 
 MonitoringService& MonitoringService::getInstance() {
     static MonitoringService instance;
@@ -106,8 +107,50 @@ static bool isIpAddress(const String& host) {
     return ip.fromString(host);
 }
 
+static String stripQueryAndFragment(const String& url) {
+    int queryIdx = url.indexOf('?');
+    int fragmentIdx = url.indexOf('#');
+    int cutIdx = -1;
+    if (queryIdx != -1 && fragmentIdx != -1) {
+        cutIdx = (queryIdx < fragmentIdx) ? queryIdx : fragmentIdx;
+    } else if (queryIdx != -1) {
+        cutIdx = queryIdx;
+    } else if (fragmentIdx != -1) {
+        cutIdx = fragmentIdx;
+    }
+    if (cutIdx != -1) {
+        return url.substring(0, cutIdx);
+    }
+    return url;
+}
+
 bool MonitoringService::_doHead(const String& address) {
     bool success = false;
+    String host = extractHost(address);
+    bool isIp = isIpAddress(host);
+    bool dnsFailed = false;
+    String sanitizedAddress = stripQueryAndFragment(address);
+
+    if (isIp) {
+        IPAddress ip;
+        if (ip.fromString(host) && AddressValidator::isForbiddenIPv4(ip[0], ip[1], ip[2], ip[3])) {
+            char buffer[160];
+            snprintf(buffer, sizeof(buffer), "HEAD %s blocked: forbidden IP %s", sanitizedAddress.c_str(), host.c_str());
+            Logger.error(MAINLOG, "%s", buffer);
+            return false;
+        }
+    } else {
+        IPAddress resolvedIp;
+        if (WiFi.hostByName(host.c_str(), resolvedIp) != 1 || resolvedIp == IPAddress(0, 0, 0, 0)) {
+            dnsFailed = true;
+        } else if (AddressValidator::isForbiddenIPv4(resolvedIp[0], resolvedIp[1], resolvedIp[2], resolvedIp[3])) {
+            char buffer[160];
+            snprintf(buffer, sizeof(buffer), "HEAD %s blocked: host %s resolved to forbidden address %u.%u.%u.%u",
+                     sanitizedAddress.c_str(), host.c_str(), resolvedIp[0], resolvedIp[1], resolvedIp[2], resolvedIp[3]);
+            Logger.error(MAINLOG, "%s", buffer);
+            return false;
+        }
+    }
 
     HTTPClient http;
     if (address.startsWith("https")) {
@@ -124,22 +167,14 @@ bool MonitoringService::_doHead(const String& address) {
         success = true;
     } else {
         char buffer[160];
-        String host = extractHost(address);
-
-        if (!isIpAddress(host)) {
-            IPAddress resolvedIp;
-            if (WiFi.hostByName(host.c_str(), resolvedIp) != 1 || resolvedIp == IPAddress(0, 0, 0, 0)) {
-                snprintf(buffer, sizeof(buffer), "HEAD %s failed: host not found (DNS/mDNS resolution failed)", address.c_str());
-            } else {
-                snprintf(buffer, sizeof(buffer), "HEAD %s failed with HTTP Error: %s", address.c_str(), http.errorToString(httpCode).c_str());
-            }
+        if (!isIp && dnsFailed) {
+            snprintf(buffer, sizeof(buffer), "HEAD %s failed: host not found (DNS/mDNS resolution failed)", sanitizedAddress.c_str());
         } else {
-            snprintf(buffer, sizeof(buffer), "HEAD %s failed with HTTP Error: %s", address.c_str(), http.errorToString(httpCode).c_str());
+            snprintf(buffer, sizeof(buffer), "HEAD %s failed with HTTP Error: %s", sanitizedAddress.c_str(), http.errorToString(httpCode).c_str());
         }
-        Logger.error(MAINLOG, buffer);
+        Logger.error(MAINLOG, "%s", buffer);
     }
     http.end();
-    //Logger.debug(MAINLOG, "HEAD %s result: %s (code: %d)", address.c_str(), success ? "success" : "failed", httpCode);
     return success;
 }
 

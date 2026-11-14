@@ -22,6 +22,67 @@ let dashboardIconsCatalog = null;
 let dashboardIconsLoading = false;
 let mdiIconsCatalog = null;
 let mdiIconsLoading = false;
+let configCountdownInterval = null;
+let configTimeoutRemaining = 0;
+
+function formatConfigCountdown(totalSeconds) {
+    if (isNaN(totalSeconds) || totalSeconds <= 0) return '00:00';
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function updateConfigCountdownUI() {
+    if (configTimeoutRemaining <= 0) {
+        $('#configCountdownBadge').addClass('d-none').removeClass('d-inline-flex');
+        $('#configButton').hide();
+        $('#headerConfigBadge').addClass('d-none');
+        if (configCountdownInterval) {
+            clearInterval(configCountdownInterval);
+            configCountdownInterval = null;
+        }
+        return;
+    }
+
+    const formatted = formatConfigCountdown(configTimeoutRemaining);
+    $('#configCountdownTime').text(formatted);
+    $('#configMenuCountdown').text(formatted);
+
+    if (configTimeoutRemaining <= 60) {
+        $('#configCountdownBadge').removeClass('bg-warning text-dark').addClass('bg-danger text-white');
+        $('#configMenuCountdown').removeClass('bg-warning text-dark').addClass('bg-danger text-white');
+    } else {
+        $('#configCountdownBadge').removeClass('bg-danger text-white').addClass('bg-warning text-dark');
+        $('#configMenuCountdown').removeClass('bg-danger text-white').addClass('bg-warning text-dark');
+    }
+}
+
+function setConfigCountdown(seconds, enabled) {
+    if (!enabled || seconds <= 0) {
+        configTimeoutRemaining = 0;
+        updateConfigCountdownUI();
+        return;
+    }
+
+    configTimeoutRemaining = seconds;
+    $('#configCountdownBadge').removeClass('d-none').addClass('d-inline-flex');
+    $('#configButton').show();
+    $('#headerConfigBadge').removeClass('d-none');
+    updateConfigCountdownUI();
+
+    if (!configCountdownInterval) {
+        configCountdownInterval = setInterval(() => {
+            if (configTimeoutRemaining > 0) {
+                configTimeoutRemaining--;
+                updateConfigCountdownUI();
+            } else {
+                clearInterval(configCountdownInterval);
+                configCountdownInterval = null;
+                updateConfigCountdownUI();
+            }
+        }, 1000);
+    }
+}
 
 function getGithubReleaseUrl(version) {
     if (!version || version === '--') {
@@ -233,6 +294,11 @@ function handleWsMessage(msg) {
             if (msg.sysinfo) updateSysinfoUI(msg.sysinfo);
             if (msg.logLevelName) {
                 $('#terminalLogLevel').val(msg.logLevelName);
+            }
+            if (msg.canChangeLogLevel === false) {
+                $('#terminalLogLevel').prop('disabled', true).attr('title', 'Log level is fixed in release builds');
+            } else {
+                $('#terminalLogLevel').prop('disabled', false).removeAttr('title');
             }
             if (terminalOpen) {
                 sendWsMessage({ type: 'subscribe_logs', enabled: true });
@@ -957,9 +1023,13 @@ function updateSysinfoUI(data) {
         if (data.configEnabled) {
             $('#configButton').show();
             $('#headerConfigBadge').removeClass('d-none');
+            const remaining = (data.configTimeoutRemaining !== undefined && data.configTimeoutRemaining > 0)
+                ? data.configTimeoutRemaining : (configTimeoutRemaining > 0 ? configTimeoutRemaining : 600);
+            setConfigCountdown(remaining, true);
         } else {
             $('#configButton').hide();
             $('#headerConfigBadge').addClass('d-none');
+            setConfigCountdown(0, false);
         }
     }
 
@@ -1395,6 +1465,7 @@ $('#terminalAutoScroll').on('change', function() {
     if (terminalAutoScroll) scrollToTerminalBottom();
 });
 $('#terminalLogLevel').on('change', function() {
+    if ($(this).is(':disabled')) return;
     const val = $(this).val();
     sendWsMessage({ type: 'set_log_level', level: val });
 });
@@ -1447,6 +1518,10 @@ $('#btnCopySysinfo').on('click', function() {
 });
 
 if (typeof window !== 'undefined') {
+    window.formatConfigCountdown = formatConfigCountdown;
+    window.setConfigCountdown = setConfigCountdown;
+    window.get_configTimeoutRemaining = () => configTimeoutRemaining;
+    window.set_configTimeoutRemaining = (v) => { configTimeoutRemaining = v; };
     window.formatUptime = formatUptime;
     window.formatBytes = formatBytes;
     window.loadSummary = loadSummary;
@@ -1500,5 +1575,8 @@ if (typeof window !== 'undefined') {
     window.set_dashboardIconsCatalog = (v) => { dashboardIconsCatalog = v; };
     window.get_mdiIconsCatalog = () => mdiIconsCatalog;
     window.set_mdiIconsCatalog = (v) => { mdiIconsCatalog = v; };
+    window.getUsageBarClass = getUsageBarClass;
+    window.setProgressBar = setProgressBar;
+    window.formatRssiHtml = formatRssiHtml;
 }
 })();

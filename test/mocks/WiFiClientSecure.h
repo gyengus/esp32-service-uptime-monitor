@@ -6,6 +6,8 @@
 class WiFiClientSecure : public Client {
 public:
     void setInsecure() {}
+    void setCACert(const char *rootCA) {}
+    void setCACertBundle(const uint8_t *bundle = nullptr, size_t size = 0) {}
     int connect(IPAddress ip, uint16_t port) override { return 1; }
     int connect(const char *host, uint16_t port) override { return 1; }
     size_t write(uint8_t) override { return 1; }

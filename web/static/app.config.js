@@ -1,5 +1,95 @@
+let configCountdownInterval = null;
+let remainingSeconds = 0;
+let ws = null;
+
+function formatConfigCountdown(totalSecs) {
+    if (isNaN(totalSecs) || totalSecs <= 0) return '00:00';
+    const m = Math.floor(totalSecs / 60);
+    const s = totalSecs % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function updateCountdownDisplay() {
+    if (remainingSeconds <= 0) {
+        onConfigExpired();
+        return;
+    }
+    $('#configCountdownTime').text(formatConfigCountdown(remainingSeconds));
+    if (remainingSeconds <= 60) {
+        $('#configCountdownBadge').removeClass('bg-warning text-dark').addClass('bg-danger text-white');
+    } else {
+        $('#configCountdownBadge').removeClass('bg-danger text-white').addClass('bg-warning text-dark');
+    }
+}
+
+function startConfigCountdown(seconds) {
+    if (seconds <= 0) {
+        onConfigExpired();
+        return;
+    }
+    remainingSeconds = seconds;
+    $('#configCountdownBadge').removeClass('d-none').addClass('d-flex');
+    updateCountdownDisplay();
+
+    if (configCountdownInterval) {
+        clearInterval(configCountdownInterval);
+        configCountdownInterval = null;
+    }
+    configCountdownInterval = setInterval(function() {
+        if (remainingSeconds > 0) {
+            remainingSeconds--;
+            updateCountdownDisplay();
+        } else {
+            clearInterval(configCountdownInterval);
+            configCountdownInterval = null;
+            onConfigExpired();
+        }
+    }, 1000);
+}
+
+function onConfigExpired() {
+    if (configCountdownInterval) {
+        clearInterval(configCountdownInterval);
+        configCountdownInterval = null;
+    }
+    remainingSeconds = 0;
+    $('#configCountdownBadge').removeClass('bg-warning text-dark').addClass('bg-danger text-white');
+    $('#configCountdownTime').text('00:00');
+    $('#configExpiredAlert').removeClass('d-none');
+    $('#configForm :input').prop('disabled', true);
+    setTimeout(function() {
+        if (typeof window !== 'undefined' && window.location) {
+            window.location.href = '/';
+        }
+    }, 3000);
+}
+
+function initConfigWebSocket() {
+    if (typeof WebSocket === 'undefined') return;
+    try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        ws = new WebSocket(wsUrl);
+        ws.onmessage = function(event) {
+            try {
+                const msg = JSON.parse(event.data);
+                const sysData = (msg.type === 'sysinfo') ? msg.data : ((msg.type === 'init') ? msg.sysinfo : null);
+                if (sysData) {
+                    if (sysData.configEnabled === false) {
+                        onConfigExpired();
+                    } else if (sysData.configTimeoutRemaining !== undefined && sysData.configTimeoutRemaining > 0) {
+                        remainingSeconds = sysData.configTimeoutRemaining;
+                        updateCountdownDisplay();
+                    }
+                }
+            } catch (e) {}
+        };
+    } catch (e) {}
+}
+
 $.when($.ready).then(function() {
     var wifiScanInProgress = false;
+    initConfigWebSocket();
 
     // Get current configuration from the server
     $.ajax({
@@ -14,6 +104,7 @@ $.when($.ready).then(function() {
             $('#checkInterval').val(config.checkInterval);
             $('#discordWebhookURL').val(config.discordWebhookURL);
             $('#hostname').val(config.hostname);
+            $('#otaToken').val(config.otaToken || '');
             let ledBrightness = (config.ledBrightness !== undefined) ? config.ledBrightness : 50;
             $('#ledBrightness').val(ledBrightness);
             $('#ledBrightnessVal').text(ledBrightness + '%');
@@ -22,9 +113,18 @@ $.when($.ready).then(function() {
                 $('#factoryResetRow').show();
                 $('#backupRow').show();
             }
+
+            if (config.configTimeoutRemaining !== undefined && config.configTimeoutRemaining > 0) {
+                startConfigCountdown(config.configTimeoutRemaining);
+            } else if (config.configEnabled === true) {
+                startConfigCountdown(600);
+            }
         },
         error: function(xhr, status, error) {
             showError(xhr, "Can't fetch configuration");
+            if (xhr.status === 403) {
+                onConfigExpired();
+            }
         }
     });
 
@@ -32,6 +132,14 @@ $.when($.ready).then(function() {
     $('#saveButton').on('click', function(event) {
         $(this).prop('disabled', true);
         event.preventDefault();
+
+        const otaTokenVal = $('#otaToken').val() || '';
+        if (otaTokenVal.length > 0 && otaTokenVal !== '******' && otaTokenVal.length < 8) {
+            $('#otaToken')[0].setCustomValidity('OTA token must be at least 8 characters long');
+        } else {
+            $('#otaToken')[0].setCustomValidity('');
+        }
+
         $('#configForm').addClass('was-validated');
         if (!$('#configForm')[0].checkValidity()) {
             $(this).prop('disabled', false);
@@ -45,7 +153,8 @@ $.when($.ready).then(function() {
             checkInterval: parseInt($('#checkInterval').val()),
             discordWebhookURL: $('#discordWebhookURL').val(),
             hostname: $('#hostname').val(),
-            ledBrightness: parseInt($('#ledBrightness').val())
+            ledBrightness: parseInt($('#ledBrightness').val()),
+            otaToken: $('#otaToken').val()
         });
         $.ajax({
             type: 'POST',
@@ -346,10 +455,10 @@ $('#webArchiveFile').on('change', function(event) {
             $icon.removeClass('d-none');
             $text.text('Update Web UI (.zip)');
             $('#webArchiveFile').val('');
-            showSuccess('Web UI updated successfully! Reloading page in 2s...');
+            showSuccess('Web UI updated successfully! Reloading page in 3s...');
             setTimeout(function() {
                 window.location.reload();
-            }, 2000);
+            }, 3000);
         },
         error: function(xhr, status, error) {
             $btn.prop('disabled', false);
@@ -399,6 +508,9 @@ $('#firmwareBinaryFile').on('change', function(event) {
         } else {
             $progressContainer.addClass('d-none');
         }
+    }
+    if (typeof window !== 'undefined') {
+        window._resetFirmwareUI = resetFirmwareUI;
     }
 
     $.ajax({
@@ -516,4 +628,11 @@ if (typeof window !== 'undefined') {
     window.showError = showError;
     window.showSuccess = showSuccess;
     window.showToast = showToast;
+    window.formatConfigCountdown = formatConfigCountdown;
+    window.startConfigCountdown = startConfigCountdown;
+    window.updateCountdownDisplay = updateCountdownDisplay;
+    window.onConfigExpired = onConfigExpired;
+    window.get_remainingSeconds = () => remainingSeconds;
+    window.set_remainingSeconds = (v) => { remainingSeconds = v; };
+    window.initConfigWebSocket = initConfigWebSocket;
 }

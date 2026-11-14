@@ -438,6 +438,12 @@ div#mainContainer {
     text-decoration: underline !important;
 }
 
+@media (max-width: 767.98px) {
+    #configCountdownBadge {
+        display: none !important;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;

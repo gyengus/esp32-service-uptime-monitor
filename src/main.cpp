@@ -43,9 +43,13 @@ FileManager fileManager(storage.getFS(), WEB_UI_PATH);
 
 volatile bool isConfigFunctionsEnabled = false;
 bool isAPMode = false;
-volatile bool buttonEventPending = false;
 volatile bool shouldRestart = false;
 volatile bool isOtaUpdating = false;
+unsigned long configModeLastActivity = 0;
+
+void resetConfigModeActivity() {
+    configModeLastActivity = millis();
+}
 
 TaskHandle_t MonitoringTaskHandle = NULL;
 #ifdef HAS_RGB_LED
@@ -63,7 +67,6 @@ void setup() {
     digitalWrite(LED_PIN, HIGH);
 #endif
     pinMode(BOOT_BTN_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(BOOT_BTN_PIN), handleButtonInterrupt, FALLING);
 
     #ifdef MONITOR_SPEED
         Serial.begin(MONITOR_SPEED);
@@ -114,7 +117,13 @@ void setup() {
         return storage.isAvailable();
     });
     fileManager.setAuthCheck([](AsyncWebServerRequest *request) {
-        return isConfigFunctionsEnabled || isAPMode;
+        if (isConfigFunctionsEnabled || isAPMode) {
+            if (isConfigFunctionsEnabled) {
+                resetConfigModeActivity();
+            }
+            return true;
+        }
+        return false;
     });
 #endif
 
@@ -228,10 +237,14 @@ void setup() {
 }
 
 void loop() {
-    if (buttonEventPending) {
-        buttonEventPending = false;
-        Logger.debug(MAINLOG, "BOOT button pressed, configuration functions %s", isConfigFunctionsEnabled ? "enabled" : "disabled");
-        wsService.broadcastSysinfo();
+    handleButton();
+
+    if (isConfigFunctionsEnabled && !isAPMode) {
+        if (getConfigModeRemainingSeconds() == 0) {
+            isConfigFunctionsEnabled = false;
+            Logger.info(MAINLOG, "Configuration mode timed out after 10 minutes of inactivity");
+            wsService.broadcastSysinfo();
+        }
     }
 
     if (shouldRestart) {
@@ -272,7 +285,7 @@ void loop() {
                 ESP.getMaxAllocHeap(), 
                 ESP.getFreePsram(),
                 heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
-            Logger.debug(MAINLOG, buffer);
+            Logger.debug(MAINLOG, "%s", buffer);
         }
 #endif
         networkContext.checkConnection();
@@ -281,7 +294,17 @@ void loop() {
 
 void configurationMode() {
     isAPMode = true;
-    networkContext.startAPMode(WIFI_AP_SSID, WIFI_AP_PASSWORD, 8, 4);
+    uint8_t mac[6];
+#ifdef UNIT_TEST
+    memset(mac, 0xAA, 6);
+#else
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+#endif
+    char apSSID[32];
+    snprintf(apSSID, sizeof(apSSID), "%s%02X%02X%02X", WIFI_AP_SSID_PREFIX, mac[3], mac[4], mac[5]);
+
+    Logger.info(MAINLOG, "Starting Setup AP (Open) - SSID: %s", apSSID);
+    networkContext.startAPMode(apSSID, "", 8, 4);
 
     dnsServer.start();
 
@@ -401,10 +424,11 @@ void initNormalMode() {
 }
 
 void commonWebServerSettings() {
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Private-Network", "true");
+    DefaultHeaders::Instance().addHeader("X-Frame-Options", "DENY");
+    DefaultHeaders::Instance().addHeader("X-Content-Type-Options", "nosniff");
+    DefaultHeaders::Instance().addHeader("Referrer-Policy", "no-referrer");
+    DefaultHeaders::Instance().addHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' ws: wss: https://cdn.jsdelivr.net;");
+
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(storage.getFS(), (String(WEB_UI_PATH) + "/static/favicon.ico"), "image/x-icon");
     });
@@ -523,7 +547,7 @@ void onSntpSyncSchedule() {
                 int64_t drift_ms = ((int64_t)ntp_now_s - old_tv.tv_sec) * 1000 + (long)ntp_ms - (old_tv.tv_usec / 1000);
                 snprintf(buffer, sizeof(buffer), "Time synchronised, time: %s (drift: %lld ms)", timeStr, drift_ms);
             }
-            Logger.info(MAINLOG, buffer);
+            Logger.info(MAINLOG, "%s", buffer);
         } else {
             Logger.error(MAINLOG, "Time syncronisation failed: No response from server.");
         }
@@ -538,18 +562,41 @@ void errorMode() {
     }
 }
 
-void IRAM_ATTR handleButtonInterrupt() {
-    unsigned long currentTime = millis();
-    static unsigned long lastDebounceTime = 0;
+void handleButton() {
+    static unsigned long buttonPressStart = 0;
+    static bool buttonWasPressed = false;
+    static bool resetTriggered = false;
 
-    if (currentTime < 1000) {
-        return; 
-    }
+    if (millis() < 1000) return;
 
-    if ((digitalRead(BOOT_BTN_PIN) == LOW) && (currentTime - lastDebounceTime > 200)) {
-        isConfigFunctionsEnabled = !isConfigFunctionsEnabled;
-        lastDebounceTime = currentTime;
-        buttonEventPending = true;
+    bool isPressed = (digitalRead(BOOT_BTN_PIN) == LOW);
+
+    if (isPressed) {
+        if (!buttonWasPressed) {
+            buttonWasPressed = true;
+            buttonPressStart = millis();
+            resetTriggered = false;
+        } else if (!resetTriggered && (millis() - buttonPressStart >= 10000)) {
+            resetTriggered = true;
+            Logger.warning(MAINLOG, "BOOT button held for 10s - performing factory reset...");
+            storage.deleteFile(CONFIG_FILE_PATH);
+            storage.deleteFile(ENTITIES_FILE_PATH);
+            shouldRestart = true;
+        }
+    } else {
+        if (buttonWasPressed) {
+            unsigned long duration = millis() - buttonPressStart;
+            buttonWasPressed = false;
+            if (!resetTriggered && duration >= 50 && duration < 5000) {
+                isConfigFunctionsEnabled = !isConfigFunctionsEnabled;
+                if (isConfigFunctionsEnabled) {
+                    resetConfigModeActivity();
+                }
+                Logger.info(MAINLOG, "BOOT button pressed, configuration functions %s",
+                            isConfigFunctionsEnabled ? "enabled" : "disabled");
+                wsService.broadcastSysinfo();
+            }
+        }
     }
 }
 

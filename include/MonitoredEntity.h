@@ -32,6 +32,8 @@ public:
     
     void fillJson(JsonObject& doc) const;
     bool fromJsonObject(const JsonObject& doc);
+    static bool isValidAddress(const String& addr);
+    bool isValidForUserInput() const;
     MonitoredEntity& operator=(const MonitoredEntity& other);
 
     uint8_t getFailCount() const { return _failCount; }

@@ -104,6 +104,10 @@
  *           type: string
  *           description: RFC 1123 mDNS hostname without .local suffix
  *           example: esp32-service-uptime-monitor
+ *         otaToken:
+ *           type: string
+ *           description: PlatformIO OTA update authentication token (minimum 8 characters; masked on read)
+ *           example: "******"
  *         logLevel:
  *           type: integer
  *           minimum: 0
@@ -117,6 +121,14 @@
  *           minimum: 0
  *           maximum: 100
  *           example: 50
+ *         configEnabled:
+ *           type: boolean
+ *           description: Whether configuration mode is currently active
+ *           example: true
+ *         configTimeoutRemaining:
+ *           type: integer
+ *           description: Remaining configuration mode timeout in seconds
+ *           example: 600
  *     MonitoredEntity:
  *       type: object
  *       properties:
@@ -253,6 +265,10 @@
  *           type: string
  *         configEnabled:
  *           type: boolean
+ *         configTimeoutRemaining:
+ *           type: integer
+ *           description: Remaining configuration mode timeout in seconds
+ *           example: 600
  *     DetailedSysinfo:
  *       allOf:
  *         - $ref: '#/components/schemas/BasicSysinfo'

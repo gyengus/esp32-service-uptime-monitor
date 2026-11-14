@@ -1,4 +1,5 @@
 #include "MonitoredEntity.h"
+#include "AddressValidator.h"
 
 MonitoredEntity::MonitoredEntity(const String& name, const String& address, const String& icon, bool notify)
     : _name(name), _address(address), _icon(icon), _notification(notify),
@@ -50,6 +51,18 @@ void MonitoredEntity::fillJson(JsonObject& doc) const {
     doc["lastChanged"] = (uint64_t)_lastChanged;
 }
 
+bool MonitoredEntity::isValidAddress(const String& addr) {
+    return AddressValidator::isValidMonitoredUrl(addr);
+}
+
+bool MonitoredEntity::isValidForUserInput() const {
+    return AddressValidator::isValidEntityName(_name) &&
+           AddressValidator::isValidMonitoredUrl(_address) &&
+           AddressValidator::isValidEntityIcon(_icon);
+}
+
+// Deliberately lenient: also used when loading persisted entities, which must never be dropped.
+// User-supplied entities are checked with isValidForUserInput() in the API layer.
 bool MonitoredEntity::fromJsonObject(const JsonObject& doc) {
     if (!doc["name"].is<const char*>() || !doc["address"].is<const char*>()) {
         return false; 

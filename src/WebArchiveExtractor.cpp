@@ -111,8 +111,14 @@ static bool extractZipEntries(UNZIP* pZip, const String& targetDir) {
                                 int bytesRead = 0;
                                 while ((bytesRead = pZip->readCurrentFile(chunkBuf, CHUNK_SIZE)) > 0) {
                                     outFile.write(chunkBuf, bytesRead);
+#ifndef UNIT_TEST
+                                    vTaskDelay(pdMS_TO_TICKS(1));
+#endif
                                 }
                                 outFile.close();
+#ifndef UNIT_TEST
+                                vTaskDelay(pdMS_TO_TICKS(1));
+#endif
                                 extractedCount++;
                                 Logger.debug(MAINLOG, "Extracted: %s (%u bytes)", rawName.c_str(), (unsigned int)fi.uncompressed_size);
                             } else {
@@ -129,6 +135,9 @@ static bool extractZipEntries(UNZIP* pZip, const String& targetDir) {
             }
         }
 
+#ifndef UNIT_TEST
+        vTaskDelay(pdMS_TO_TICKS(1));
+#endif
         rc = pZip->gotoNextFile();
     }
 

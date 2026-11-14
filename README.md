@@ -53,8 +53,8 @@ pio device monitor
 
 1. **Power on the device**: If no configuration exists, the device boots into Access Point (AP) mode. On first boot (or if `/web/index.html` is missing), the firmware automatically unpacks its embedded web UI archive into storage (`/web/`), so no manual file uploading is required.
 2. **Connect to AP**:
-   - **SSID**: `ESP32-Service-Uptime-Monitor`
-   - **Password**: `29965225`
+   - **SSID**: `ESP32-Service-Uptime-Monitor-XXXXXX` (suffix matches last 3 MAC octets)
+   - **Security**: Open (no password required for initial setup)
    - **Captive Portal IP**: `192.168.4.1`
 3. **Open browser**: Navigate to `http://192.168.4.1/` (most devices trigger the captive portal automatically).
 4. **Configure Wi-Fi**: Enter your network credentials and click **Save**.
@@ -71,15 +71,15 @@ Access the dashboard at `http://<hostname>.local/` (default: `http://esp32-servi
 > **Hostname & mDNS Compatibility:** In accordance with RFC 1123, device hostnames only allow lowercase ASCII letters (`a-z`), digits (`0-9`), and hyphens (`-`). Any spaces, dots, or underscores entered via the web interface are automatically sanitized to hyphens to ensure seamless mDNS resolution across all operating systems, including Windows, macOS, iOS, Android, and Linux.
 
 - **Main Dashboard (`/`)**: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature) and device log terminal.
-- **Configuration Page (`/config`)**: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.
+- **Configuration Page (`/config`)**: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, OTA update token, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.
 - **Interactive API Documentation (`/api/docs` or `/swagger`)**: On-device Swagger UI backed by `/api/openapi.yaml` (also deployable statically to GitHub Pages from [`docs/api/`](docs/api/index.html)).
 - **File Manager (`/fileManager`)**: Browse directories, upload files, download files, delete items, and create folders. Can be completely disabled in production releases from the command line (`DISABLE_FILE_MANAGER=1 pio run` or `RELEASE=1 pio run`), via `#define DISABLE_FILE_MANAGER` in `include/Config.h`, or `-D DISABLE_FILE_MANAGER` in `platformio.ini`, omitting `fileManager.html` from storage and saving ~15 KB flash.
 
-### Configuration Protection Toggle
+### Configuration Protection & Factory Reset
 
-Press the hardware **BOOT** button at any time to toggle configuration access:
-- **Enabled**: Settings button visible in the web header; `/config` and management endpoints unlocked.
-- **Disabled**: Configuration protected; sensitive endpoints return `403 Forbidden`.
+The hardware **BOOT** button controls configuration mode and factory reset:
+- **Short Press (< 5s)**: Toggles configuration access. When enabled, the Settings icon and a real-time countdown badge (`10:00`) appear in the web header/menu, and `/config`, entity editing, and management routes are unlocked. For security, configuration mode automatically times out after **10 minutes of inactivity** (each interaction resets the timer).
+- **Long Press (≥ 10s)**: Initiates an immediate **Factory Reset** — deletes stored configurations and entities (`config.json`, `monitored_entities.json`) and restarts the device into Open Setup AP mode.
 
 ## API Overview
 
@@ -102,13 +102,13 @@ Full interactive request/response schemas and live testing are available in the 
 
 ### Configuration & Updates
 
-*(Configuration endpoints require BOOT button unlock or AP mode; otherwise they return `403 Forbidden`.)*
+*(Configuration endpoints require BOOT button unlock or AP mode; otherwise they return `403 Forbidden`. Alternatively, OTA and web archive endpoints accept an `X-PlatformIO-Upload` HTTP header matching the configured `otaToken`.)*
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/config` | Retrieve current configuration |
+| `GET` | `/api/config` | Retrieve current configuration (sensitive secrets masked as `******`) |
 | `POST` | `/api/config` | Update configuration parameters |
-| `GET` | `/api/config/backup` | Download complete configuration and entity backup JSON |
+| `GET` | `/api/config/backup` | Download complete configuration and entity backup JSON (`Cache-Control: no-store`; contains Wi-Fi and webhook secrets) |
 | `POST` | `/api/config/restore` | Restore configuration and entities from backup JSON (`multipart/form-data`) |
 | `POST` | `/api/config/factoryReset` | Reset settings to factory defaults |
 | `POST` | `/api/config/test-led` | Preview RGB LED brightness (cyan pulse) |
@@ -117,6 +117,16 @@ Full interactive request/response schemas and live testing are available in the 
 | `POST` | `/api/web/upload-archive` | Upload and unpack `web.zip` archive into `/web` |
 | `GET` | `/ota/start` | Initialize native firmware OTA session (`mode=fr`, optional `hash` MD5) |
 | `POST` | `/ota/upload` | Firmware binary upload handled natively via `Update.h` |
+
+### Security Considerations
+
+- **CSRF & DNS Rebinding Protection**: State-mutating endpoints enforce `Content-Type: application/json` and validate the `Host` (DNS rebinding protection against foreign domains) and `Origin`/`Referer` headers.
+- **Physical BOOT Button Authorization**: Management endpoints and log level alterations require physical activation via the BOOT button (10-minute auto-expiry with visual countdown).
+- **SSRF & Address Validation**: Monitored addresses and webhook URLs are strictly validated to HTTP/HTTPS schemes; local loopback (`127.0.0.0/8`, `::1`), link-local, and broadcast IP targets are blocked to prevent Server-Side Request Forgery.
+- **WebSocket & Log Hygiene**: Live log streaming (`/ws`) is viewable on the local network up to INFO level without credentials (limited to 3 concurrent subscribers); DEBUG-level logs are only streamed during active configuration mode. Monitored query parameters (`?token=...`) are stripped from log messages, and format strings are strictly enforced.
+- **OTA Hardening**: OTA firmware and web archive uploads are disabled in open AP setup mode and protected against brute-force token guessing via constant-time comparison and automatic 60-second lockout after 5 consecutive failures.
+- **Secret Masking**: Passwords, OTA tokens, and Discord webhook authorization tokens are masked as `******` when retrieving device configuration via `GET /api/config`.
+
 
 ## Status Indicators
 
@@ -145,6 +155,7 @@ The device stores its persistent state in JSON format in the root of the filesys
   "ledBrightness": 50,
   "discordWebhookURL": "https://discord.com/api/webhooks/...",
   "hostname": "esp32-service-uptime-monitor",
+  "otaToken": "your-ota-token",
   "logLevel": 8
 }
 ```

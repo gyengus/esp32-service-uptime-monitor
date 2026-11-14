@@ -3,6 +3,11 @@
 #include <Elog.h>
 #include "Config.h"
 
+#ifndef UNIT_TEST
+extern const uint8_t x509_crt_bundle_start[] asm("_binary_x509_crt_bundle_start");
+extern const uint8_t x509_crt_bundle_end[] asm("_binary_x509_crt_bundle_end");
+#endif
+
 NotificationService& NotificationService::getInstance() {
     static NotificationService instance;
     return instance;
@@ -16,7 +21,11 @@ bool NotificationService::send(const String& url, const String& message, uint32_
     if (url.length() == 0 || message.length() == 0) return false;
 
     WiFiClientSecure client;
+#ifndef UNIT_TEST
+    client.setCACertBundle(x509_crt_bundle_start, x509_crt_bundle_end - x509_crt_bundle_start);
+#else
     client.setInsecure();
+#endif
     HTTPClient http;
 
     bool success = false;

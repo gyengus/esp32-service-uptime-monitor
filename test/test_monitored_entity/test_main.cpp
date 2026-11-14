@@ -195,6 +195,74 @@ void test_copy_assignment_operator(void) {
     TEST_ASSERT_EQUAL_STRING("Mutated", copy.getName().c_str());
 }
 
+void test_is_valid_address(void) {
+    TEST_ASSERT_TRUE(MonitoredEntity::isValidAddress("http://example.com"));
+    TEST_ASSERT_TRUE(MonitoredEntity::isValidAddress("https://192.168.1.1:8443/status"));
+    TEST_ASSERT_TRUE(MonitoredEntity::isValidAddress("http://server.local"));
+
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("ftp://example.com"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://localhost"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://localhost:8080/admin"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://127.0.0.1"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://127.0.0.5:9000"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://169.254.169.254/latest/meta-data"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://0.0.0.0"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://224.0.0.1"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://255.255.255.255"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://[::1]"));
+
+    // R-03 bypass tests: userinfo rejection
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://x@169.254.169.254/"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://admin:pass@example.com/"));
+
+    // Alternative IPv4 notation (octal, hex, dword, short forms)
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://127.1/"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://2130706433/"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://0x7f.1/"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://0177.0.0.1/"));
+
+    // IPv4-mapped IPv6 literals
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://[::ffff:127.0.0.1]/"));
+    TEST_ASSERT_FALSE(MonitoredEntity::isValidAddress("http://[::ffff:169.254.169.254]/"));
+}
+
+void test_is_valid_for_user_input(void) {
+    MonitoredEntity valid("valid-node", "http://192.168.1.50/health", "mdi-server", true);
+    TEST_ASSERT_TRUE(valid.isValidForUserInput());
+
+    // Valid Hungarian and punctuation characters in name
+    MonitoredEntity accented("Árvíztűrő Fúrógép_01-test.srv", "http://192.168.1.50/health", "mdi-server", true);
+    TEST_ASSERT_TRUE(accented.isValidForUserInput());
+
+    // Name length > 63
+    String longName = "a";
+    while (longName.length() <= 63) longName += "a";
+    MonitoredEntity oversizeName(longName, "http://192.168.1.50/health", "mdi-server", true);
+    TEST_ASSERT_FALSE(oversizeName.isValidForUserInput());
+
+    // Leading / trailing space in name
+    MonitoredEntity leadingSpace(" test", "http://192.168.1.50/health", "mdi-server", true);
+    TEST_ASSERT_FALSE(leadingSpace.isValidForUserInput());
+    MonitoredEntity trailingSpace("test ", "http://192.168.1.50/health", "mdi-server", true);
+    TEST_ASSERT_FALSE(trailingSpace.isValidForUserInput());
+
+    // Address length > 127
+    String longAddr = "http://example.com/";
+    while (longAddr.length() <= 127) longAddr += "x";
+    MonitoredEntity oversizeAddr("valid-name", longAddr, "mdi-server", true);
+    TEST_ASSERT_FALSE(oversizeAddr.isValidForUserInput());
+
+    // Icon length > 127
+    String longIcon = "mdi-";
+    while (longIcon.length() <= 127) longIcon += "i";
+    MonitoredEntity oversizeIcon("valid-name", "http://192.168.1.50/health", longIcon, true);
+    TEST_ASSERT_FALSE(oversizeIcon.isValidForUserInput());
+
+    // Prohibited characters in name
+    MonitoredEntity badChars("bad/name", "http://192.168.1.50/health", "mdi-server", true);
+    TEST_ASSERT_FALSE(badChars.isValidForUserInput());
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_default_constructor);
@@ -207,5 +275,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_from_json_object_missing_required_fields);
     RUN_TEST(test_from_json_string_valid_and_invalid);
     RUN_TEST(test_copy_assignment_operator);
+    RUN_TEST(test_is_valid_address);
+    RUN_TEST(test_is_valid_for_user_input);
     return UNITY_END();
 }

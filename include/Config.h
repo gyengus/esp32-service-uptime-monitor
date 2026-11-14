@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 
 #define WIFI_AP_SSID "ESP32-Service-Uptime-Monitor"
-#define WIFI_AP_PASSWORD "29965225"
+#define WIFI_AP_SSID_PREFIX "ESP32-Monitor-"
 #define DEFAULT_HOSTNAME "esp32-service-uptime-monitor"
 #define DEFAULT_SNTP_SERVER "pool.ntp.org"
 #define DEFAULT_TIMEZONE_OFFSET_HOURS 1
@@ -84,7 +84,7 @@ public:
 
     bool loadConfig();
     bool saveConfig(const config_t& config);
-    bool updateLogLevel(uint8_t newLevel);
+    bool updateLogLevel(uint8_t newLevel, bool persist = true);
     config_t getConfig();
     uint8_t getLedBrightness() const { return currentConfig.ledBrightness; }
     String getOtaToken() const { return currentConfig.otaToken; }

@@ -64,6 +64,10 @@
             </div>
 
             <div class="d-flex align-items-center flex-shrink-0 gap-1">
+                <a href="/config" id="configCountdownBadge" class="badge rounded-pill bg-warning text-dark text-decoration-none d-none align-items-center gap-1 px-2 py-1" title="Configuration mode active - click to open settings">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-cog"></use></svg>
+                    <span id="configCountdownTime">--:--</span>
+                </a>
                 <button type="button" id="refreshButton" class="btn btn-sm btn-outline-light border-0 p-1" title="Refresh" aria-label="Refresh services">
                     <svg id="refreshIcon" class="ui-icon ui-icon-lg" aria-hidden="true"><use href="#ui-refresh"></use></svg>
                 </button>
@@ -75,9 +79,12 @@
                     <ul id="headerMenuDropdown" class="dropdown-menu dropdown-menu-end shadow" data-bs-theme="dark" aria-labelledby="headerMenuButton">
                         <li>
                             <a href="/config" id="configButton" class="dropdown-item" style="display: none;">
-                                <span class="d-inline-flex align-items-center gap-2">
-                                    <svg class="ui-icon" aria-hidden="true"><use href="#ui-cog"></use></svg>
-                                    <span>Settings</span>
+                                <span class="d-inline-flex align-items-center justify-content-between w-100 gap-2">
+                                    <span class="d-inline-flex align-items-center gap-2">
+                                        <svg class="ui-icon" aria-hidden="true"><use href="#ui-cog"></use></svg>
+                                        <span>Settings</span>
+                                    </span>
+                                    <span id="configMenuCountdown" class="badge bg-warning text-dark">10:00</span>
                                 </span>
                             </a>
                         </li>
