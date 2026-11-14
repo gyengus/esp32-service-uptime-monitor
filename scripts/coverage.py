@@ -1,8 +1,17 @@
 import os
 import glob
 import re
+import shutil
 import subprocess
 import sys
+
+def run_native_tests(project_dir):
+    pio_cmd = shutil.which("pio")
+    if pio_cmd:
+        cmd = [pio_cmd, "test", "-e", "native"]
+    else:
+        cmd = [sys.executable, "-m", "platformio", "test", "-e", "native"]
+    return subprocess.run(cmd, cwd=project_dir)
 
 def generate_coverage_report(project_dir=None):
     if not project_dir:
@@ -10,13 +19,23 @@ def generate_coverage_report(project_dir=None):
 
     build_dir = os.path.join(project_dir, ".pio", "build", "native")
     if not os.path.isdir(build_dir):
-        print("[COVERAGE] Error: .pio/build/native not found. Run tests first: pio test -e native")
-        return False
+        print("[COVERAGE] .pio/build/native not found. Running tests first: pio test -e native...")
+        res = run_native_tests(project_dir)
+        if res.returncode != 0:
+            print("[COVERAGE] Unit tests failed. Cannot generate coverage report.")
+            return False
 
     gcda_files = glob.glob(os.path.join(build_dir, "**", "*.gcda"), recursive=True)
     if not gcda_files:
-        print("[COVERAGE] No .gcda coverage data found. Please run: pio test -e native")
-        return False
+        print("[COVERAGE] No .gcda coverage data found. Running tests first: pio test -e native...")
+        res = run_native_tests(project_dir)
+        if res.returncode != 0:
+            print("[COVERAGE] Unit tests failed. Cannot generate coverage report.")
+            return False
+        gcda_files = glob.glob(os.path.join(build_dir, "**", "*.gcda"), recursive=True)
+        if not gcda_files:
+            print("[COVERAGE] Still no .gcda files found after running tests.")
+            return False
 
     src_files = []
     # Collect application source files to report on
@@ -98,8 +117,8 @@ try:
         name="coverage",
         dependencies=[],
         actions=[coverage_action],
-        title="Coverage Report",
-        description="Display unit test code coverage report"
+        title="Generate Coverage Report",
+        description="Run native tests and display code coverage report"
     )
 except Exception:
     pass

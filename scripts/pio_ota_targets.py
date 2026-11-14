@@ -190,8 +190,8 @@ env.AddCustomTarget(
     name="uploadweb",
     dependencies=None,
     actions=[upload_web_action],
-    title="Upload Web UI to SD",
-    description="Package web/ folder into zip and upload to ESP32 SD card"
+    title="Upload Web UI to storage",
+    description="Package web/ folder into zip and upload to ESP32 storage"
 )
 
 env.AddCustomTarget(

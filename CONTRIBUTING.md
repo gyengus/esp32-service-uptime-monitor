@@ -142,6 +142,9 @@ Open `http://localhost:8000/` in your browser and enter your ESP32 IP or mDNS ho
 # Run all native C++ unit tests (Unity + ArduinoFake)
 pio test -e native
 
+# Run native tests and generate code coverage report (Custom task: "Generate Coverage Report")
+pio run -t coverage
+
 # Run a single C++ test suite
 pio test -e native -f test_api
 
