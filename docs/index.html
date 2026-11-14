@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32 Service Uptime Monitor</title>
+  <meta name="description" content="Self-hosted ESP32 HTTP/HTTPS service uptime monitor with Discord alerts, responsive Web UI, Swagger API, and one-click Web Flasher." />
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a class="brand" href="./index.html">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span>ESP32 Service Uptime Monitor</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./index.html" aria-current="page">Overview &amp; Flasher</a>
+        <a href="./docs.html?doc=readme">Documentation</a>
+        <a href="./api/index.html">API (Swagger)</a>
+        <a href="./docs.html?doc=contributing">Contributing</a>
+        <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="eyebrow">Open-Source Embedded Monitoring</span>
+          <h1>Monitor your homelab &amp; services from a single ESP32.</h1>
+          <p class="hero-lead">
+            Periodic HTTP/HTTPS health checks, Discord webhook alerts on status changes,
+            real-time WebSocket dashboard, built-in Swagger UI, and wireless OTA updates —
+            running directly on ESP32, S3, C3, C5, or C6.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#flasher">Install via USB</a>
+            <a class="btn btn-secondary" href="./docs.html?doc=readme">Read Docs</a>
+            <a class="btn btn-secondary" href="./api/index.html">Explore API</a>
+          </div>
+        </div>
+
+        <aside id="flasher" class="card flasher-card" aria-labelledby="flasher-heading">
+          <h2 id="flasher-heading">Web Flasher</h2>
+          <p class="flasher-subtitle">
+            Flash the latest release firmware directly from your browser and configure Wi-Fi via Improv Wi-Fi.
+          </p>
+
+          <label class="field-label" for="boardSelect">Target Board</label>
+          <select id="boardSelect" class="select-input">
+            <option value="esp32-s3-cam">ESP32-S3-CAM (MicroSD)</option>
+            <option value="esp32-s3">ESP32-S3 DevKit (LittleFS 16MB)</option>
+            <option value="esp32">ESP32-WROOM-32 / NodeMCU-32S (LittleFS 4MB)</option>
+            <option value="esp32-c3">ESP32-C3 SuperMini / DevKitM-1 (LittleFS 4MB)</option>
+            <option value="esp32-c6">ESP32-C6 DevKit (Wi-Fi 6, LittleFS 4MB)</option>
+            <option value="esp32-c5">ESP32-C5 DevKit (Dual-Band Wi-Fi 6, LittleFS 4MB)</option>
+          </select>
+
+          <div id="boardMeta" class="board-meta" aria-live="polite">
+            <span class="chip" id="metaArch">Dual-core Xtensa LX7</span>
+            <span class="chip" id="metaStorage">SD_MMC (1-bit)</span>
+            <span class="chip" id="metaBoot">BOOT: GPIO 0</span>
+          </div>
+
+          <div id="serialWarning" class="alert alert-warning hidden" role="alert">
+            Web Serial is not supported in this browser. Please open this page in desktop
+            <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong> over HTTPS.
+          </div>
+
+          <div class="flasher-action">
+            <esp-web-install-button id="installBtn" manifest="./firmware/manifest-esp32-s3-cam.json">
+              <button slot="activate" class="btn btn-primary" style="width: 100%;">
+                Connect &amp; Install Firmware
+              </button>
+              <span slot="unsupported">
+                Browser not supported. Use desktop Chrome or Edge.
+              </span>
+              <span slot="not-allowed">
+                Web Serial requires HTTPS or localhost.
+              </span>
+            </esp-web-install-button>
+
+            <div class="alert">
+              <strong>Tip:</strong> If your board does not enter bootloader mode automatically, hold the
+              <strong>BOOT</strong> button while connecting or clicking Install. Keep the window open after flashing to set Wi-Fi via <strong>Improv Wi-Fi</strong> (or connect to the setup AP at <code>192.168.4.1</code>).
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2>After Flashing: 3 Quick Steps</h2>
+          <p>Zero manual file uploads — the embedded Web UI extracts automatically on first boot.</p>
+        </div>
+        <div class="steps">
+          <article class="card step-card">
+            <span class="step-num">1</span>
+            <h3>Connect to Wi-Fi</h3>
+            <p>Configure credentials in the Improv Wi-Fi prompt, or join the open AP <code>ESP32-Service-Uptime-Monitor-XXXXXX</code> and open <code>192.168.4.1</code>.</p>
+          </article>
+          <article class="card step-card">
+            <span class="step-num">2</span>
+            <h3>Open the Dashboard</h3>
+            <p>Visit <code>http://esp32-service-uptime-monitor.local/</code> (or the device's DHCP IP) to view live service cards and logs.</p>
+          </article>
+          <article class="card step-card">
+            <span class="step-num">3</span>
+            <h3>Unlock Settings via BOOT</h3>
+            <p>Short-press the physical <strong>BOOT</strong> button to unlock configuration for 10 minutes. Hold &ge; 10s for a full Factory Reset.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Key Features</h2>
+          <p>Engineered for reliability on constrained microcontrollers.</p>
+        </div>
+        <div class="grid-3">
+          <article class="card feature-card">
+            <h3>HTTP &amp; HTTPS Checks</h3>
+            <p>Runs non-blocking checks on Core 0 with 3-retry hysteresis before triggering an offline state, avoiding false alarms and unnecessary flash writes.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Discord Webhooks</h3>
+            <p>Sends rich embed notifications to your Discord channel only when a service transitions between <code>ONLINE</code> and <code>OFFLINE</code>.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Live WebSocket UI</h3>
+            <p>Responsive Bootstrap 5 dashboard with dark mode, instant status filtering, system telemetry (heap, RSSI, temp), and live log streaming.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Interactive Swagger API</h3>
+            <p>Full OpenAPI 3 specification served both on-device at <code>/api/docs</code> and statically right here on GitHub Pages.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Security Hardened</h3>
+            <p>Physical BOOT button authorization, 10-minute auto-lock, SSRF address validation, DNS rebinding protection, and OTA token rate-limiting.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Wireless OTA &amp; Backup</h3>
+            <p>Update firmware or web assets over HTTP/PlatformIO, and export or restore full JSON configuration snapshots anytime.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Supported Hardware</h2>
+          <p>Board pinouts and storage backends are defined in <code>include/devices.h</code>.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Environment</th>
+                <th>Board</th>
+                <th>Architecture</th>
+                <th>Storage</th>
+                <th>Status LED</th>
+                <th>RGB LED</th>
+                <th>BOOT Pin</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>esp32-s3-cam</code></td>
+                <td>ESP32-S3 CAM</td>
+                <td>Dual-core Xtensa LX7</td>
+                <td>MicroSD (<code>SD_MMC</code>)</td>
+                <td>GPIO 2</td>
+                <td>GPIO 48</td>
+                <td>GPIO 0</td>
+              </tr>
+              <tr>
+                <td><code>esp32-s3</code></td>
+                <td>ESP32-S3 DevKitC-1</td>
+                <td>Dual-core Xtensa LX7</td>
+                <td>LittleFS (16MB)</td>
+                <td>—</td>
+                <td>GPIO 48</td>
+                <td>GPIO 0</td>
+              </tr>
+              <tr>
+                <td><code>esp32</code></td>
+                <td>ESP32-WROOM-32</td>
+                <td>Dual-core Xtensa LX6</td>
+                <td>LittleFS (4MB)</td>
+                <td>GPIO 2</td>
+                <td>—</td>
+                <td>GPIO 0</td>
+              </tr>
+              <tr>
+                <td><code>esp32-c3</code></td>
+                <td>ESP32-C3 SuperMini</td>
+                <td>Single-core RISC-V</td>
+                <td>LittleFS (4MB)</td>
+                <td>GPIO 8</td>
+                <td>—</td>
+                <td>GPIO 9</td>
+              </tr>
+              <tr>
+                <td><code>esp32-c6</code></td>
+                <td>ESP32-C6 DevKit</td>
+                <td>Single-core RISC-V (Wi-Fi 6)</td>
+                <td>LittleFS (4MB)</td>
+                <td>—</td>
+                <td>GPIO 8</td>
+                <td>GPIO 9</td>
+              </tr>
+              <tr>
+                <td><code>esp32-c5</code></td>
+                <td>ESP32-C5 DevKit</td>
+                <td>Single-core RISC-V (Dual-Band Wi-Fi 6)</td>
+                <td>LittleFS (4MB)</td>
+                <td>—</td>
+                <td>GPIO 27</td>
+                <td>GPIO 28</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2>RGB LED Status Indicators</h2>
+          <p>Instant visual feedback on boards equipped with a WS2812B RGB LED (<code>HAS_RGB_LED</code>).</p>
+        </div>
+        <div class="led-list">
+          <div class="led-item">
+            <span class="led-swatch" style="background: #334155; border: 1px solid var(--border-strong);" aria-hidden="true"></span>
+            <div><strong>Off</strong> — All services online</div>
+          </div>
+          <div class="led-item">
+            <span class="led-swatch" style="background: var(--magenta);" aria-hidden="true"></span>
+            <div><strong>Pulsing Magenta</strong> — Service(s) offline</div>
+          </div>
+          <div class="led-item">
+            <span class="led-swatch" style="background: var(--warning);" aria-hidden="true"></span>
+            <div><strong>Pulsing Amber</strong> — Setup AP mode active</div>
+          </div>
+          <div class="led-item">
+            <span class="led-swatch" style="background: var(--danger);" aria-hidden="true"></span>
+            <div><strong>Pulsing Red</strong> — Storage / critical error</div>
+          </div>
+          <div class="led-item">
+            <span class="led-swatch" style="background: var(--cyan);" aria-hidden="true"></span>
+            <div><strong>Cyan</strong> — LED brightness test</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>ESP32 Service Uptime Monitor</strong>
+        <p style="margin: 6px 0 8px;">
+          Dual License: Free for personal/home use. Commercial &amp; organizational use requires a paid license.
+          <a href="./docs.html?doc=license">Read full LICENSE</a>.
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <span>Support development:</span>
+          <button type="button" class="copy-pill" data-copy="bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn" title="Copy BTC address">
+            BTC: bc1qx4q5...7kcn
+          </button>
+          <button type="button" class="copy-pill" data-copy="0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8" title="Copy EVM address">
+            EVM: 0x9F0a...C4E8
+          </button>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="./docs.html?doc=readme">Documentation</a>
+        <a href="./api/index.html">API Swagger</a>
+        <a href="./docs.html?doc=contributing">Contributing</a>
+        <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const BOARDS = {
+      "esp32-s3-cam": { arch: "Dual-core Xtensa LX7", storage: "SD_MMC (1-bit)", boot: "BOOT: GPIO 0" },
+      "esp32-s3": { arch: "Dual-core Xtensa LX7", storage: "LittleFS (16MB)", boot: "BOOT: GPIO 0" },
+      "esp32": { arch: "Dual-core Xtensa LX6", storage: "LittleFS (4MB)", boot: "BOOT: GPIO 0" },
+      "esp32-c3": { arch: "Single-core RISC-V", storage: "LittleFS (4MB)", boot: "BOOT: GPIO 9" },
+      "esp32-c6": { arch: "RISC-V Wi-Fi 6", storage: "LittleFS (4MB)", boot: "BOOT: GPIO 9" },
+      "esp32-c5": { arch: "RISC-V Dual-Band Wi-Fi 6", storage: "LittleFS (4MB)", boot: "BOOT: GPIO 28" }
+    };
+
+    const boardSelect = document.getElementById("boardSelect");
+    const installBtn = document.getElementById("installBtn");
+    const metaArch = document.getElementById("metaArch");
+    const metaStorage = document.getElementById("metaStorage");
+    const metaBoot = document.getElementById("metaBoot");
+    const serialWarning = document.getElementById("serialWarning");
+
+    if (!("serial" in navigator)) {
+      serialWarning.classList.remove("hidden");
+    }
+
+    boardSelect.addEventListener("change", () => {
+      const env = boardSelect.value;
+      const info = BOARDS[env];
+      installBtn.setAttribute("manifest", `./firmware/manifest-${env}.json`);
+      if (info) {
+        metaArch.textContent = info.arch;
+        metaStorage.textContent = info.storage;
+        metaBoot.textContent = info.boot;
+      }
+    });
+
+    document.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const value = btn.getAttribute("data-copy");
+        const original = btn.textContent;
+        try {
+          await navigator.clipboard.writeText(value);
+          btn.textContent = "Copied!";
+          setTimeout(() => {
+            btn.textContent = original;
+          }, 1500);
+        } catch {
+          // Clipboard API unavailable
+        }
+      });
+    });
+  </script>
+</body>
+</html>

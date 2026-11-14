@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation — ESP32 Service Uptime Monitor</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a class="brand" href="./index.html">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span>ESP32 Service Uptime Monitor</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./docs.html?doc=readme" data-nav="readme">Documentation</a>
+        <a href="./api/index.html">API (Swagger)</a>
+        <a href="./docs.html?doc=contributing" data-nav="contributing">Contributing</a>
+        <a href="./docs.html?doc=license" data-nav="license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container docs-layout">
+    <aside class="docs-sidebar" aria-label="Document selector">
+      <button type="button" class="doc-tab" data-doc="readme">Project README</button>
+      <button type="button" class="doc-tab" data-doc="contributing">Contributing Guide</button>
+      <button type="button" class="doc-tab" data-doc="license">License (Dual)</button>
+      <a class="doc-tab" href="./api/index.html">API Docs (Swagger) &nearr;</a>
+    </aside>
+
+    <article id="docContent" class="markdown-body" aria-live="polite">
+      <p>Loading document…</p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>ESP32 Service Uptime Monitor</strong> — Dual License (Personal &amp; Commercial)
+      </div>
+      <div class="footer-links">
+        <a href="./index.html">Web Flasher</a>
+        <a href="./api/index.html">API Swagger</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const DOCS = {
+      readme: {
+        title: "Documentation — ESP32 Service Uptime Monitor",
+        paths: ["./content/README.md", "../README.md"],
+        rawUrl: "https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/README.md",
+        isPlain: false
+      },
+      contributing: {
+        title: "Contributing — ESP32 Service Uptime Monitor",
+        paths: ["./content/CONTRIBUTING.md", "../CONTRIBUTING.md"],
+        rawUrl: "https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/CONTRIBUTING.md",
+        isPlain: false
+      },
+      license: {
+        title: "License — ESP32 Service Uptime Monitor",
+        paths: ["./content/LICENSE", "../LICENSE"],
+        rawUrl: "https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/LICENSE",
+        isPlain: true
+      }
+    };
+
+    const contentEl = document.getElementById("docContent");
+    const tabs = document.querySelectorAll(".doc-tab[data-doc]");
+
+    function getActiveDocKey() {
+      const params = new URLSearchParams(window.location.search);
+      const key = (params.get("doc") || "readme").toLowerCase();
+      return DOCS[key] ? key : "readme";
+    }
+
+    async function fetchFirstAvailable(paths) {
+      for (const path of paths) {
+        try {
+          const res = await fetch(path);
+          if (res.ok) return await res.text();
+        } catch {
+          // Try next path
+        }
+      }
+      return null;
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    async function renderDoc(key, pushState = false) {
+      const spec = DOCS[key];
+      document.title = spec.title;
+
+      tabs.forEach((t) => t.classList.toggle("active", t.dataset.doc === key));
+      document.querySelectorAll("[data-nav]").forEach((a) => {
+        if (a.dataset.nav === key) a.setAttribute("aria-current", "page");
+        else a.removeAttribute("aria-current");
+      });
+
+      if (pushState) {
+        const url = new URL(window.location);
+        url.searchParams.set("doc", key);
+        window.history.pushState({}, "", url);
+      }
+
+      contentEl.innerHTML = "<p>Loading document…</p>";
+      const text = await fetchFirstAvailable(spec.paths);
+
+      if (!text) {
+        contentEl.innerHTML = `
+          <div class="alert alert-warning">
+            Could not load document locally.
+            <a href="${spec.rawUrl}" target="_blank" rel="noopener">View on GitHub</a>.
+          </div>`;
+        return;
+      }
+
+      if (spec.isPlain) {
+        contentEl.innerHTML = `<h1>License</h1><pre><code>${escapeHtml(text)}</code></pre>`;
+      } else if (window.marked) {
+        contentEl.innerHTML = window.marked.parse(text);
+      } else {
+        contentEl.innerHTML = `<pre><code>${escapeHtml(text)}</code></pre>`;
+      }
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => renderDoc(tab.dataset.doc, true));
+    });
+
+    window.addEventListener("popstate", () => renderDoc(getActiveDocKey(), false));
+    renderDoc(getActiveDocKey(), false);
+  </script>
+</body>
+</html>
