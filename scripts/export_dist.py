@@ -3,6 +3,8 @@ import os
 import shutil
 import subprocess
 import json
+import configparser
+import sys
 
 def get_chip_info(env):
     board_mcu = str(env.get("BOARD_MCU", "")).lower()
@@ -162,10 +164,47 @@ def export_dist_action(source, target, env):
 
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", export_dist_action)
 
+def get_default_envs(project_dir):
+    ini_path = os.path.join(project_dir, "platformio.ini")
+    parser = configparser.ConfigParser()
+    try:
+        parser.read(ini_path, encoding="utf-8")
+        if parser.has_option("platformio", "default_envs"):
+            raw = parser.get("platformio", "default_envs")
+            return [e.strip() for e in raw.split(",") if e.strip()]
+    except Exception:
+        pass
+    return ["esp32-s3-cam", "esp32-s3", "esp32", "esp32-c3", "esp32-c6", "esp32-c5"]
+
+def export_all_dist_action(source, target, env):
+    if os.environ.get("EXPORT_DIST_ALL") == "1":
+        return
+
+    os.environ["EXPORT_DIST_ALL"] = "1"
+    project_dir = env.get("PROJECT_DIR", ".")
+    target_envs = get_default_envs(project_dir)
+    print(f"\n[DIST] Building all environments for distribution: {', '.join(target_envs)}...\n")
+
+    pio_cmd = shutil.which("pio")
+    if pio_cmd:
+        cmd = [pio_cmd, "run"]
+    else:
+        cmd = [sys.executable, "-m", "platformio", "run"]
+
+    for target_env in target_envs:
+        cmd.extend(["-e", target_env])
+
+    res = subprocess.run(cmd, cwd=project_dir)
+    if res.returncode != 0:
+        print(f"\n[DIST] ERROR: Failed to build distribution binaries (exit code {res.returncode})")
+        raise RuntimeError(f"Distribution build failed with exit code {res.returncode}")
+
+    print(f"\n[DIST] Successfully built and exported all {len(target_envs)} binaries to dist/\n")
+
 env.AddCustomTarget(
     name="dist",
-    dependencies=["$BUILD_DIR/${PROGNAME}.bin"],
-    actions=[export_dist_action],
+    dependencies=None,
+    actions=[export_all_dist_action],
     title="Export dist binaries",
-    description="Export merged Web Flasher binaries to dist/<env>.bin"
+    description="Build all environments and export merged Web Flasher binaries to dist/"
 )
