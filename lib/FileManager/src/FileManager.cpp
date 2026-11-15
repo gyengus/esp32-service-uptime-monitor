@@ -116,6 +116,8 @@ void FileManager::registerHandlers(AsyncWebServer &server) {
      *           text/html:
      *             schema:
      *               type: string
+     *       '403':
+     *         description: Configuration mode disabled
      *       '500':
      *         description: Storage not available
      */

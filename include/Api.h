@@ -78,6 +78,23 @@
  *         offline:
  *           type: integer
  *           example: 1
+ *     LedTestResponse:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: string
+ *           example: success
+ *         message:
+ *           type: string
+ *           example: LED test started
+ *         brightness:
+ *           type: integer
+ *           minimum: 0
+ *           maximum: 100
+ *           example: 50
+ *         duration:
+ *           type: integer
+ *           example: 3000
  *     Config:
  *       type: object
  *       properties:
@@ -86,19 +103,26 @@
  *           example: MyWiFi
  *         wifiPassword:
  *           type: string
+ *           description: Wi-Fi password (masked as ****** on read)
  *           example: secret123
  *         sntpServer:
  *           type: string
+ *           maxLength: 64
  *           example: pool.ntp.org
  *         offsetHours:
  *           type: integer
+ *           minimum: -12
+ *           maximum: 14
  *           example: 1
  *         checkInterval:
  *           type: integer
+ *           minimum: 5
+ *           maximum: 255
  *           description: Check interval in seconds
  *           example: 60
  *         discordWebhookURL:
  *           type: string
+ *           description: Discord webhook URL (token suffix masked as ****** on read)
  *           example: https://discord.com/api/webhooks/...
  *         hostname:
  *           type: string
@@ -134,12 +158,16 @@
  *       properties:
  *         name:
  *           type: string
+ *           maxLength: 63
  *           example: Router
  *         address:
  *           type: string
+ *           maxLength: 127
  *           example: http://192.168.0.1/
  *         icon:
  *           type: string
+ *           maxLength: 127
+ *           description: Material Design Icons class (mdi-*), Dashboard Icons slug (di:*), or icon URL
  *           example: mdi-router-wireless
  *         isOnline:
  *           type: boolean
@@ -163,12 +191,16 @@
  *       properties:
  *         name:
  *           type: string
+ *           maxLength: 63
  *           example: Router
  *         address:
  *           type: string
+ *           maxLength: 127
  *           example: http://192.168.0.1/
  *         icon:
  *           type: string
+ *           maxLength: 127
+ *           description: Material Design Icons class (mdi-*), Dashboard Icons slug (di:*), or icon URL
  *           example: mdi-router-wireless
  *         notification:
  *           type: boolean
@@ -276,25 +308,153 @@
  *           properties:
  *             device:
  *               type: object
- *               additionalProperties: true
+ *               properties:
+ *                 board:
+ *                   type: string
+ *                   example: ESP32-S3-CAM
+ *                 chipModel:
+ *                   type: string
+ *                   example: ESP32-S3
+ *                 chipRevision:
+ *                   type: integer
+ *                 chipCores:
+ *                   type: integer
+ *                 cpuFreqMHz:
+ *                   type: integer
+ *                 resetReason:
+ *                   type: string
+ *                   example: POWERON
+ *                 efuseMac:
+ *                   type: string
+ *                   example: AA:BB:CC:DD:EE:FF
+ *                 hasTempSensor:
+ *                   type: boolean
  *             memory:
  *               type: object
- *               additionalProperties: true
+ *               properties:
+ *                 heapSize:
+ *                   type: integer
+ *                 freeHeap:
+ *                   type: integer
+ *                 minFreeHeap:
+ *                   type: integer
+ *                 maxAllocHeap:
+ *                   type: integer
+ *                 maxFreeBlock:
+ *                   type: integer
+ *                 psramSize:
+ *                   type: integer
+ *                 freePsram:
+ *                   type: integer
+ *                 minFreePsram:
+ *                   type: integer
+ *                 maxAllocPsram:
+ *                   type: integer
+ *                 flashSize:
+ *                   type: integer
+ *                 flashSpeed:
+ *                   type: integer
+ *                 sketchSize:
+ *                   type: integer
+ *                 freeSketchSpace:
+ *                   type: integer
  *             storage:
  *               type: object
- *               additionalProperties: true
+ *               properties:
+ *                 backend:
+ *                   type: string
+ *                   example: SD_MMC
+ *                 available:
+ *                   type: boolean
+ *                 cardType:
+ *                   type: string
+ *                 cardSizeBytes:
+ *                   type: integer
+ *                   format: int64
+ *                 totalBytes:
+ *                   type: integer
+ *                   format: int64
+ *                 usedBytes:
+ *                   type: integer
+ *                   format: int64
+ *                 freeBytes:
+ *                   type: integer
+ *                   format: int64
  *             network:
  *               type: object
- *               additionalProperties: true
+ *               properties:
+ *                 mode:
+ *                   type: string
+ *                   enum: [STA, AP]
+ *                 connected:
+ *                   type: boolean
+ *                 ssid:
+ *                   type: string
+ *                 bssid:
+ *                   type: string
+ *                 channel:
+ *                   type: integer
+ *                 rssi:
+ *                   type: integer
+ *                 ip:
+ *                   type: string
+ *                 subnetMask:
+ *                   type: string
+ *                 gateway:
+ *                   type: string
+ *                 dns:
+ *                   type: string
+ *                 mac:
+ *                   type: string
+ *                 hostname:
+ *                   type: string
+ *                 wsClients:
+ *                   type: integer
  *             time:
  *               type: object
- *               additionalProperties: true
+ *               properties:
+ *                 localTime:
+ *                   type: string
+ *                 timeSynced:
+ *                   type: boolean
+ *                 sntpServer:
+ *                   type: string
+ *                 timezoneOffset:
+ *                   type: integer
+ *                 uptime:
+ *                   type: integer
  *             monitoring:
  *               type: object
- *               additionalProperties: true
+ *               properties:
+ *                 checkInterval:
+ *                   type: integer
+ *                 lastCheckDurationMs:
+ *                   type: integer
+ *                 lastCheckTime:
+ *                   type: string
+ *                 stackHighWaterBytes:
+ *                   type: integer
  *             firmware:
  *               type: object
- *               additionalProperties: true
+ *               properties:
+ *                 version:
+ *                   type: string
+ *                 commit:
+ *                   type: string
+ *                 buildDate:
+ *                   type: string
+ *                 uiVersion:
+ *                   type: string
+ *                 expectedUiVersion:
+ *                   type: string
+ *                 otaPartition:
+ *                   type: string
+ *                 sdkVersion:
+ *                   type: string
+ *                 coreVersion:
+ *                   type: string
+ *                 configEnabled:
+ *                   type: boolean
  *     FileEntry:
  *       type: object
  *       properties:

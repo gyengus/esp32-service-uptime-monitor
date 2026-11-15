@@ -298,17 +298,9 @@ void loop() {
 
 void configurationMode() {
     isAPMode = true;
-    uint8_t mac[6];
-#ifdef UNIT_TEST
-    memset(mac, 0xAA, 6);
-#else
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);
-#endif
-    char apSSID[32];
-    snprintf(apSSID, sizeof(apSSID), "%s%02X%02X%02X", WIFI_AP_SSID_PREFIX, mac[3], mac[4], mac[5]);
 
-    Logger.info(MAINLOG, "Starting Setup AP (Open) - SSID: %s", apSSID);
-    networkContext.startAPMode(apSSID, "", 8, 4);
+    Logger.info(MAINLOG, "Starting Setup AP (Open) - SSID: %s", WIFI_AP_SSID);
+    networkContext.startAPMode(WIFI_AP_SSID, "", 8, 4);
 
     dnsServer.start();
 

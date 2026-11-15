@@ -69,13 +69,20 @@ pio run -e esp32-c5-ota --target upload
 ESP_IP=192.168.0.118 pio run -e esp32-s3-cam-ota --target upload
 ESP_HOST=my-device.local pio run -e esp32-s3-cam-ota --target upload
 pio run -e esp32-s3-ota --target upload --upload-port 192.168.0.118
+
+# Provide OTA token when configuration mode is locked on the device
+ESP_OTA_TOKEN=your-ota-token pio run -e esp32-s3-cam-ota --target upload
 ```
 
 **OTA Target Resolution Order:**
 1. `ESP_HOST` / `ESP_IP` environment variables
 2. `upload_port` in `platformio.ini` (or `--upload-port` CLI flag)
-3. `hostname` in local `config.json` (if present)
+3. `hostname` in local `config.json` or `data/config.json` (if present)
 4. Fallback: `esp32-service-uptime-monitor.local`
+
+**OTA Token Resolution Order (`X-PlatformIO-Upload` header):**
+1. `ESP_OTA_TOKEN` / `OTA_TOKEN` environment variables
+2. `otaToken` in local `config.json` or `data/config.json` (if present)
 
 ---
 

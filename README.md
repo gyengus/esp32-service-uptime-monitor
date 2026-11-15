@@ -59,7 +59,7 @@ pio device monitor
 #### Option B: Captive Portal Access Point
 1. **Power on the device**: If no configuration exists, the device boots into Access Point (AP) mode. On first boot (or if `/web/index.html` is missing), the firmware automatically unpacks its embedded web UI archive into storage (`/web/`), so no manual file uploading is required.
 2. **Connect to AP**:
-   - **SSID**: `ESP32-Service-Uptime-Monitor-XXXXXX` (suffix matches last 3 MAC octets)
+   - **SSID**: `ESP32-Service-Uptime-Monitor`
    - **Security**: Open (no password required for initial setup)
    - **Captive Portal IP**: `192.168.4.1`
 3. **Open browser**: Navigate to `http://192.168.4.1/` (most devices trigger the captive portal automatically).
@@ -129,7 +129,7 @@ Full interactive request/response schemas and live testing are available in the 
 - **CSRF & DNS Rebinding Protection**: State-mutating endpoints enforce `Content-Type: application/json` and validate the `Host` (DNS rebinding protection against foreign domains) and `Origin`/`Referer` headers.
 - **Physical BOOT Button Authorization**: Management endpoints and log level alterations require physical activation via the BOOT button (10-minute auto-expiry with visual countdown).
 - **SSRF & Address Validation**: Monitored addresses and webhook URLs are strictly validated to HTTP/HTTPS schemes; local loopback (`127.0.0.0/8`, `::1`), link-local, and broadcast IP targets are blocked to prevent Server-Side Request Forgery.
-- **WebSocket & Log Hygiene**: Live log streaming (`/ws`) is viewable on the local network up to INFO level without credentials (limited to 3 concurrent subscribers); DEBUG-level logs are only streamed during active configuration mode. Monitored query parameters (`?token=...`) are stripped from log messages, and format strings are strictly enforced.
+- **WebSocket & Log Hygiene**: Live log streaming (`/ws`) is restricted to trusted local origins (maximum 3 concurrent log subscribers). In production release builds (`RELEASE=1`), `DEBUG`/`TRACE`/`VERBOSE` logs and runtime log-level elevation above `INFO` are disabled. Monitored query parameters (`?token=...`) and fragments are stripped from HTTP check log messages, and format strings are strictly enforced.
 - **OTA Hardening**: OTA firmware and web archive uploads are disabled in open AP setup mode and protected against brute-force token guessing via constant-time comparison and automatic 60-second lockout after 5 consecutive failures.
 - **Secret Masking**: Passwords, OTA tokens, and Discord webhook authorization tokens are masked as `******` when retrieving device configuration via `GET /api/config`.
 
@@ -158,11 +158,12 @@ The device stores its persistent state in JSON format in the root of the filesys
   "sntpServer": "pool.ntp.org",
   "offsetHours": 1,
   "checkInterval": 60,
-  "ledBrightness": 50,
   "discordWebhookURL": "https://discord.com/api/webhooks/...",
   "hostname": "esp32-service-uptime-monitor",
-  "otaToken": "your-ota-token",
-  "logLevel": 8
+  "logLevel": 8,
+  "logLevelName": "DEBUG",
+  "ledBrightness": 50,
+  "otaToken": "your-ota-token"
 }
 ```
 
@@ -173,10 +174,10 @@ The device stores its persistent state in JSON format in the root of the filesys
     "name": "Router",
     "address": "http://192.168.0.1/",
     "icon": "mdi-router-wireless",
+    "isOnline": true,
     "notification": true,
     "disabled": false,
-    "lastChanged": 1700000000,
-    "failCount": 0
+    "lastChanged": 1700000000
   }
 ]
 ```

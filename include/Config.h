@@ -5,7 +5,6 @@
 #include <ArduinoJson.h>
 
 #define WIFI_AP_SSID "ESP32-Service-Uptime-Monitor"
-#define WIFI_AP_SSID_PREFIX "ESP32-Monitor-"
 #define DEFAULT_HOSTNAME "esp32-service-uptime-monitor"
 #define DEFAULT_SNTP_SERVER "pool.ntp.org"
 #define DEFAULT_TIMEZONE_OFFSET_HOURS 1

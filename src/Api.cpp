@@ -196,7 +196,7 @@ void Api::registerConfigEndpoints() {
      *               file:
      *                 type: string
      *                 format: binary
-     *                 description: Backup JSON file containing config and entities
+     *                 description: Backup JSON file containing config and entities (max 32 KB)
      *     responses:
      *       '200':
      *         description: Restore completed and device restarting
@@ -208,6 +208,8 @@ void Api::registerConfigEndpoints() {
      *         description: Invalid JSON or missing config/entities keys
      *       '403':
      *         description: Configuration mode disabled
+     *       '413':
+     *         description: Backup payload exceeds maximum allowed size (32 KB)
      *       '500':
      *         description: Storage unavailable or failed to write config files
      */
@@ -421,12 +423,13 @@ void Api::registerConfigEndpoints() {
      *             properties:
      *               url:
      *                 type: string
+     *                 description: Discord webhook URL (if empty or masked with ******, uses currently saved webhook URL)
      *                 example: https://discord.com/api/webhooks/...
      *     responses:
      *       '200':
      *         description: Notification sent successfully (OK)
      *       '400':
-     *         description: Missing url parameter
+     *         description: Missing or invalid Discord webhook URL
      *       '403':
      *         description: Configuration mode disabled
      *       '500':
@@ -490,10 +493,16 @@ void Api::registerConfigEndpoints() {
      *     responses:
      *       '200':
      *         description: LED test started
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/LedTestResponse'
      *       '400':
      *         description: RGB LED not supported on this board
      *       '403':
      *         description: Configuration mode disabled
+     *       '415':
+     *         description: Unsupported Media Type (application/json required when body is present)
      */
     server.on("/api/config/test-led", HTTP_POST, [this](AsyncWebServerRequest *request) {
         String* body = (String*)request->_tempObject;
@@ -643,9 +652,13 @@ void Api::registerConfigEndpoints() {
      *                 restarting:
      *                   type: boolean
      *       '400':
-     *         description: Wi-Fi connection failed or missing body
+     *         description: Invalid JSON, missing body, or Wi-Fi connection failed
      *       '403':
      *         description: Configuration mode disabled
+     *       '413':
+     *         description: Payload Too Large (exceeds 4 KB)
+     *       '415':
+     *         description: Unsupported Media Type (application/json required)
      *       '500':
      *         description: Failed to save configuration
      */
@@ -1275,6 +1288,8 @@ void Api::registerServicesEndpoints() {
      *                 status:
      *                   type: string
      *                   example: deleted
+     *       '403':
+     *         description: Configuration mode disabled
      *       '404':
      *         description: Entity not found
      *         content:
@@ -1322,9 +1337,15 @@ void Api::registerServicesEndpoints() {
      *                   type: string
      *                   example: created
      *       '400':
-     *         description: Invalid JSON or missing required fields
+     *         description: Invalid JSON, name, or address
+     *       '403':
+     *         description: Configuration mode disabled
      *       '409':
      *         description: Entity with this name already exists
+     *       '413':
+     *         description: Payload Too Large (exceeds 4 KB)
+     *       '415':
+     *         description: Unsupported Media Type (application/json required)
      */
     server.on("/api/monitoredentity", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
@@ -1416,9 +1437,15 @@ void Api::registerServicesEndpoints() {
      *                   type: string
      *                   example: updated
      *       '400':
-     *         description: Invalid JSON
+     *         description: Invalid JSON, name, or address
+     *       '403':
+     *         description: Configuration mode disabled
      *       '404':
      *         description: Entity not found
+     *       '413':
+     *         description: Payload Too Large (exceeds 4 KB)
+     *       '415':
+     *         description: Unsupported Media Type (application/json required)
      */
     server.on("^\\/api\\/monitoredentity\\/([^\\/]+)$", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL,
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
