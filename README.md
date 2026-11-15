@@ -5,7 +5,7 @@ An ESP32-based monitoring device that periodically checks the availability of HT
 ## Features
 
 - **Multi-board support**: Native configurations for `esp32-s3-cam` (MicroSD slot), `esp32-s3` (LittleFS), `esp32` (classic dual-core ESP32-WROOM-32), `esp32-c3` (single-core RISC-V), `esp32-c6` (single-core RISC-V with Wi-Fi 6), and `esp32-c5` (single-core RISC-V with Dual-Band 2.4/5GHz Wi-Fi 6) via `devices.h`
-- **WiFi AP/STA mode**: Easy configuration via built-in captive portal access point or connection to existing WiFi (supports 2.4 GHz and 5 GHz Dual-Band Wi-Fi 6)
+- **WiFi AP/STA & Improv Serial mode**: Easy configuration via browser-based **Improv Wi-Fi** (over USB Serial in ESP Web Tools), built-in captive portal access point, or connection to existing WiFi (supports 2.4 GHz and 5 GHz Dual-Band Wi-Fi 6)
 - **Dual storage backends**: Supports FAT32 MicroSD (1-bit SD_MMC) or internal SPI Flash with wear-leveling (LittleFS)
 - **OTA Firmware updates**: Wireless updates via Web UI or PlatformIO (`*-ota` environments)
 - **Modern Web UI**: Responsive Bootstrap 5 interface with dark mode, live status filtering, and entity management
@@ -47,10 +47,16 @@ pio run -e esp32-s3-cam --target upload
 pio device monitor
 ```
 
-> **Web Flasher (ESP Web Tools):** Pre-merged `dist/<env>.bin` images and `dist/manifest.json` can also be generated via `pio run -t dist` for one-click browser flashing via [ESP Web Tools](https://esphome.github.io/esp-web-tools/).
+> **Web Flasher & Improv Wi-Fi (ESP Web Tools):** Pre-merged `dist/<env>.bin` images and `dist/manifest.json` can also be generated via `pio run -t dist` for one-click browser flashing and serial Wi-Fi provisioning via [ESP Web Tools](https://esphome.github.io/esp-web-tools/) and [Improv Wi-Fi](https://www.improv-wifi.com/).
 
 ### Initial Setup
 
+#### Option A: Browser Provisioning via Improv Wi-Fi (USB Serial)
+1. Flash the firmware from the Web Flasher (or connect an already flashed board via **Connect** in ESP Web Tools).
+2. Once the device boots, select **Connect to Wi-Fi** in the browser dialog, choose your Wi-Fi network from the scanned list, and enter the password.
+3. The device connects to your network, saves `/config.json`, returns a direct **Visit Device** link (`http://<hostname>.local/`), and reboots into normal monitoring mode.
+
+#### Option B: Captive Portal Access Point
 1. **Power on the device**: If no configuration exists, the device boots into Access Point (AP) mode. On first boot (or if `/web/index.html` is missing), the firmware automatically unpacks its embedded web UI archive into storage (`/web/`), so no manual file uploading is required.
 2. **Connect to AP**:
    - **SSID**: `ESP32-Service-Uptime-Monitor-XXXXXX` (suffix matches last 3 MAC octets)

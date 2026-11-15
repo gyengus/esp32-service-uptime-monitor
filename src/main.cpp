@@ -20,6 +20,7 @@
 #include "NetworkContext.h"
 #include "Api.h"
 #include "LedService.h"
+#include "ImprovService.h"
 
 #ifndef DISABLE_FILE_MANAGER
 #include "FileManager.h"
@@ -238,6 +239,9 @@ void setup() {
 
 void loop() {
     handleButton();
+    if (!isOtaUpdating) {
+        improvService.handleSerial();
+    }
 
     if (isConfigFunctionsEnabled && !isAPMode) {
         if (getConfigModeRemainingSeconds() == 0) {

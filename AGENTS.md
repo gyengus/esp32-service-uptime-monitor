@@ -46,6 +46,7 @@ All core subsystems follow singleton or repository patterns with controlled life
 | `WebSecurity` | `include/WebSecurity.h` | Validates request `Host` (DNS rebinding defense) and `Origin`/`Referer` headers against local IP and configured hostname |
 | `AddressValidator` | `include/AddressValidator.h` | Validates HTTP/HTTPS target URLs and Discord webhooks; blocks loopback (`127.0.0.0/8`, `::1`), link-local, and broadcast IPs |
 | `LedService` | `include/LedService.h` | Non-blocking WS2812B RGB LED animation and state pulsing |
+| `ImprovService` | `include/ImprovService.h` | Non-blocking Improv Wi-Fi Serial v1 provisioning handler (`Serial` & `Serial0`) for ESP Web Tools |
 | `WsService` & `WsLogStream` | `include/WsService.h` | WebSocket server broadcasting live state updates and intercepting system log messages |
 | `Api` (OTA) | `src/Api.cpp` | REST endpoints; enforces physical BOOT button authorization, origin checks, OTA token rate-limiting (5 failures $\to$ 60s lockout) with constant-time comparison, secret masking on GET, and native firmware OTA (`/ota/start`, `/ota/upload`) using `Update.h` |
 
