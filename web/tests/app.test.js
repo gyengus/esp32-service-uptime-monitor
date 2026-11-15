@@ -901,7 +901,7 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#menuApiDocsLink').attr('href')).toBe('/api/docs');
       expect($('#menuLicenseLink').attr('href')).toBe('/license');
       expect($('#menuGithubRepoLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor');
-      expect($('#menuGithubPagesLink').attr('href')).toBe('https://gyengus.github.io/esp32-service-uptime-monitor/');
+      expect($('#menuGithubPagesLink').attr('href')).toBe('https://esp32-service-uptime-monitor.com/');
       expect($('#menuSysinfoButton').attr('data-bs-target')).toBe('#sysinfoModal');
       expect($('#btnToggleTerminal').length).toBe(1);
 

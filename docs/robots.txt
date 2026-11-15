@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://gyengus.github.io/esp32-service-uptime-monitor/sitemap.xml
+Sitemap: https://esp32-service-uptime-monitor.com/sitemap.xml
