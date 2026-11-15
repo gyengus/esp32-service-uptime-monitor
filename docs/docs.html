@@ -4,6 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Documentation — ESP32 Service Uptime Monitor</title>
+  <meta name="description" content="Official documentation, hardware pinouts, setup guide, interactive Swagger/OpenAPI reference, and licensing terms for the ESP32 Service Uptime Monitor." />
+  <link rel="canonical" href="https://gyengus.github.io/esp32-service-uptime-monitor/docs.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
+  <meta property="og:title" content="Documentation &amp; API Reference — ESP32 Service Uptime Monitor" />
+  <meta property="og:description" content="Official documentation, board pinouts, Improv Wi-Fi setup guide, and interactive OpenAPI/Swagger specification." />
+  <meta property="og:url" content="https://gyengus.github.io/esp32-service-uptime-monitor/docs.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Documentation &amp; API Reference — ESP32 Service Uptime Monitor" />
+  <meta name="twitter:description" content="Official documentation, board pinouts, Improv Wi-Fi setup guide, and interactive OpenAPI/Swagger specification." />
   <link rel="stylesheet" href="./styles.css" />
   <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
   <script>
@@ -121,6 +131,8 @@
     async function renderDoc(key, pushState = false) {
       const spec = DOCS[key];
       document.title = spec.title;
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ event: "doc_view", doc_key: key });
 
       document.querySelectorAll("header [data-nav]").forEach((a) => {
         if (a.dataset.nav === key) a.setAttribute("aria-current", "page");

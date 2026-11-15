@@ -6,7 +6,7 @@ documentation, and associated files, collectively the "Software") is made
 available under a dual-licensing model:
 
   1. Personal / Home Use License (Free of Charge) — Section 1 below
-  2. Commercial & Organizational License (Paid) — Section 3 below
+  2. Commercial & Organizational License (30-Day Free Evaluation, then Paid) — Section 3 below
 
 --------------------------------------------------------------------------------
 1. PERSONAL AND NON-COMMERCIAL LICENSE GRANT
@@ -36,9 +36,11 @@ worldwide, non-exclusive, non-transferable, revocable, royalty-free license to:
 2. PROHIBITED USES WITHOUT A COMMERCIAL LICENSE
 --------------------------------------------------------------------------------
 
-Without a separate, executed Commercial License from the Author, you may NOT
-use, copy, modify, compile, deploy, distribute, or operate the Software (in
-source or binary form, modified or unmodified):
+Without a separate, executed Commercial License from the Author (or except as
+expressly permitted during the 30-Day Commercial Evaluation Period under
+Section 3(a) below), you may NOT use, copy, modify, compile, deploy,
+distribute, or operate the Software (in source or binary form, modified or
+unmodified):
 
   a) On behalf of, or for the internal or external operations of, any company,
      corporation, partnership, sole proprietorship (for business activities),
@@ -52,15 +54,28 @@ source or binary form, modified or unmodified):
   d) For any direct or indirect commercial advantage or monetary compensation.
 
 --------------------------------------------------------------------------------
-3. COMMERCIAL AND ORGANIZATIONAL LICENSING
+3. COMMERCIAL AND ORGANIZATIONAL LICENSING (30-DAY FREE EVALUATION)
 --------------------------------------------------------------------------------
 
-If you are an Organization, or if you wish to use, deploy, bundle, or
-distribute the Software in any manner not permitted by Section 1, you must
-obtain a Commercial License prior to such use.
+  a) 30-Day Commercial Evaluation Grant:
+     If you are an Organization, the Author grants you a one-time, worldwide,
+     non-exclusive, non-transferable, revocable, royalty-free evaluation license
+     to download, compile, install, and internally test the Software for a
+     period of up to thirty (30) calendar days from first installation
+     ("Evaluation Period"), solely to evaluate whether the Software meets your
+     internal operational requirements. During the Evaluation Period, you may
+     NOT resell, distribute, sublicense, or bundle the Software (or hardware
+     flashed with the Software) to third parties or clients.
+
+  b) Production Commercial License:
+     To continue using or operating the Software after the 30-day Evaluation
+     Period expires, or to deploy, bundle, or distribute the Software as part of
+     a commercial product, managed service, or client hardware bundle at any
+     time, you must obtain a paid Commercial License from the Author.
 
 To inquire about commercial or organizational licensing, please contact the
-Author via the project repository:
+Author via:
+  https://gyengus.hu/kapcsolat
   https://github.com/gyengus/esp32-service-uptime-monitor
 
 --------------------------------------------------------------------------------

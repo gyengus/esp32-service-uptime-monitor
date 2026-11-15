@@ -1,6 +1,20 @@
 # ESP32 Service Uptime Monitor
 
-An ESP32-based monitoring device that periodically checks the availability of HTTP/HTTPS services and sends Discord notifications when status changes occur. It features a responsive Web UI, WebSocket live updates, built-in Swagger/OpenAPI documentation, OTA firmware and web asset flashing, and support for both MicroSD and internal Flash (LittleFS) storage.
+**Who watches your monitoring server when the server itself goes down?**
+
+Turn any $4 ESP32 into a standalone, ultra-low-power (< 1 W) hardware uptime appliance. Periodically check HTTP/HTTPS services from an independent microcontroller, get instant **Discord webhook alerts** on status changes, monitor live telemetry over **WebSockets**, and see outages at a glance via **RGB LED indicators** — with zero cloud subscriptions and zero VM overhead.
+
+[![Web Flasher](https://img.shields.io/badge/Web_Flasher-Install_in_Browser-10b981?style=for-the-badge&logo=espressif&logoColor=white)](https://gyengus.github.io/esp32-service-uptime-monitor/#flasher)
+[![Live Preview & Docs](https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge)](https://gyengus.github.io/esp32-service-uptime-monitor/)
+[![OpenAPI 3.0](https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&logo=swagger&logoColor=black)](https://gyengus.github.io/esp32-service-uptime-monitor/docs.html?doc=api)
+[![License](https://img.shields.io/badge/License-Free_for_Personal_%7C_30--Day_Business_Trial-f59e0b?style=for-the-badge)](LICENSE)
+
+## Why a Dedicated Hardware Uptime Monitor?
+
+- **Out-of-Band Independence:** Containerized monitors (like Uptime Kuma or Prometheus) go down with your hypervisor, NAS, or Docker host. An independent ESP32 keeps watching and alerts you even when your primary server crashes.
+- **Flash in 60 Seconds from Your Browser:** No IDE or toolchain needed to get started. Connect via USB, click **Install** in the [Web Flasher](https://gyengus.github.io/esp32-service-uptime-monitor/#flasher), and configure Wi-Fi directly in Chrome or Edge via **Improv Wi-Fi**.
+- **Zero-Wear Steady State:** 3-retry hysteresis prevents false alarms and writes to flash/MicroSD **only when a service actually transitions** between `ONLINE` and `OFFLINE`.
+- **Built for Homelabs, Ready for Business:** Free forever for personal homelabs and hobbyists, with a **30-day free evaluation trial** for companies. Equipped with a full REST API (OpenAPI 3 / Swagger UI), JSON backup/restore for rapid multi-device provisioning, and hardened security (physical BOOT button lock, SSRF & DNS rebinding protection) for commercial and MSP deployments.
 
 ## Features
 
@@ -191,7 +205,7 @@ For multi-board builds, OTA targets, Web UI asset packing (`packweb` / `uploadwe
 This project uses a **Dual License (Personal & Commercial)** — see [`LICENSE`](LICENSE) for the full terms:
 
 - **Personal / Home Use (Free):** Individuals may use, compile, and modify the software free of charge for private, personal, non-commercial home/hobby monitoring, subject to keeping copyright notices intact.
-- **Companies, Public Institutions & Commercial Use (Paid):** Any use by companies, organizations, public/government institutions, or for commercial products/services/hardware bundles requires a separate **Commercial License**. Please reach out via the project repository (<https://github.com/gyengus/esp32-service-uptime-monitor>) for commercial licensing inquiries.
+- **Companies, Public Institutions & Commercial Use (30-Day Free Trial, then Paid):** Organizations may internally evaluate and test the software **free of charge for up to 30 days**. Continued production use, MSP deployments, or commercial hardware bundles require a separate **Commercial License**. Please reach out via the [contact form](https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorReadme&utm_medium=referral&utm_campaign=commercial_license) or the project repository (<https://github.com/gyengus/esp32-service-uptime-monitor>) for commercial licensing inquiries.
 
 ## Donations
 

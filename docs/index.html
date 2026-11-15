@@ -3,8 +3,40 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ESP32 Service Uptime Monitor</title>
-  <meta name="description" content="Self-hosted ESP32 HTTP/HTTPS service uptime monitor with Discord alerts, responsive Web UI, Swagger API, and one-click Web Flasher." />
+  <title>ESP32 Service Uptime Monitor — Self-Hosted HTTP/HTTPS Hardware Watchdog &amp; Web Flasher</title>
+  <meta name="description" content="Turn any ESP32 (S3, C3, C5, C6) into a standalone HTTP/HTTPS uptime monitor for your homelab or business. Instant Discord alerts, live WebSocket UI, Swagger API, and 1-click browser flashing." />
+  <link rel="canonical" href="https://gyengus.github.io/esp32-service-uptime-monitor/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
+  <meta property="og:title" content="ESP32 Service Uptime Monitor — Standalone Hardware Watchdog" />
+  <meta property="og:description" content="Who watches your monitoring server when the server goes down? Monitor HTTP/HTTPS services from an independent sub-1W ESP32 with instant Discord alerts, WebSocket UI, and 1-click browser flashing." />
+  <meta property="og:url" content="https://gyengus.github.io/esp32-service-uptime-monitor/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ESP32 Service Uptime Monitor — Standalone Hardware Watchdog" />
+  <meta name="twitter:description" content="Turn any ESP32 into an independent HTTP/HTTPS uptime appliance with Discord webhook alerts, real-time WebSocket UI, Swagger REST API, and 1-click Web Flasher." />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ESP32 Service Uptime Monitor",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "ESP32, FreeRTOS",
+    "description": "Standalone ESP32-based HTTP/HTTPS service uptime monitor with Discord webhook notifications, real-time WebSocket dashboard, OpenAPI/Swagger documentation, and browser-based Web Flasher.",
+    "url": "https://gyengus.github.io/esp32-service-uptime-monitor/",
+    "downloadUrl": "https://github.com/gyengus/esp32-service-uptime-monitor/releases/latest",
+    "author": {
+      "@type": "Person",
+      "name": "Gyengus",
+      "url": "https://gyengus.hu/"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free for personal, hobby, and non-commercial homelab use. Includes a 30-day free evaluation trial for companies and organizations."
+    }
+  }
+  </script>
   <link rel="stylesheet" href="./styles.css" />
   <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
   <script>
@@ -57,17 +89,23 @@
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <span class="eyebrow">Open-Source Embedded Monitoring</span>
-          <h1>Monitor your homelab &amp; services from a single ESP32.</h1>
+          <span class="eyebrow">Standalone Hardware Watchdog &middot; Free for Homelabs &middot; 30-Day Business Trial</span>
+          <h1>Independent HTTP/HTTPS Uptime Monitoring on a Single ESP32.</h1>
           <p class="hero-lead">
-            Periodic HTTP/HTTPS health checks, Discord webhook alerts on status changes,
-            real-time WebSocket dashboard, built-in Swagger UI, and wireless OTA updates —
-            running directly on ESP32, S3, C3, C5, or C6.
+            When your server crashes, its monitoring containers go down with it. Run an always-on,
+            sub-1W hardware watchdog for your homelab, self-hosted apps, or business infrastructure —
+            with instant Discord alerts, real-time WebSocket UI, Swagger REST API, and 60-second browser flashing.
           </p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="#flasher">Install via USB</a>
+            <a id="heroInstallCta" class="btn btn-primary" href="#flasher">Install via USB</a>
             <a class="btn btn-secondary" href="./docs.html?doc=readme">Read Docs</a>
             <a class="btn btn-secondary" href="./docs.html?doc=api">Explore API</a>
+          </div>
+          <div class="hero-trust" aria-label="Key benefits">
+            <span class="hero-trust-item"><span class="hero-trust-check" aria-hidden="true">&#10003;</span> Out-of-band independence</span>
+            <span class="hero-trust-item"><span class="hero-trust-check" aria-hidden="true">&#10003;</span> &lt; 1W power draw</span>
+            <span class="hero-trust-item"><span class="hero-trust-check" aria-hidden="true">&#10003;</span> Free for personal use</span>
+            <span class="hero-trust-item"><span class="hero-trust-check" aria-hidden="true">&#10003;</span> 30-day free business trial</span>
           </div>
         </div>
 
@@ -415,6 +453,51 @@
       <div class="container">
         <div class="section-header">
           <div>
+            <h2>Built for Homelabs. Ready for Business.</h2>
+            <p>Why rely on a monitoring container running on the very host that might fail?</p>
+          </div>
+        </div>
+        <div class="grid-3">
+          <article class="card feature-card">
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <h3>Homelab &amp; Self-Hosters</h3>
+            </div>
+            <p>Keep an out-of-band eye on Proxmox, Home Assistant, GitLab, NAS, and local miners. Even if your primary hypervisor or Docker host locks up, your ESP32 stays online and sends the Discord alert.</p>
+            <div class="use-case-meta"><strong>Free</strong> for personal &amp; home use</div>
+          </article>
+          <article class="card feature-card">
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+              </div>
+              <h3>Makers &amp; Desk Setups</h3>
+            </div>
+            <p>Turn a spare $4 ESP32, S3, C3, C5, or C6 board into a silent desk or server-rack status appliance. The WS2812B RGB LED stays dark when everything is healthy and pulses magenta only when a service drops.</p>
+            <div class="use-case-meta">Flash in 60s via USB &middot; &lt; 1W power draw</div>
+          </article>
+          <article class="card feature-card">
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              </div>
+              <h3>Businesses, MSPs &amp; IT Ops</h3>
+            </div>
+            <p>Deploy low-cost, dedicated hardware probes across client sites or server rooms. Clone configurations in seconds via JSON backup/restore, integrate via the OpenAPI REST endpoints, and lock down settings with physical BOOT button authentication.</p>
+            <div class="use-case-meta">
+              <strong>30-day free trial</strong> &middot; <a href="https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorPage&amp;utm_medium=referral&amp;utm_campaign=commercial_license" target="_blank" rel="noopener" data-license-cta="use_cases">Commercial Licensing &rarr;</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <div>
             <h2>After Flashing: 3 Quick Steps</h2>
             <p>Zero manual file uploads — the embedded Web UI extracts automatically on first boot.</p>
           </div>
@@ -632,7 +715,7 @@
         <div class="section-header">
           <div>
             <h2>Licensing &amp; Support</h2>
-            <p>Free for personal homelabs, with commercial licensing for organizations and optional community donations.</p>
+            <p>Free for personal homelabs, with a 30-day free evaluation trial and commercial licensing for organizations.</p>
           </div>
         </div>
         <div class="grid-2">
@@ -646,19 +729,20 @@
             <div class="license-tier">
               <div class="license-tier-head">
                 <span>Personal &amp; Home Use</span>
-                <span class="tier-badge tier-free">Free</span>
+                <span class="tier-badge tier-free">Free Forever</span>
               </div>
               <p>Individuals may use, compile, and modify the software free of charge for private, non-commercial homelab and hobby monitoring.</p>
             </div>
             <div class="license-tier">
               <div class="license-tier-head">
                 <span>Commercial &amp; Organizational Use</span>
-                <span class="tier-badge tier-paid">Paid License</span>
+                <span class="tier-badge tier-paid">30-Day Free Trial &middot; Paid License</span>
               </div>
-              <p>Companies, institutions, and commercial deployments or hardware bundles require a separate Commercial License.</p>
+              <p>Companies and institutions can test and evaluate the software internally <strong>free of charge for 30 days</strong>. Continued production use, MSP deployments, or client hardware bundles require a Commercial License.</p>
             </div>
-            <div style="margin-top: 12px; font-size: 0.9rem;">
-              <a href="./docs.html?doc=license">Read full LICENSE &rarr;</a>
+            <div class="license-actions">
+              <a class="btn btn-primary" href="https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorPage&amp;utm_medium=referral&amp;utm_campaign=commercial_license" target="_blank" rel="noopener" data-license-cta="license_card">Request Commercial License</a>
+              <a href="./docs.html?doc=license" style="font-size: 0.9rem;">Read full LICENSE &rarr;</a>
             </div>
           </article>
 
@@ -720,6 +804,7 @@
     const RELEASES_BASE = "https://github.com/gyengus/esp32-service-uptime-monitor/releases/latest/download";
     const boardSelect = document.getElementById("boardSelect");
     const installBtn = document.getElementById("installBtn");
+    const heroInstallCta = document.getElementById("heroInstallCta");
     const metaArch = document.getElementById("metaArch");
     const metaStorage = document.getElementById("metaStorage");
     const metaBoot = document.getElementById("metaBoot");
@@ -727,11 +812,16 @@
     const serialWarning = document.getElementById("serialWarning");
     const boardRows = document.querySelectorAll("tbody tr[data-env]");
 
+    function trackEvent(eventName, params = {}) {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ event: eventName, ...params });
+    }
+
     if (!("serial" in navigator)) {
       serialWarning.classList.remove("hidden");
     }
 
-    function selectBoard(env) {
+    function selectBoard(env, source = "dropdown") {
       boardSelect.value = env;
       const info = BOARDS[env];
       installBtn.setAttribute("manifest", `./firmware/manifest-${env}.json`);
@@ -743,13 +833,38 @@
         metaBoot.textContent = info.boot;
       }
       boardRows.forEach((row) => row.classList.toggle("selected", row.dataset.env === env));
+      trackEvent("board_select", { board_env: env, select_source: source });
     }
 
-    boardSelect.addEventListener("change", () => selectBoard(boardSelect.value));
+    boardSelect.addEventListener("change", () => selectBoard(boardSelect.value, "dropdown"));
     boardRows.forEach((row) => {
       row.addEventListener("click", () => {
-        selectBoard(row.dataset.env);
+        selectBoard(row.dataset.env, "hardware_table");
         document.getElementById("flasher").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+
+    if (heroInstallCta) {
+      heroInstallCta.addEventListener("click", () => {
+        trackEvent("web_flasher_click", { board_env: boardSelect.value, cta_location: "hero" });
+      });
+    }
+
+    if (installBtn) {
+      installBtn.addEventListener("click", () => {
+        trackEvent("web_flasher_click", { board_env: boardSelect.value, cta_location: "flasher_card" });
+      });
+    }
+
+    if (manualBinLink) {
+      manualBinLink.addEventListener("click", () => {
+        trackEvent("firmware_bin_download", { board_env: boardSelect.value, file_url: manualBinLink.href });
+      });
+    }
+
+    document.querySelectorAll("[data-license-cta]").forEach((link) => {
+      link.addEventListener("click", () => {
+        trackEvent("commercial_license_click", { cta_location: link.getAttribute("data-license-cta") });
       });
     });
 
@@ -776,6 +891,7 @@
         mockLogsDrawer.classList.toggle("open", logsOpen);
         mockConsoleBtn.classList.toggle("active", logsOpen);
       }
+      trackEvent("preview_tab_view", { preview_tab: target });
     }
 
     previewTabs.forEach((tab) => {
@@ -798,6 +914,7 @@
           const show = filter === "all" || card.dataset.status === filter;
           card.classList.toggle("hidden", !show);
         });
+        trackEvent("preview_tab_view", { preview_tab: "dashboard", filter_state: filter });
       });
     });
 
@@ -830,7 +947,9 @@
     document.querySelectorAll("[data-copy]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const value = btn.getAttribute("data-copy");
+        const network = value.startsWith("0x") ? "EVM" : "BTC";
         const original = btn.textContent;
+        trackEvent("donation_copy", { crypto_network: network });
         try {
           await navigator.clipboard.writeText(value);
           btn.textContent = "Copied!";
