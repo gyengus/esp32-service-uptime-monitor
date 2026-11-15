@@ -6,22 +6,49 @@
   <title>ESP32 Service Uptime Monitor</title>
   <meta name="description" content="Self-hosted ESP32 HTTP/HTTPS service uptime monitor with Discord alerts, responsive Web UI, Swagger API, and one-click Web Flasher." />
   <link rel="stylesheet" href="./styles.css" />
+  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  </script>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
 </head>
 <body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+    <symbol id="ui-layers" viewBox="0 0 24 24"><path d="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.8L12,18.54Z"/></symbol>
+    <symbol id="ui-check-circle" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/></symbol>
+    <symbol id="ui-alert-circle" viewBox="0 0 24 24"><path d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z"/></symbol>
+    <symbol id="ui-refresh" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></symbol>
+    <symbol id="ui-menu" viewBox="0 0 24 24"><path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/></symbol>
+    <symbol id="ui-console" viewBox="0 0 24 24"><path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z"/></symbol>
+    <symbol id="ui-plus" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/></symbol>
+    <symbol id="ui-pencil" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/></symbol>
+    <symbol id="ui-delete" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></symbol>
+    <symbol id="ui-bell" viewBox="0 0 24 24"><path d="M10,21H14A2,2 0 0,1 12,23A2,2 0 0,1 10,21M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M17,11A5,5 0 0,0 12,6A5,5 0 0,0 7,11V18H17V11Z"/></symbol>
+    <symbol id="ui-clock" viewBox="0 0 24 24"><path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></symbol>
+    <symbol id="ui-memory" viewBox="0 0 24 24"><path d="M2,7H4.5V17H3V8.5H2M22,7V16H20V17H19V16H17V17H16V16H14V17H13V16H11V17H10V16H8V17H7V16H5V7H22M16,9H14V14H16V9M13,9H11V14H13V9M10,9H8V14H10V9M19,9H17V14H19V9Z"/></symbol>
+    <symbol id="ui-wifi" viewBox="0 0 24 24"><path d="M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z"/></symbol>
+    <symbol id="ui-thermometer" viewBox="0 0 24 24"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z"/></symbol>
+  </svg>
+
   <header class="site-header">
     <div class="container nav-inner">
       <a class="brand" href="./index.html">
-        <span class="pulse-dot" aria-hidden="true"></span>
+        <span class="status-dot" aria-hidden="true"></span>
         <span>ESP32 Service Uptime Monitor</span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="./index.html" aria-current="page">Overview &amp; Flasher</a>
         <a href="./docs.html?doc=readme">Documentation</a>
-        <a href="./api/index.html">API (Swagger)</a>
+        <a href="./docs.html?doc=api">API (Swagger)</a>
         <a href="./docs.html?doc=contributing">Contributing</a>
         <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+        </button>
       </nav>
     </div>
   </header>
@@ -40,7 +67,7 @@
           <div class="cta-row">
             <a class="btn btn-primary" href="#flasher">Install via USB</a>
             <a class="btn btn-secondary" href="./docs.html?doc=readme">Read Docs</a>
-            <a class="btn btn-secondary" href="./api/index.html">Explore API</a>
+            <a class="btn btn-secondary" href="./docs.html?doc=api">Explore API</a>
           </div>
         </div>
 
@@ -68,7 +95,8 @@
 
           <div id="serialWarning" class="alert alert-warning hidden" role="alert">
             Web Serial is not supported in this browser. Please open this page in desktop
-            <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong> over HTTPS.
+            <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong> over HTTPS,
+            or download the <code>.bin</code> below.
           </div>
 
           <div class="flasher-action">
@@ -88,6 +116,17 @@
               <strong>Tip:</strong> If your board does not enter bootloader mode automatically, hold the
               <strong>BOOT</strong> button while connecting or clicking Install. Keep the window open after flashing to set Wi-Fi via <strong>Improv Wi-Fi</strong> (or connect to the setup AP at <code>192.168.4.1</code>).
             </div>
+
+            <div class="manual-download">
+              <span>Manual flash / esptool:</span>
+              <span>
+                <a id="manualBinLink" href="https://github.com/gyengus/esp32-service-uptime-monitor/releases/latest/download/esp32-s3-cam.bin" target="_blank" rel="noopener">
+                  Download esp32-s3-cam.bin
+                </a>
+                &middot;
+                <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">All releases</a>
+              </span>
+            </div>
           </div>
         </aside>
       </div>
@@ -96,23 +135,310 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <h2>After Flashing: 3 Quick Steps</h2>
-          <p>Zero manual file uploads — the embedded Web UI extracts automatically on first boot.</p>
+          <div>
+            <h2>Live Interface Preview</h2>
+            <p>A faithful look at the on-device Web UI, live WebSocket logs, and Discord alerts.</p>
+          </div>
+          <div class="preview-tabs" role="tablist" aria-label="Interface preview tabs">
+            <button type="button" class="preview-tab active" role="tab" aria-selected="true" data-preview="dashboard">Dashboard</button>
+            <button type="button" class="preview-tab" role="tab" aria-selected="false" data-preview="logs">Device Logs</button>
+            <button type="button" class="preview-tab" role="tab" aria-selected="false" data-preview="discord">Discord Alert</button>
+          </div>
+        </div>
+
+        <div class="preview-window">
+          <div id="preview-webui">
+            <div class="mock-navbar">
+              <div class="mock-brand">
+                <span class="mock-ws-dot" aria-hidden="true"></span>
+                <span>ESP32 Service Uptime Monitor</span>
+                <div class="mock-filters" role="group" aria-label="Filter simulated services">
+                  <button type="button" class="mock-pill mock-pill-all active" data-filter="all" title="Filter: All services">
+                    <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-layers"></use></svg><span>9</span>
+                  </button>
+                  <button type="button" class="mock-pill mock-pill-online" data-filter="online" title="Filter: Online services">
+                    <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-check-circle"></use></svg><span>8</span>
+                  </button>
+                  <button type="button" class="mock-pill mock-pill-offline" data-filter="offline" title="Filter: Offline services">
+                    <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-alert-circle"></use></svg><span>1</span>
+                  </button>
+                </div>
+              </div>
+              <div class="mock-nav-actions" aria-hidden="true">
+                <span class="mock-icon-btn"><svg class="mock-ui-icon" style="width: 1.25rem; height: 1.25rem;"><use href="#ui-refresh"></use></svg></span>
+                <span class="mock-icon-btn"><svg class="mock-ui-icon" style="width: 1.25rem; height: 1.25rem;"><use href="#ui-menu"></use></svg></span>
+              </div>
+            </div>
+
+            <div class="mock-body-area">
+              <div class="mock-cards">
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bitcoin.svg" alt="" />
+                      <span>Bitaxe Gamma 601 1</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">http://██████████/api/system/info</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/13/2026, 01:12:19 PM</div>
+                </div>
+
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bitcoin.svg" alt="" />
+                      <span>Bitaxe Gamma 602 1</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">http://██████████/api/system/info</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/13/2026, 01:12:20 PM</div>
+                </div>
+
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitlab.svg" alt="" />
+                      <span>GitLab</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">https://██████████████/</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/11/2026, 04:59:38 PM</div>
+                </div>
+
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" alt="" />
+                      <span>Home Assistant</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">http://████████████████/</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/11/2026, 05:00:21 PM</div>
+                </div>
+
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/netalertx.svg" alt="" />
+                      <span>NetAlertX</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">http://████████████/</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/13/2026, 09:28:35 PM</div>
+                </div>
+
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/node-red.svg" alt="" />
+                      <span>Node-RED</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">http://██████████/</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/11/2026, 04:59:00 PM</div>
+                </div>
+
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seafile.svg" alt="" />
+                      <span>Seafile</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">https://██████████████/</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/11/2026, 04:59:21 PM</div>
+                </div>
+
+                <div class="mock-service-card is-offline" data-status="offline">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-alert-circle"></use></svg>
+                      <span>test_device</span>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-alert-circle"></use></svg> Offline</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">http://████████████████/</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/09/2026, 10:37:35 AM</div>
+                </div>
+
+                <div class="mock-service-card is-online" data-status="online">
+                  <div class="mock-card-top">
+                    <div class="mock-service-title">
+                      <img class="mock-entity-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zigbee2mqtt.svg" alt="" />
+                      <span>Zigbee2MQTT</span>
+                      <svg class="mock-ui-icon" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                    </div>
+                    <div class="mock-card-actions" aria-hidden="true">
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-pencil"></use></svg></span>
+                      <span class="mock-card-btn"><svg class="mock-ui-icon"><use href="#ui-delete"></use></svg></span>
+                    </div>
+                  </div>
+                  <div class="mock-state-badge"><svg class="mock-ui-icon"><use href="#ui-check-circle"></use></svg> Online</div>
+                  <div class="mock-service-url" aria-label="Redacted URL">http://██████████/</div>
+                  <div class="mock-service-time"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 11/11/2026, 04:59:52 PM</div>
+                </div>
+              </div>
+
+              <div class="mock-fab" aria-hidden="true">
+                <svg class="mock-ui-icon" style="width: 1.4rem; height: 1.4rem;"><use href="#ui-plus"></use></svg>
+              </div>
+
+              <div id="mockLogsDrawer" class="mock-drawer">
+                <div class="mock-drawer-header">
+                  <div style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg class="mock-ui-icon" style="color: #0dcaf0;"><use href="#ui-console"></use></svg>
+                    <strong>Device Logs</strong>
+                    <span style="background: #6c757d; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem;">300 lines</span>
+                  </div>
+                  <div class="mock-drawer-controls">
+                    <span>Log Level:</span>
+                    <span class="mock-select-sm">DEBUG &#9662;</span>
+                    <span>Auto-scroll</span>
+                  </div>
+                </div>
+                <div class="mock-terminal">
+                  <div class="log-err">2026-11-15 10:35:00.018 [LOG] [ERROR] HEAD <span class="redacted-url">http://████████████████/</span> failed: host not found (DNS/mDNS resolution failed)</div>
+                  <div class="log-dbg">2026-11-15 10:35:00.817 [LOG] [DEBUG] Checking entity: NetAlertX (<span class="redacted-url">http://████████████/</span>)</div>
+                  <div class="log-dbg">2026-11-15 10:35:00.864 [LOG] [DEBUG] Checking entity: Zigbee2MQTT (<span class="redacted-url">http://██████████/</span>)</div>
+                  <div class="log-dbg">2026-11-15 10:35:00.894 [LOG] [DEBUG] Checking entity: Node-RED (<span class="redacted-url">http://██████████/</span>)</div>
+                  <div class="log-dbg">2026-11-15 10:35:00.120 [LOG] [DEBUG] Checking entity: Seafile (<span class="redacted-url">https://██████████████/</span>)</div>
+                  <div class="log-dbg">2026-11-15 10:35:00.146 [LOG] [DEBUG] Checking entity: GitLab (<span class="redacted-url">https://██████████████/</span>)</div>
+                  <div class="log-dbg">2026-11-15 10:35:00.178 [LOG] [DEBUG] Checking entity: Bitaxe Gamma 601 1 (<span class="redacted-url">http://██████████/api/system/info</span>)</div>
+                  <div class="log-dbg">2026-11-15 10:35:00.524 [LOG] [DEBUG] Checking entity: Bitaxe Gamma 602 1 (<span class="redacted-url">http://██████████/api/system/info</span>)</div>
+                  <div class="log-dbg">2026-11-15 10:35:06.527 [LOG] [DEBUG] Free Heap: 176712 B, Max Alloc: 126964 B, Free PSRAM: 8340824 B, Max Free Block: 126964 B</div>
+                  <div class="log-dbg">2026-11-15 10:35:59.789 [LOG] [DEBUG] WS client #11 subscribed to logs</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mock-footer">
+              <div class="mock-footer-left">
+                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 22h 18m</span>
+                <span class="mock-footer-item" style="color: #198754;"><svg class="mock-ui-icon"><use href="#ui-wifi"></use></svg> -54 dBm</span>
+                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-memory"></use></svg> 172 KB</span>
+                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-thermometer"></use></svg> 56.6 &deg;C</span>
+              </div>
+              <button type="button" id="mockConsoleBtn" class="mock-console-btn" title="Toggle Device Logs">
+                <svg class="mock-ui-icon"><use href="#ui-console"></use></svg>
+              </button>
+              <div class="mock-footer-right">
+                <span>v<strong style="color: #f8f9fa;">0.0.1-SNAPSHOT</strong></span>
+                <span>Hash: <span style="color: #0dcaf0; font-family: var(--font-mono);">#38870dc</span></span>
+                <span>Build: 2026-11-14 12:14:56</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="preview-discord" class="hidden">
+            <div class="mock-discord-bg">
+              <div class="mock-discord-msg">
+                <div>
+                  <div class="mock-discord-author">
+                    <span>ESP32 Uptime Monitor</span>
+                    <span class="mock-discord-bot">App</span>
+                    <span style="font-size: 0.74rem; color: #949ba4; font-weight: 400;">Today at 10:35 AM</span>
+                  </div>
+                  <div class="mock-discord-embed">
+                    <h4>ESP32 Service Uptime Monitor</h4>
+                    <p>&#9888;&#65039; Status Change Alert</p>
+                    <p>Entity: <strong>test_device</strong></p>
+                    <p>New status: &#10060; <strong>OFFLINE</strong></p>
+                  </div>
+                </div>
+                <div>
+                  <div class="mock-discord-author">
+                    <span>ESP32 Uptime Monitor</span>
+                    <span class="mock-discord-bot">App</span>
+                    <span style="font-size: 0.74rem; color: #949ba4; font-weight: 400;">Today at 10:36 AM</span>
+                  </div>
+                  <div class="mock-discord-embed is-recovery">
+                    <h4>ESP32 Service Uptime Monitor</h4>
+                    <p>&#9888;&#65039; Status Change Alert</p>
+                    <p>Entity: <strong>test_device</strong></p>
+                    <p>New status: &#9989; <strong>ONLINE</strong></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <div>
+            <h2>After Flashing: 3 Quick Steps</h2>
+            <p>Zero manual file uploads — the embedded Web UI extracts automatically on first boot.</p>
+          </div>
         </div>
         <div class="steps">
           <article class="card step-card">
-            <span class="step-num">1</span>
-            <h3>Connect to Wi-Fi</h3>
+            <div class="step-header">
+              <span class="step-num">1</span>
+              <h3>Connect to Wi-Fi</h3>
+            </div>
             <p>Configure credentials in the Improv Wi-Fi prompt, or join the open AP <code>ESP32-Service-Uptime-Monitor-XXXXXX</code> and open <code>192.168.4.1</code>.</p>
           </article>
           <article class="card step-card">
-            <span class="step-num">2</span>
-            <h3>Open the Dashboard</h3>
+            <div class="step-header">
+              <span class="step-num">2</span>
+              <h3>Open the Dashboard</h3>
+            </div>
             <p>Visit <code>http://esp32-service-uptime-monitor.local/</code> (or the device's DHCP IP) to view live service cards and logs.</p>
           </article>
           <article class="card step-card">
-            <span class="step-num">3</span>
-            <h3>Unlock Settings via BOOT</h3>
+            <div class="step-header">
+              <span class="step-num">3</span>
+              <h3>Unlock Settings via BOOT</h3>
+            </div>
             <p>Short-press the physical <strong>BOOT</strong> button to unlock configuration for 10 minutes. Hold &ge; 10s for a full Factory Reset.</p>
           </article>
         </div>
@@ -122,32 +448,64 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <h2>Key Features</h2>
-          <p>Engineered for reliability on constrained microcontrollers.</p>
+          <div>
+            <h2>Key Features</h2>
+            <p>Engineered for reliability on constrained microcontrollers.</p>
+          </div>
         </div>
         <div class="grid-3">
           <article class="card feature-card">
-            <h3>HTTP &amp; HTTPS Checks</h3>
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <h3>HTTP &amp; HTTPS Checks</h3>
+            </div>
             <p>Runs non-blocking checks on Core 0 with 3-retry hysteresis before triggering an offline state, avoiding false alarms and unnecessary flash writes.</p>
           </article>
           <article class="card feature-card">
-            <h3>Discord Webhooks</h3>
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <h3>Discord Webhooks</h3>
+            </div>
             <p>Sends rich embed notifications to your Discord channel only when a service transitions between <code>ONLINE</code> and <code>OFFLINE</code>.</p>
           </article>
           <article class="card feature-card">
-            <h3>Live WebSocket UI</h3>
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <h3>Live WebSocket UI</h3>
+            </div>
             <p>Responsive Bootstrap 5 dashboard with dark mode, instant status filtering, system telemetry (heap, RSSI, temp), and live log streaming.</p>
           </article>
           <article class="card feature-card">
-            <h3>Interactive Swagger API</h3>
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <h3>Interactive Swagger API</h3>
+            </div>
             <p>Full OpenAPI 3 specification served both on-device at <code>/api/docs</code> and statically right here on GitHub Pages.</p>
           </article>
           <article class="card feature-card">
-            <h3>Security Hardened</h3>
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <h3>Security Hardened</h3>
+            </div>
             <p>Physical BOOT button authorization, 10-minute auto-lock, SSRF address validation, DNS rebinding protection, and OTA token rate-limiting.</p>
           </article>
           <article class="card feature-card">
-            <h3>Wireless OTA &amp; Backup</h3>
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <h3>Wireless OTA &amp; Backup</h3>
+            </div>
             <p>Update firmware or web assets over HTTP/PlatformIO, and export or restore full JSON configuration snapshots anytime.</p>
           </article>
         </div>
@@ -157,8 +515,10 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <h2>Supported Hardware</h2>
-          <p>Board pinouts and storage backends are defined in <code>include/devices.h</code>.</p>
+          <div>
+            <h2>Supported Hardware</h2>
+            <p>Click any row to select that board in the Web Flasher above. Pinouts are defined in <code>include/devices.h</code>.</p>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -174,7 +534,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr data-env="esp32-s3-cam" class="selected">
                 <td><code>esp32-s3-cam</code></td>
                 <td>ESP32-S3 CAM</td>
                 <td>Dual-core Xtensa LX7</td>
@@ -183,7 +543,7 @@
                 <td>GPIO 48</td>
                 <td>GPIO 0</td>
               </tr>
-              <tr>
+              <tr data-env="esp32-s3">
                 <td><code>esp32-s3</code></td>
                 <td>ESP32-S3 DevKitC-1</td>
                 <td>Dual-core Xtensa LX7</td>
@@ -192,7 +552,7 @@
                 <td>GPIO 48</td>
                 <td>GPIO 0</td>
               </tr>
-              <tr>
+              <tr data-env="esp32">
                 <td><code>esp32</code></td>
                 <td>ESP32-WROOM-32</td>
                 <td>Dual-core Xtensa LX6</td>
@@ -201,7 +561,7 @@
                 <td>—</td>
                 <td>GPIO 0</td>
               </tr>
-              <tr>
+              <tr data-env="esp32-c3">
                 <td><code>esp32-c3</code></td>
                 <td>ESP32-C3 SuperMini</td>
                 <td>Single-core RISC-V</td>
@@ -210,7 +570,7 @@
                 <td>—</td>
                 <td>GPIO 9</td>
               </tr>
-              <tr>
+              <tr data-env="esp32-c6">
                 <td><code>esp32-c6</code></td>
                 <td>ESP32-C6 DevKit</td>
                 <td>Single-core RISC-V (Wi-Fi 6)</td>
@@ -219,7 +579,7 @@
                 <td>GPIO 8</td>
                 <td>GPIO 9</td>
               </tr>
-              <tr>
+              <tr data-env="esp32-c5">
                 <td><code>esp32-c5</code></td>
                 <td>ESP32-C5 DevKit</td>
                 <td>Single-core RISC-V (Dual-Band Wi-Fi 6)</td>
@@ -237,8 +597,10 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <h2>RGB LED Status Indicators</h2>
-          <p>Instant visual feedback on boards equipped with a WS2812B RGB LED (<code>HAS_RGB_LED</code>).</p>
+          <div>
+            <h2>RGB LED Status Indicators</h2>
+            <p>Visual hardware feedback on boards equipped with a WS2812B RGB LED (<code>HAS_RGB_LED</code>).</p>
+          </div>
         </div>
         <div class="led-list">
           <div class="led-item">
@@ -246,50 +608,101 @@
             <div><strong>Off</strong> — All services online</div>
           </div>
           <div class="led-item">
-            <span class="led-swatch" style="background: var(--magenta);" aria-hidden="true"></span>
+            <span class="led-swatch led-pulse-magenta" aria-hidden="true"></span>
             <div><strong>Pulsing Magenta</strong> — Service(s) offline</div>
           </div>
           <div class="led-item">
-            <span class="led-swatch" style="background: var(--warning);" aria-hidden="true"></span>
+            <span class="led-swatch led-pulse-amber" aria-hidden="true"></span>
             <div><strong>Pulsing Amber</strong> — Setup AP mode active</div>
           </div>
           <div class="led-item">
-            <span class="led-swatch" style="background: var(--danger);" aria-hidden="true"></span>
+            <span class="led-swatch led-pulse-red" aria-hidden="true"></span>
             <div><strong>Pulsing Red</strong> — Storage / critical error</div>
           </div>
           <div class="led-item">
-            <span class="led-swatch" style="background: var(--cyan);" aria-hidden="true"></span>
+            <span class="led-swatch led-solid-cyan" aria-hidden="true"></span>
             <div><strong>Cyan</strong> — LED brightness test</div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <div>
+            <h2>Licensing &amp; Support</h2>
+            <p>Free for personal homelabs, with commercial licensing for organizations and optional community donations.</p>
+          </div>
+        </div>
+        <div class="grid-2">
+          <article class="card feature-card">
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M5 7l7-4 7 4"/><path d="M3 13l3-6 3 6a3 3 0 0 1-6 0z"/><path d="M15 13l3-6 3 6a3 3 0 0 1-6 0z"/></svg>
+              </div>
+              <h3>Dual Licensing</h3>
+            </div>
+            <div class="license-tier">
+              <div class="license-tier-head">
+                <span>Personal &amp; Home Use</span>
+                <span class="tier-badge tier-free">Free</span>
+              </div>
+              <p>Individuals may use, compile, and modify the software free of charge for private, non-commercial homelab and hobby monitoring.</p>
+            </div>
+            <div class="license-tier">
+              <div class="license-tier-head">
+                <span>Commercial &amp; Organizational Use</span>
+                <span class="tier-badge tier-paid">Paid License</span>
+              </div>
+              <p>Companies, institutions, and commercial deployments or hardware bundles require a separate Commercial License.</p>
+            </div>
+            <div style="margin-top: 12px; font-size: 0.9rem;">
+              <a href="./docs.html?doc=license">Read full LICENSE &rarr;</a>
+            </div>
+          </article>
+
+          <article class="card feature-card">
+            <div class="feature-header">
+              <div class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <h3>Support Development</h3>
+            </div>
+            <p style="margin-bottom: 14px;">
+              If you find this project useful in your homelab and would like to support its continued development:
+            </p>
+            <div class="donate-box">
+              <span class="donate-label">Bitcoin (BTC)</span>
+              <div class="donate-row">
+                <span class="donate-addr">bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn</span>
+                <button type="button" class="copy-btn" data-copy="bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn">Copy</button>
+              </div>
+            </div>
+            <div class="donate-box">
+              <span class="donate-label">EVM (Ethereum, L2s &amp; EVM-compatible networks)</span>
+              <div class="donate-row">
+                <span class="donate-addr">0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8</span>
+                <button type="button" class="copy-btn" data-copy="0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8">Copy</button>
+              </div>
+            </div>
+          </article>
         </div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <strong>ESP32 Service Uptime Monitor</strong>
-        <p style="margin: 6px 0 8px;">
-          Dual License: Free for personal/home use. Commercial &amp; organizational use requires a paid license.
-          <a href="./docs.html?doc=license">Read full LICENSE</a>.
-        </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-          <span>Support development:</span>
-          <button type="button" class="copy-pill" data-copy="bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn" title="Copy BTC address">
-            BTC: bc1qx4q5...7kcn
-          </button>
-          <button type="button" class="copy-pill" data-copy="0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8" title="Copy EVM address">
-            EVM: 0x9F0a...C4E8
-          </button>
-        </div>
-      </div>
+    <div class="container">
       <div class="footer-links">
+        <a href="./index.html">Overview &amp; Flasher</a>
         <a href="./docs.html?doc=readme">Documentation</a>
-        <a href="./api/index.html">API Swagger</a>
+        <a href="./docs.html?doc=api">API (Swagger)</a>
         <a href="./docs.html?doc=contributing">Contributing</a>
         <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+        <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>
       </div>
     </div>
   </footer>
@@ -304,28 +717,116 @@
       "esp32-c5": { arch: "RISC-V Dual-Band Wi-Fi 6", storage: "LittleFS (4MB)", boot: "BOOT: GPIO 28" }
     };
 
+    const RELEASES_BASE = "https://github.com/gyengus/esp32-service-uptime-monitor/releases/latest/download";
     const boardSelect = document.getElementById("boardSelect");
     const installBtn = document.getElementById("installBtn");
     const metaArch = document.getElementById("metaArch");
     const metaStorage = document.getElementById("metaStorage");
     const metaBoot = document.getElementById("metaBoot");
+    const manualBinLink = document.getElementById("manualBinLink");
     const serialWarning = document.getElementById("serialWarning");
+    const boardRows = document.querySelectorAll("tbody tr[data-env]");
 
     if (!("serial" in navigator)) {
       serialWarning.classList.remove("hidden");
     }
 
-    boardSelect.addEventListener("change", () => {
-      const env = boardSelect.value;
+    function selectBoard(env) {
+      boardSelect.value = env;
       const info = BOARDS[env];
       installBtn.setAttribute("manifest", `./firmware/manifest-${env}.json`);
+      manualBinLink.href = `${RELEASES_BASE}/${env}.bin`;
+      manualBinLink.textContent = `Download ${env}.bin`;
       if (info) {
         metaArch.textContent = info.arch;
         metaStorage.textContent = info.storage;
         metaBoot.textContent = info.boot;
       }
+      boardRows.forEach((row) => row.classList.toggle("selected", row.dataset.env === env));
+    }
+
+    boardSelect.addEventListener("change", () => selectBoard(boardSelect.value));
+    boardRows.forEach((row) => {
+      row.addEventListener("click", () => {
+        selectBoard(row.dataset.env);
+        document.getElementById("flasher").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
     });
 
+    // Preview tabs (Dashboard, Device Logs drawer inside Web UI, Discord Alert)
+    const previewTabs = document.querySelectorAll(".preview-tab");
+    const previewWebui = document.getElementById("preview-webui");
+    const previewDiscord = document.getElementById("preview-discord");
+    const mockLogsDrawer = document.getElementById("mockLogsDrawer");
+    const mockConsoleBtn = document.getElementById("mockConsoleBtn");
+
+    function setPreviewMode(target) {
+      previewTabs.forEach((t) => {
+        const active = t.dataset.preview === target;
+        t.classList.toggle("active", active);
+        t.setAttribute("aria-selected", String(active));
+      });
+      if (target === "discord") {
+        previewWebui.classList.add("hidden");
+        previewDiscord.classList.remove("hidden");
+      } else {
+        previewWebui.classList.remove("hidden");
+        previewDiscord.classList.add("hidden");
+        const logsOpen = target === "logs";
+        mockLogsDrawer.classList.toggle("open", logsOpen);
+        mockConsoleBtn.classList.toggle("active", logsOpen);
+      }
+    }
+
+    previewTabs.forEach((tab) => {
+      tab.addEventListener("click", () => setPreviewMode(tab.dataset.preview));
+    });
+
+    mockConsoleBtn.addEventListener("click", () => {
+      const isOpen = mockLogsDrawer.classList.contains("open");
+      setPreviewMode(isOpen ? "dashboard" : "logs");
+    });
+
+    // Dashboard mockup filter pills
+    const filterPills = document.querySelectorAll(".mock-pill[data-filter]");
+    const mockCards = document.querySelectorAll(".mock-service-card[data-status]");
+    filterPills.forEach((pill) => {
+      pill.addEventListener("click", () => {
+        const filter = pill.dataset.filter;
+        filterPills.forEach((p) => p.classList.toggle("active", p.dataset.filter === filter));
+        mockCards.forEach((card) => {
+          const show = filter === "all" || card.dataset.status === filter;
+          card.classList.toggle("hidden", !show);
+        });
+      });
+    });
+
+    // Theme toggle
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const THEME_KEY = "uptime-docs-theme";
+    const SUN_SVG = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    const MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+    function getEffectiveTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      themeIcon.innerHTML = theme === "light" ? MOON_SVG : SUN_SVG;
+    }
+
+    applyTheme(getEffectiveTheme());
+    themeToggle.addEventListener("click", () => {
+      const next = getEffectiveTheme() === "light" ? "dark" : "light";
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    });
+
+    // Copy donation addresses
     document.querySelectorAll("[data-copy]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const value = btn.getAttribute("data-copy");

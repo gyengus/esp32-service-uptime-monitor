@@ -66,6 +66,7 @@ jobs:
           mkdir -p _site/content _site/firmware
           cp -r docs/* _site/
           cp README.md CONTRIBUTING.md LICENSE _site/content/
+          [ -f CHANGELOG.md ] && cp CHANGELOG.md _site/content/ || true
           cp dist/*.bin _site/firmware/
 
           python3 - << 'EOF'

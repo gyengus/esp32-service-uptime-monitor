@@ -134,6 +134,19 @@ python3 -m http.server 8000 --directory docs/api
 
 Open `http://localhost:8000/` in your browser and enter your ESP32 IP or mDNS hostname in the **Servers → `host`** field.
 
+### Local GitHub Pages Site Preview
+
+To preview the full static GitHub Pages site (`docs/index.html`, `docs/docs.html`, and `docs/api/index.html`) with local `README.md`, `CONTRIBUTING.md`, and `LICENSE` resolution, start a local HTTP server from the repository root:
+
+```bash
+python3 -m http.server 8765
+```
+
+Then open in your browser:
+- **Overview & Web Flasher:** `http://localhost:8765/docs/index.html`
+- **Documentation Reader:** `http://localhost:8765/docs/docs.html`
+- **Swagger API Docs:** `http://localhost:8765/docs/api/index.html`
+
 ---
 
 ## Testing & Quality Assurance
