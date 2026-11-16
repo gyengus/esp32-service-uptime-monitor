@@ -1141,10 +1141,11 @@ function updateLiveSysinfoModalFields(data) {
     }
 
     if (data.timeSynced !== undefined || data.localTime !== undefined) {
+        const $localTime = $('#sysLocalTime').empty();
         if (data.timeSynced && data.localTime) {
-            $('#sysLocalTime').html(`${data.localTime} <span class="badge bg-success ms-1">Synced</span>`);
+            $localTime.text(`${data.localTime} `).append('<span class="badge bg-success ms-1">Synced</span>');
         } else {
-            $('#sysLocalTime').html('<span class="badge bg-warning text-dark">Not synced</span>');
+            $localTime.append('<span class="badge bg-warning text-dark">Not synced</span>');
         }
     }
 
