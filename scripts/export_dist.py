@@ -103,8 +103,8 @@ def export_env_dist(env, pioenv):
         pass
 
     if not boot_app0_bin:
-        home = os.path.expanduser("~")
-        cand = os.path.join(home, ".platformio", "packages", "framework-arduinoespressif32", "tools", "partitions", "boot_app0.bin")
+        core_dir = os.environ.get("PLATFORMIO_CORE_DIR", os.path.expanduser("~/.platformio"))
+        cand = os.path.join(core_dir, "packages", "framework-arduinoespressif32", "tools", "partitions", "boot_app0.bin")
         if os.path.isfile(cand):
             boot_app0_bin = cand
 

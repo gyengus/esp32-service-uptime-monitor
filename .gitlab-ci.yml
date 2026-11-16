@@ -21,12 +21,24 @@ include:
 variables:
   SECRET_DETECTION_ENABLED: 'true'
   SAST_EXCLUDED_PATHS: "spec, test, tests, tmp, target, logs, .git, .mvn, .settings, .vscode"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PLATFORMIO_CORE_DIR: "$CI_PROJECT_DIR/.platformio"
+  PLATFORMIO_CACHE_DIR: "$CI_PROJECT_DIR/.platformio/.cache"
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
 
 test:ui:
   stage: test
   image: node:24
+  cache:
+    key:
+      prefix: "ui"
+      files:
+        - web/package-lock.json
+    paths:
+      - .npm/
+      - web/node_modules/
   before_script:
-    - npm --prefix web ci
+    - npm --prefix web ci --prefer-offline
   script:
     - npm --prefix web run test:coverage
   coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s+([\d\.]+)/'
@@ -38,6 +50,15 @@ test:ui:
 test:firmware:
   stage: test
   image: python:3.11
+  cache:
+    key:
+      prefix: "firmware-test"
+      files:
+        - platformio.ini
+    paths:
+      - .cache/pip/
+      - .platformio/
+      - .pio/libdeps/native/
   before_script:
     - pip install -U platformio
   script:
@@ -58,6 +79,15 @@ build:
   needs:
     - test:ui
     - test:firmware
+  cache:
+    key:
+      prefix: "firmware-build"
+      files:
+        - platformio.ini
+    paths:
+      - .cache/pip/
+      - .platformio/
+      - .pio/libdeps/
   before_script:
     - pip install -U platformio
   script:

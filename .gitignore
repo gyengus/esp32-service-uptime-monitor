@@ -34,6 +34,11 @@ CLAUDE.md
 .claude_session
 .claude/
 
+# CI Cache directories
+.platformio/
+.cache/
+.npm/
+
 # Node / Frontend testing
 node_modules/
 coverage/
