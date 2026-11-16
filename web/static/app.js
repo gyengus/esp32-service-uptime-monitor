@@ -1061,21 +1061,28 @@ function setProgressBar($bar, used, total) {
         .addClass(getUsageBarClass(pct));
 }
 
-function formatRssiHtml(rssi) {
-    if (rssi === undefined || rssi === null || isNaN(rssi)) return '--';
+function getRssiQuality(rssi) {
+    const num = Number(rssi);
+    if (rssi === undefined || rssi === null || isNaN(num)) return null;
     let label = 'Weak';
     let cls = 'bg-danger';
-    if (rssi > -55) {
+    if (num > -55) {
         label = 'Excellent';
         cls = 'bg-success';
-    } else if (rssi > -70) {
+    } else if (num > -70) {
         label = 'Good';
         cls = 'bg-success';
-    } else if (rssi > -80) {
+    } else if (num > -80) {
         label = 'Fair';
         cls = 'bg-warning text-dark';
     }
-    return `${rssi} dBm <span class="badge ${cls} ms-1">${label}</span>`;
+    return { dbm: Math.round(num), label, cls };
+}
+
+function formatRssiHtml(rssi) {
+    const quality = getRssiQuality(rssi);
+    if (!quality) return '--';
+    return `${quality.dbm} dBm <span class="badge ${quality.cls} ms-1">${quality.label}</span>`;
 }
 
 function updateLiveSysinfoModalFields(data) {
@@ -1127,7 +1134,16 @@ function updateLiveSysinfoModalFields(data) {
     }
 
     if (data.rssi !== undefined) {
-        $('#sysNetRssi').html(formatRssiHtml(data.rssi));
+        const quality = getRssiQuality(data.rssi);
+        const $netRssi = $('#sysNetRssi').empty();
+        if (!quality) {
+            $netRssi.text('--');
+        } else {
+            $netRssi.text(`${quality.dbm} dBm `).append($('<span>', {
+                class: `badge ${quality.cls} ms-1`,
+                text: quality.label
+            }));
+        }
     }
     if (data.wsClients !== undefined) {
         $('#sysNetWsClients').text(String(data.wsClients));
