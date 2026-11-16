@@ -102,6 +102,7 @@ Access the dashboard at `http://<hostname>.local/` (default: `http://esp32-servi
 ### Configuration Protection & Factory Reset
 
 The hardware **BOOT** button controls configuration mode and factory reset:
+
 - **Short Press (< 5s)**: Toggles configuration access. When enabled, the Settings icon and a real-time countdown badge (`10:00`) appear in the web header/menu, and `/config`, entity editing, and management routes are unlocked. For security, configuration mode automatically times out after **10 minutes of inactivity** (each interaction resets the timer).
 - **Long Press (≥ 10s)**: Initiates an immediate **Factory Reset** — deletes stored configurations and entities (`config.json`, `monitored_entities.json`) and restarts the device into Open Setup AP mode.
 
@@ -209,10 +210,11 @@ For multi-board builds, OTA targets, Web UI asset packing (`packweb` / `uploadwe
 This project uses a **Dual License (Personal & Commercial)** — see [`LICENSE`](LICENSE) for the full terms:
 
 - **Personal / Home Use (Free):** Individuals may use, compile, and modify the software free of charge for private, personal, non-commercial home/hobby monitoring, subject to keeping copyright notices intact.
-- **Companies, Public Institutions & Commercial Use (30-Day Free Trial, then Paid):** Organizations may internally evaluate and test the software **free of charge for up to 30 days**. Continued production use, MSP deployments, or commercial hardware bundles require a separate **Commercial License**. Please reach out via the [contact form](https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorReadme&utm_medium=referral&utm_campaign=commercial_license) or the project repository (<https://github.com/gyengus/esp32-service-uptime-monitor>) for commercial licensing inquiries.
+- **Companies, Public Institutions & Commercial Use (30-Day Free Trial, then Paid):** Organizations may internally evaluate and test the software **free of charge for up to 30 days**. Continued production use, MSP deployments, or commercial hardware bundles require a separate **Commercial License**. Please reach out via the [contact form](https://esp32-service-uptime-monitor.com/#contact) or the project repository (<https://github.com/gyengus/esp32-service-uptime-monitor>) for commercial licensing inquiries.
 
 ## Donations
 
 If you find this project useful and would like to support its development:
+
 - **Bitcoin**: `bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn`
 - **EVM**: `0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8`

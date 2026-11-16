@@ -494,7 +494,7 @@
             </div>
             <p>Deploy low-cost, dedicated hardware probes across client sites or server rooms. Clone configurations in seconds via JSON backup/restore, integrate via the OpenAPI REST endpoints, and lock down settings with physical BOOT button authentication.</p>
             <div class="use-case-meta">
-              <strong>30-day free trial</strong> &middot; <a href="https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorPage&amp;utm_medium=referral&amp;utm_campaign=commercial_license" target="_blank" rel="noopener" data-license-cta="use_cases">Commercial Licensing &rarr;</a>
+              <strong>30-day free trial</strong> &middot; <button type="button" class="inline-link-btn" id="openContactUseCase" data-license-cta="use_cases">Commercial Licensing &rarr;</button>
             </div>
           </article>
         </div>
@@ -748,7 +748,7 @@
               <p>Companies and institutions can test and evaluate the software internally <strong>free of charge for 30 days</strong>. Continued production use, MSP deployments, or client hardware bundles require a Commercial License.</p>
             </div>
             <div class="license-actions">
-              <a class="btn btn-primary" href="https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorPage&amp;utm_medium=referral&amp;utm_campaign=commercial_license" target="_blank" rel="noopener" data-license-cta="license_card">Request Commercial License</a>
+              <button type="button" class="btn btn-primary" id="openContactModal" data-license-cta="license_card">Request Commercial License</button>
               <a href="./license.html" style="font-size: 0.9rem;">Read full LICENSE &rarr;</a>
             </div>
           </article>
@@ -782,6 +782,65 @@
       </div>
     </section>
   </main>
+
+  <!-- Contact & Commercial Licensing Modal -->
+  <dialog id="contactModal" class="contact-modal" aria-labelledby="contactModalTitle">
+    <div class="contact-modal-header">
+      <h3 id="contactModalTitle">Request Commercial License</h3>
+      <button type="button" class="contact-modal-close" id="closeContactModal" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <form id="contactForm" class="contact-modal-body" novalidate>
+      <p class="contact-modal-desc">
+        Interested in organizational licensing, MSP deployments, or custom features? Send a message and we'll get back to you promptly.
+      </p>
+
+      <!-- Honeypot spam defense: visually hidden, bots fill it out -->
+      <div style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+        <label for="contactBotcheck">Do not fill this out</label>
+        <input type="checkbox" id="contactBotcheck" name="botcheck" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label for="contactInquiryType" class="field-label">Inquiry Type</label>
+        <select id="contactInquiryType" name="inquiryType" class="select-input">
+          <option value="Commercial License" selected>Commercial License Inquiry</option>
+          <option value="MSP / Client Bundling">MSP / Client Bundling</option>
+          <option value="Custom Feature">Custom Feature / Integration</option>
+          <option value="General Question">General Question</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="contactName" class="field-label">Your Name <span class="required" aria-hidden="true">*</span></label>
+        <input type="text" id="contactName" name="name" class="text-input" required placeholder="e.g. Jane Doe" autocomplete="name" />
+      </div>
+
+      <div class="form-group">
+        <label for="contactEmail" class="field-label">Work / Contact Email <span class="required" aria-hidden="true">*</span></label>
+        <input type="email" id="contactEmail" name="email" class="text-input" required placeholder="e.g. jane@company.com" autocomplete="email" />
+      </div>
+
+      <div class="form-group">
+        <label for="contactMessage" class="field-label">Message <span class="required" aria-hidden="true">*</span></label>
+        <textarea id="contactMessage" name="message" class="textarea-input" rows="4" required placeholder="Describe your use case, estimated device count, or specific questions..."></textarea>
+      </div>
+
+      <div id="contactStatus" class="form-status hidden" role="status" aria-live="polite"></div>
+
+      <div class="contact-modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelContactModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitContactBtn">
+          <span class="btn-text">Send Request</span>
+          <span class="btn-loading hidden">Sending...</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- COMPONENT: FOOTER -->
   <footer class="site-footer">
@@ -874,11 +933,143 @@
       });
     }
 
-    document.querySelectorAll("[data-license-cta]").forEach((link) => {
-      link.addEventListener("click", () => {
-        trackEvent("commercial_license_click", { cta_location: link.getAttribute("data-license-cta") });
+    // Contact & Commercial Licensing Modal
+    const contactModal = document.getElementById("contactModal");
+    const closeContactBtn = document.getElementById("closeContactModal");
+    const cancelContactBtn = document.getElementById("cancelContactModal");
+    const contactForm = document.getElementById("contactForm");
+    const contactStatus = document.getElementById("contactStatus");
+    const submitContactBtn = document.getElementById("submitContactBtn");
+    const submitBtnText = submitContactBtn ? submitContactBtn.querySelector(".btn-text") : null;
+    const submitBtnLoading = submitContactBtn ? submitContactBtn.querySelector(".btn-loading") : null;
+    const CONTACT_ENDPOINT = "https://europe-west1-global-sign-160507.cloudfunctions.net/contactForm";
+
+    function openContactModal(inquiryType = "Commercial License") {
+      if (!contactModal) return;
+      const typeSelect = document.getElementById("contactInquiryType");
+      if (typeSelect) {
+        typeSelect.value = inquiryType;
+      }
+      contactStatus.className = "form-status hidden";
+      contactStatus.textContent = "";
+      if (typeof contactModal.showModal === "function") {
+        contactModal.showModal();
+        const firstInput = contactModal.querySelector("input:not([tabindex='-1'])");
+        if (firstInput) firstInput.focus();
+      }
+    }
+
+    function closeContactModalDialog() {
+      if (contactModal && contactModal.open) {
+        contactModal.close();
+        if (["#contact", "#commercial-license", "#license-inquiry"].includes(window.location.hash.toLowerCase())) {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+      }
+    }
+
+    function checkAutoOpenContact() {
+      const hash = window.location.hash.toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      if (
+        hash === "#contact" ||
+        hash === "#commercial-license" ||
+        hash === "#license-inquiry" ||
+        params.get("contact") === "commercial" ||
+        params.has("contact")
+      ) {
+        openContactModal("Commercial License");
+      }
+    }
+
+    checkAutoOpenContact();
+    window.addEventListener("hashchange", checkAutoOpenContact);
+
+    document.querySelectorAll("[data-license-cta]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        trackEvent("commercial_license_click", { cta_location: el.getAttribute("data-license-cta") });
+        openContactModal("Commercial License");
       });
     });
+
+    if (closeContactBtn) closeContactBtn.addEventListener("click", closeContactModalDialog);
+    if (cancelContactBtn) cancelContactBtn.addEventListener("click", closeContactModalDialog);
+
+    if (contactModal) {
+      contactModal.addEventListener("click", (e) => {
+        const rect = contactModal.getBoundingClientRect();
+        if (
+          e.clientX < rect.left ||
+          e.clientX > rect.right ||
+          e.clientY < rect.top ||
+          e.clientY > rect.bottom
+        ) {
+          closeContactModalDialog();
+        }
+      });
+    }
+
+    if (contactForm) {
+      contactForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        if (!contactForm.checkValidity()) {
+          contactForm.reportValidity();
+          return;
+        }
+
+        const name = document.getElementById("contactName").value.trim();
+        const email = document.getElementById("contactEmail").value.trim();
+        const inquiryType = document.getElementById("contactInquiryType").value;
+        const rawMessage = document.getElementById("contactMessage").value.trim();
+        const botcheck = document.getElementById("contactBotcheck").checked;
+
+        submitContactBtn.disabled = true;
+        submitBtnText.classList.add("hidden");
+        submitBtnLoading.classList.remove("hidden");
+        contactStatus.className = "form-status hidden";
+        contactStatus.textContent = "";
+
+        const payload = {
+          name: name,
+          email: email,
+          message: `[Inquiry Type: ${inquiryType}]\n\n${rawMessage}`,
+          botcheck: botcheck
+        };
+
+        try {
+          const res = await fetch(CONTACT_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (res.ok && data.success) {
+            contactStatus.textContent = "Thank you! Your message has been sent successfully. We'll be in touch soon.";
+            contactStatus.className = "form-status alert-success";
+            contactForm.reset();
+            trackEvent("commercial_inquiry_sent", { inquiry_type: inquiryType });
+            setTimeout(() => {
+              closeContactModalDialog();
+            }, 3000);
+          } else {
+            throw new Error(data.error || "Failed to send message. Please try again later.");
+          }
+        } catch (err) {
+          contactStatus.textContent = err.message || "Failed to connect to the server. Please check your connection.";
+          contactStatus.className = "form-status alert-danger";
+        } finally {
+          submitContactBtn.disabled = false;
+          submitBtnText.classList.remove("hidden");
+          submitBtnLoading.classList.add("hidden");
+        }
+      });
+    }
 
     // Preview tabs (Dashboard, Device Logs drawer inside Web UI, Discord Alert)
     const previewTabs = document.querySelectorAll(".preview-tab");
