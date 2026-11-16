@@ -24,7 +24,7 @@ variables:
 
 test:ui:
   stage: test
-  image: node:20
+  image: node:24
   before_script:
     - npm --prefix web ci
   script:
