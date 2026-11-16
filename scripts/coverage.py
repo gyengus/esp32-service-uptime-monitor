@@ -105,6 +105,21 @@ def generate_coverage_report(project_dir=None):
     overall_pct = (total_exec * 100.0 / total_lines) if total_lines > 0 else 0.0
     print(f"{'OVERALL TOTAL':<42} {total_lines:>8} {total_exec:>9} {overall_pct:>7.1f}%")
     print("=" * 65 + "\n")
+
+    report_file = os.path.join(project_dir, "coverage.txt")
+    try:
+        with open(report_file, "w", encoding="utf-8") as f:
+            f.write("=" * 65 + "\n")
+            f.write(f"{'Source File':<42} {'Lines':>8} {'Covered':>9} {'Coverage':>8}\n")
+            f.write("-" * 65 + "\n")
+            for path, exec_l, total_l, pct in results:
+                f.write(f"{path:<42} {total_l:>8} {exec_l:>9} {pct:>7.1f}%\n")
+            f.write("=" * 65 + "\n")
+            f.write(f"{'OVERALL TOTAL':<42} {total_lines:>8} {total_exec:>9} {overall_pct:>7.1f}%\n")
+            f.write("=" * 65 + "\n")
+    except Exception:
+        pass
+
     return True
 
 try:

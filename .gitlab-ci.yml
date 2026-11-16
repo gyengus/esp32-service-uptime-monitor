@@ -1,0 +1,83 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+stages:
+  - security-scans
+  - test
+  - gemini-review
+  - build
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+  - project: 'ai/ai-code-reviewer'
+    ref: 'master'
+    file: 'templates/ai-code-review.yml'
+
+variables:
+  SECRET_DETECTION_ENABLED: 'true'
+  SAST_EXCLUDED_PATHS: "spec, test, tests, tmp, target, logs, .git, .mvn, .settings, .vscode"
+
+test:ui:
+  stage: test
+  image: node:20
+  before_script:
+    - npm --prefix web ci
+  script:
+    - npm --prefix web run test:coverage
+  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s+([\d\.]+)/'
+  artifacts:
+    paths:
+      - web/coverage/
+    expire_in: 1 week
+
+test:firmware:
+  stage: test
+  image: python:3.11
+  before_script:
+    - pip install -U platformio
+  script:
+    - pio test -e native
+    - python3 scripts/coverage.py | tee coverage.txt
+  coverage: '/OVERALL TOTAL\s+\d+\s+\d+\s+([\d\.]+)%/'
+  artifacts:
+    paths:
+      - coverage.txt
+    expire_in: 1 week
+
+build:
+  stage: build
+  image: python:3.11
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH == "test"
+  needs:
+    - test:ui
+    - test:firmware
+  before_script:
+    - pip install -U platformio
+  script:
+    - pio run
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+# Explicit overrides for security jobs to ensure they run in correct stages and MRs
+semgrep-sast:
+  stage: security-scans
+  variables:
+    SECURE_LOG_LEVEL: "debug"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+secret_detection:
+  stage: security-scans
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
