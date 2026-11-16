@@ -1,0 +1,251 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Build in RELEASE mode (strip debug logs, exclude fileManager)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "ci-cd-pipeline"
+  cancel-in-progress: false
+
+jobs:
+  test-ui:
+    name: Test Web UI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Web UI dependencies
+        run: npm --prefix web ci
+
+      - name: Run Web UI unit tests & coverage
+        run: npm --prefix web run test:coverage
+
+      - name: Upload UI coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-coverage
+          path: web/coverage/coverage-final.json
+          if-no-files-found: warn
+
+  test-firmware:
+    name: Test Firmware
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/platforms
+            ~/.platformio/packages
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+
+      - name: Run PlatformIO native unit tests
+        run: pio test -e native
+
+      - name: Generate firmware coverage report
+        run: python3 scripts/coverage.py
+
+      - name: Upload firmware coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-coverage
+          path: coverage.txt
+          if-no-files-found: warn
+
+  build-firmware:
+    name: Build Firmware Images
+    runs-on: ubuntu-latest
+    needs:
+      - test-ui
+      - test-firmware
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Web UI dependencies
+        run: npm --prefix web ci
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/platforms
+            ~/.platformio/packages
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio pyyaml
+
+      - name: Build firmware images for all boards
+        env:
+          RELEASE: ${{ (startsWith(github.ref, 'refs/tags/') || inputs.release == true) && '1' || '' }}
+        run: pio run
+
+      - name: Upload firmware distribution binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-dist
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+      - build-firmware
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download firmware binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-dist
+          path: dist
+
+      - name: Generate Release Notes
+        run: python3 scripts/changelog.py --release-notes > release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          body_path: release_notes.md
+          files: |
+            dist/*.bin
+            dist/web.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-site:
+    name: Assemble Static Site
+    runs-on: ubuntu-latest
+    needs:
+      - test-ui
+      - test-firmware
+      - build-firmware
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Download firmware binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-dist
+          path: dist
+
+      - name: Download UI coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-coverage
+          path: web/coverage
+
+      - name: Download firmware coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-coverage
+          path: .
+
+      - name: Install documentation tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install markdown beautifulsoup4
+
+      - name: Assemble static documentation site
+        run: python3 scripts/preview_site.py --build-only
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site"
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs:
+      - build-site
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

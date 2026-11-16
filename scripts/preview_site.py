@@ -146,6 +146,13 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
             except Exception:
                 shutil.copy2(manifest_file, firmware_dir / "manifest.json")
 
+    # 5. Generate test and coverage badge endpoints
+    try:
+        import combine_coverage
+        combine_coverage.generate_badges(project_dir, out_dir)
+    except Exception:
+        pass
+
     return out_dir
 
 

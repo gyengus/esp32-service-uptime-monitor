@@ -4,7 +4,9 @@
 
 Turn any $4 ESP32 into a standalone, ultra-low-power (< 1 W) hardware uptime appliance. Periodically check HTTP/HTTPS services from an independent microcontroller, get instant **Discord webhook alerts** on status changes, monitor live telemetry over **WebSockets**, and see outages at a glance via **RGB LED indicators** — with zero cloud subscriptions and zero VM overhead.
 
-[![Build](https://img.shields.io/github/actions/workflow/status/gyengus/esp32-service-uptime-monitor/pages.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=Build)](https://github.com/gyengus/esp32-service-uptime-monitor/actions/workflows/pages.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/gyengus/esp32-service-uptime-monitor/pipeline.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=Build)](https://github.com/gyengus/esp32-service-uptime-monitor/actions/workflows/pipeline.yml)
+[![Tests](https://img.shields.io/endpoint?url=https://esp32-service-uptime-monitor.com/tests.json&style=for-the-badge&logo=vitest&logoColor=white)](https://github.com/gyengus/esp32-service-uptime-monitor/actions/workflows/pipeline.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://esp32-service-uptime-monitor.com/coverage.json&style=for-the-badge)](https://esp32-service-uptime-monitor.com/)
 [![Release](https://img.shields.io/github/v/release/gyengus/esp32-service-uptime-monitor?style=for-the-badge&logo=github&label=Release)](https://github.com/gyengus/esp32-service-uptime-monitor/releases)
 [![Web Flasher](https://img.shields.io/badge/Web_Flasher-Install_in_Browser-10b981?style=for-the-badge&logo=espressif&logoColor=white)](https://esp32-service-uptime-monitor.com/#flasher)
 [![Live Preview & Docs](https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge)](https://esp32-service-uptime-monitor.com/)

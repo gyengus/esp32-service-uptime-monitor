@@ -130,6 +130,10 @@ build:site:
   needs:
     - job: build
       artifacts: true
+    - job: test:ui
+      artifacts: true
+    - job: test:firmware
+      artifacts: true
   cache:
     key:
       prefix: "site"
