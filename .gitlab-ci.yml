@@ -53,15 +53,21 @@ test:firmware:
   image: python:3.11
   cache:
     key:
-      prefix: "firmware-test"
+      prefix: "firmware"
       files:
         - platformio.ini
     paths:
+      - .venv/
       - .cache/pip/
       - .platformio/
-      - .pio/libdeps/native/
+      - .pio/libdeps/
   before_script:
-    - pip install -U platformio
+    - |
+      if [ ! -f .venv/bin/pio ]; then
+        python3 -m venv .venv
+        .venv/bin/pip install -U platformio
+      fi
+      . .venv/bin/activate
   script:
     - pio test -e native
     - python3 scripts/coverage.py | tee coverage.txt
@@ -77,20 +83,27 @@ build:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
     - if: $CI_COMMIT_BRANCH == "test"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   needs:
     - test:ui
     - test:firmware
   cache:
     key:
-      prefix: "firmware-build"
+      prefix: "firmware"
       files:
         - platformio.ini
     paths:
+      - .venv/
       - .cache/pip/
       - .platformio/
       - .pio/libdeps/
   before_script:
-    - pip install -U platformio
+    - |
+      if [ ! -f .venv/bin/pio ]; then
+        python3 -m venv .venv
+        .venv/bin/pip install -U platformio
+      fi
+      . .venv/bin/activate
   script:
     - pio run
   artifacts:
@@ -104,6 +117,7 @@ build:site:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
     - if: $CI_COMMIT_BRANCH == "test"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   needs:
     - job: build
       artifacts: true

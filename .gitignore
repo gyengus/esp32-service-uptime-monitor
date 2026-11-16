@@ -38,6 +38,7 @@ CLAUDE.md
 .platformio/
 .cache/
 .npm/
+.venv/
 
 # Node / Frontend testing
 node_modules/
