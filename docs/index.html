@@ -821,11 +821,13 @@
       serialWarning.classList.remove("hidden");
     }
 
-    function selectBoard(env, source = "dropdown") {
+    function selectBoard(rawEnv, source = "dropdown") {
+      const env = Object.keys(BOARDS).find((k) => k === rawEnv) || "esp32-s3-cam";
+      const safeEnv = encodeURIComponent(env);
       boardSelect.value = env;
       const info = BOARDS[env];
-      installBtn.setAttribute("manifest", `./firmware/manifest-${env}.json`);
-      manualBinLink.href = `${RELEASES_BASE}/${env}.bin`;
+      installBtn.setAttribute("manifest", `./firmware/manifest-${safeEnv}.json`);
+      manualBinLink.href = `${RELEASES_BASE}/${safeEnv}.bin`;
       manualBinLink.textContent = `Download ${env}.bin`;
       if (info) {
         metaArch.textContent = info.arch;
