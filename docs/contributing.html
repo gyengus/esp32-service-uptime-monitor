@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing & Development Guide — ESP32 Service Uptime Monitor</title>
+  <meta name="description" content="Development workflow, PlatformIO build targets, OTA flashing, test suites, and coding standards for ESP32 Service Uptime Monitor." />
+  <link rel="canonical" href="https://esp32-service-uptime-monitor.com/docs.html?doc=contributing" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
+  <meta property="og:title" content="Contributing & Development Guide — ESP32 Service Uptime Monitor" />
+  <meta property="og:description" content="Development workflow, PlatformIO build targets, OTA flashing, test suites, and coding standards for ESP32 Service Uptime Monitor." />
+  <meta property="og:url" content="https://esp32-service-uptime-monitor.com/docs.html?doc=contributing" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Contributing & Development Guide — ESP32 Service Uptime Monitor" />
+  <meta name="twitter:description" content="Development workflow, PlatformIO build targets, OTA flashing, test suites, and coding standards for ESP32 Service Uptime Monitor." />
+  <link rel="stylesheet" href="./styles.css" />
+  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a class="brand" href="./index.html">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>ESP32 Service Uptime Monitor</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./docs.html?doc=readme">Documentation</a>
+        <a href="./docs.html?doc=api">API (Swagger)</a>
+        <a href="./docs.html?doc=contributing" aria-current="page">Contributing</a>
+        
+        <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container docs-layout">
+    <article id="docContent" class="markdown-body">
+      <h1 id="contributing-development-guide">Contributing &amp; Development Guide</h1>
+<p>Thank you for contributing to <strong>ESP32 Service Uptime Monitor</strong>. This guide covers the local development setup, build targets, Web UI packaging, OpenAPI/Swagger documentation generation, and testing workflows.</p>
+<blockquote>
+<p>For architectural conventions and AI agent coding rules, also see <strong><a href="https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/AGENTS.md" rel="noopener noreferrer" target="_blank">AGENTS.md</a></strong>.</p>
+</blockquote>
+<hr/>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li><a href="https://platformio.org/install/cli">PlatformIO Core (CLI)</a> or PlatformIO IDE</li>
+<li><strong>Python 3</strong> with <strong>PyYAML</strong> (<code>pip install pyyaml</code>) — required for OpenAPI specification generation (<code>PyYAML</code> is installed in the PlatformIO Python environment when running <code>pio run</code>)</li>
+<li><strong>Node.js &amp; npm</strong> — required for Web UI unit tests and <code>terser</code> JS minification (<code>npm --prefix web install</code>)</li>
+</ul>
+<hr/>
+<h2 id="building-firmware">Building Firmware</h2>
+<h3 id="standard-builds">Standard Builds</h3>
+<pre><code class="language-bash"># Build all default board environments
+pio run
+
+# Build for a specific target board
+pio run -e esp32-s3-cam   # ESP32-S3-CAM (MicroSD)
+pio run -e esp32-s3       # ESP32-S3 DevKit (LittleFS, 16MB)
+pio run -e esp32          # Classic ESP32-WROOM-32 (LittleFS, 4MB)
+pio run -e esp32-c3       # ESP32-C3 SuperMini (LittleFS, 4MB)
+pio run -e esp32-c6       # ESP32-C6 DevKit (LittleFS, 4MB)
+pio run -e esp32-c5       # ESP32-C5 DevKit (LittleFS, 4MB)
+
+# Build with File Manager excluded for release (omits fileManager.html, saves ~15 KB flash)
+DISABLE_FILE_MANAGER=1 pio run
+
+# Build with periodic memory statistics logging excluded
+DISABLE_MEM_STATS_LOGGING=1 pio run
+
+# Build release versions (disables File Manager and memory stats logging, sets log level to INFO)
+RELEASE=1 pio run
+
+# Flash via USB and monitor serial output (115200 8N1)
+pio run -e esp32-s3-cam --target upload
+pio device monitor
+
+# Clean build artifacts
+pio run --target clean
+</code></pre>
+<h3 id="release-binaries-esp-web-tools-manifest">Release Binaries &amp; ESP Web Tools Manifest</h3>
+<pre><code class="language-bash"># Export standalone OTA binaries, merged factory-*.bin images, web.zip, and manifest.json to dist/
+pio run -t dist
+</code></pre>
+<h3 id="wireless-ota-firmware-upload">Wireless OTA Firmware Upload</h3>
+<pre><code class="language-bash"># Upload over OTA (default target: esp32-service-uptime-monitor.local)
+pio run -e esp32-s3-cam-ota --target upload
+pio run -e esp32-s3-ota --target upload
+pio run -e esp32-ota --target upload
+pio run -e esp32-c3-ota --target upload
+pio run -e esp32-c6-ota --target upload
+pio run -e esp32-c5-ota --target upload
+
+# Override target IP or mDNS hostname
+ESP_IP=192.168.0.118 pio run -e esp32-s3-cam-ota --target upload
+ESP_HOST=my-device.local pio run -e esp32-s3-cam-ota --target upload
+pio run -e esp32-s3-ota --target upload --upload-port 192.168.0.118
+
+# Provide OTA token when configuration mode is locked on the device
+ESP_OTA_TOKEN=your-ota-token pio run -e esp32-s3-cam-ota --target upload
+</code></pre>
+<p><strong>OTA Target Resolution Order:</strong>
+1. <code>ESP_HOST</code> / <code>ESP_IP</code> environment variables
+2. <code>upload_port</code> in <code>platformio.ini</code> (or <code>--upload-port</code> CLI flag)
+3. <code>hostname</code> in local <code>config.json</code> or <code>data/config.json</code> (if present)
+4. Fallback: <code>esp32-service-uptime-monitor.local</code></p>
+<p><strong>OTA Token Resolution Order (<code>X-PlatformIO-Upload</code> header):</strong>
+1. <code>ESP_OTA_TOKEN</code> / <code>OTA_TOKEN</code> environment variables
+2. <code>otaToken</code> in local <code>config.json</code> or <code>data/config.json</code> (if present)</p>
+<hr/>
+<h2 id="web-ui-asset-pipeline">Web UI Asset Pipeline</h2>
+<p>Web UI sources live in <code>web/</code> and are minified and packed into <code>web.zip</code> and <code>src/EmbeddedWebArchive.cpp</code> (PROGMEM) automatically before firmware compilation (<code>pre:scripts/generate_web_embed.py</code>). The archive also embeds <code>docs/api/index.html</code> (<code>api-docs.html</code>), <code>docs/api/openapi.yaml</code> (<code>openapi.yaml</code>), and <code>LICENSE</code>.</p>
+<pre><code class="language-bash"># Package, minify, and upload Web UI directly to a running device over HTTP
+pio run --target uploadweb
+
+# Upload to a custom device IP or hostname
+ESP_IP=192.168.0.118 pio run --target uploadweb
+ESP_HOST=my-device.local pio run --target uploadweb
+
+# Generate web.zip locally without uploading
+pio run --target packweb
+</code></pre>
+<hr/>
+<h2 id="api-documentation-openapi-swagger-ui">API Documentation (OpenAPI &amp; Swagger UI)</h2>
+<p>The REST API specification is generated directly from <code>@openapi</code> JSDoc-style YAML blocks inside the C++ source files (<code>include/Api.h</code>, <code>src/Api.cpp</code>, <code>lib/FileManager/src/FileManager.cpp</code>).</p>
+<h3 id="how-it-works">How It Works</h3>
+<ul>
+<li>Top-level metadata, <code>servers</code> variables, <code>tags</code>, and reusable <code>components.schemas</code> live in <a href="https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/include/Api.h" rel="noopener noreferrer" target="_blank"><code>include/Api.h</code></a>.</li>
+<li>Each endpoint's OpenAPI block sits directly above its <code>server.on(...)</code> registration in <a href="https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/src/Api.cpp" rel="noopener noreferrer" target="_blank"><code>src/Api.cpp</code></a> or <a href="https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/lib/FileManager/src/FileManager.cpp" rel="noopener noreferrer" target="_blank"><code>lib/FileManager/src/FileManager.cpp</code></a>.</li>
+<li><code>info.version</code> is automatically populated from <code>FIRMWARE_VERSION</code> in <a href="https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/include/version.h" rel="noopener noreferrer" target="_blank"><code>include/version.h</code></a>.</li>
+<li>Endpoints marked with <code>x-internal: true</code> (such as the File Manager endpoints) are excluded from the public <code>docs/api/openapi.yaml</code> by default, along with any orphaned tags and schemas.</li>
+<li>During <code>pio run</code>, <code>pre:scripts/generate_openapi.py</code> runs <strong>before</strong> <code>pre:scripts/generate_web_embed.py</code> so the updated <code>docs/api/openapi.yaml</code> is always embedded into the firmware as well.</li>
+</ul>
+<h3 id="generator-cli-flags">Generator CLI &amp; Flags</h3>
+<pre><code class="language-bash"># Generate docs/api/openapi.yaml (excludes x-internal: true endpoints, warns on missing routes)
+python3 scripts/openapi_generator.py
+
+# Fail with exit code 1 if any server.on(...) route is missing an @openapi block (recommended for CI)
+python3 scripts/openapi_generator.py --strict
+
+# Include internal/dev-only endpoints (e.g. File Manager) in the generated YAML
+python3 scripts/openapi_generator.py --include-internal
+
+# Custom output path or project root
+python3 scripts/openapi_generator.py --output docs/api/openapi-dev.yaml --include-internal
+python3 scripts/openapi_generator.py --project-dir /path/to/repo
+</code></pre>
+<h3 id="local-swagger-ui-preview">Local Swagger UI Preview</h3>
+<pre><code class="language-bash">python3 -m http.server 8000 --directory docs/api
+</code></pre>
+<p>Open <code>http://localhost:8000/</code> in your browser and enter your ESP32 IP or mDNS hostname in the <strong>Servers → <code>host</code></strong> field.</p>
+<h3 id="local-github-pages-site-preview">Local GitHub Pages Site Preview</h3>
+<p>To preview the full static GitHub Pages site (<code>docs/index.html</code>, <code>docs/docs.html</code>, and <code>docs/api/index.html</code>) with local <code>README.md</code>, <code>CONTRIBUTING.md</code>, and <code>LICENSE</code> resolution, start a local HTTP server from the repository root:</p>
+<pre><code class="language-bash">python3 -m http.server 8765
+</code></pre>
+<p>Then open in your browser:
+- <strong>Overview &amp; Web Flasher:</strong> <code>http://localhost:8765/docs/index.html</code>
+- <strong>Documentation Reader:</strong> <code>http://localhost:8765/docs/docs.html</code>
+- <strong>Swagger API Docs:</strong> <code>http://localhost:8765/docs/api/index.html</code></p>
+<hr/>
+<h2 id="testing-quality-assurance">Testing &amp; Quality Assurance</h2>
+<pre><code class="language-bash"># Run all native C++ unit tests (Unity + ArduinoFake)
+pio test -e native
+
+# Run native tests and generate code coverage report (Custom task: "Generate Coverage Report")
+pio run -t coverage
+
+# Run a single C++ test suite
+pio test -e native -f test_api
+
+# Run Web UI frontend unit tests (Vitest)
+npm --prefix web test
+
+# Run Web UI tests with coverage
+npm --prefix web run test:coverage
+
+# Run PlatformIO static analysis
+pio check
+</code></pre>
+<hr/>
+<h2 id="coding-commit-guidelines">Coding &amp; Commit Guidelines</h2>
+<ul>
+<li>Follow all architectural and thread-safety rules in <a href="https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/AGENTS.md" rel="noopener noreferrer" target="_blank">AGENTS.md</a>.</li>
+<li>Keep device hostnames RFC 1123 compliant (<code>a-z</code>, <code>0-9</code>, <code>-</code> only; sanitize user input via <code>HostnameUtils::cleanHostname()</code>).</li>
+<li>Write clear, descriptive commit messages in English <strong>without</strong> Conventional Commits prefixes (<code>feat:</code>, <code>fix:</code>, <code>chore:</code>, etc.) and without sign-off lines.</li>
+<li>Sign all commits with GPG/SSH (<code>git commit -S</code>).</li>
+</ul>
+<hr/>
+<h2 id="contributor-license-agreement-cla">Contributor License Agreement (CLA)</h2>
+<p>Because this project is dual-licensed (free for personal use, paid commercial license for businesses and organizations), by submitting a Pull Request, patch, or other contribution to this repository, you agree that:</p>
+<ol>
+<li>Your contribution is your original work and you have the legal right to submit it.</li>
+<li>You retain copyright to your contribution, and you grant the project author (<code>gyengus</code>) a perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to use, reproduce, modify, distribute, and <strong>relicense</strong> your contribution under both the Personal &amp; Non-Commercial License in <a href="./docs.html?doc=license"><code>LICENSE</code></a> and any Commercial Licenses offered by the author.</li>
+</ol>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./docs.html?doc=readme">Documentation</a>
+        <a href="./docs.html?doc=api">API (Swagger)</a>
+        <a href="./docs.html?doc=contributing">Contributing</a>
+        
+        <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+        <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const THEME_KEY = "uptime-docs-theme";
+    const SUN_SVG = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    const MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+    function getEffectiveTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      themeIcon.innerHTML = theme === "light" ? MOON_SVG : SUN_SVG;
+    }
+
+    applyTheme(getEffectiveTheme());
+    themeToggle.addEventListener("click", () => {
+      const next = getEffectiveTheme() === "light" ? "dark" : "light";
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    });
+  </script>
+</body>
+</html>

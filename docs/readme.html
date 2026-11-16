@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation — ESP32 Service Uptime Monitor</title>
+  <meta name="description" content="Comprehensive documentation for ESP32 Service Uptime Monitor: multi-board setup, hardware pinouts, REST API, Web UI, and security." />
+  <link rel="canonical" href="https://esp32-service-uptime-monitor.com/docs.html?doc=readme" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
+  <meta property="og:title" content="Documentation — ESP32 Service Uptime Monitor" />
+  <meta property="og:description" content="Comprehensive documentation for ESP32 Service Uptime Monitor: multi-board setup, hardware pinouts, REST API, Web UI, and security." />
+  <meta property="og:url" content="https://esp32-service-uptime-monitor.com/docs.html?doc=readme" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Documentation — ESP32 Service Uptime Monitor" />
+  <meta name="twitter:description" content="Comprehensive documentation for ESP32 Service Uptime Monitor: multi-board setup, hardware pinouts, REST API, Web UI, and security." />
+  <link rel="stylesheet" href="./styles.css" />
+  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a class="brand" href="./index.html">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>ESP32 Service Uptime Monitor</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./docs.html?doc=readme" aria-current="page">Documentation</a>
+        <a href="./docs.html?doc=api">API (Swagger)</a>
+        <a href="./docs.html?doc=contributing">Contributing</a>
+        
+        <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container docs-layout">
+    <article id="docContent" class="markdown-body">
+      <h1 id="esp32-service-uptime-monitor">ESP32 Service Uptime Monitor</h1>
+<p><strong>Who watches your monitoring server when the server itself goes down?</strong></p>
+<p>Turn any $4 ESP32 into a standalone, ultra-low-power (&lt; 1 W) hardware uptime appliance. Periodically check HTTP/HTTPS services from an independent microcontroller, get instant <strong>Discord webhook alerts</strong> on status changes, monitor live telemetry over <strong>WebSockets</strong>, and see outages at a glance via <strong>RGB LED indicators</strong> — with zero cloud subscriptions and zero VM overhead.</p>
+<p><a href="https://esp32-service-uptime-monitor.com/#flasher"><img alt="Web Flasher" src="https://img.shields.io/badge/Web_Flasher-Install_in_Browser-10b981?style=for-the-badge&amp;logo=espressif&amp;logoColor=white"/></a>
+<a href="https://esp32-service-uptime-monitor/"><img alt="Live Preview &amp; Docs" src="https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge"/></a>
+<a href="https://esp32-service-uptime-monitor/docs.html?doc=api"><img alt="OpenAPI 3.0" src="https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&amp;logo=swagger&amp;logoColor=black"/></a>
+<a href="./docs.html?doc=license"><img alt="License" src="https://img.shields.io/badge/License-Free_for_Personal_%7C_30--Day_Business_Trial-f59e0b?style=for-the-badge"/></a></p>
+<h2 id="why-a-dedicated-hardware-uptime-monitor">Why a Dedicated Hardware Uptime Monitor?</h2>
+<ul>
+<li><strong>Out-of-Band Independence:</strong> Containerized monitors (like Uptime Kuma or Prometheus) go down with your hypervisor, NAS, or Docker host. An independent ESP32 keeps watching and alerts you even when your primary server crashes.</li>
+<li><strong>Flash in 60 Seconds from Your Browser:</strong> No IDE or toolchain needed to get started. Connect via USB, click <strong>Install</strong> in the <a href="https://esp32-service-uptime-monitor.com/#flasher">Web Flasher</a>, and configure Wi-Fi directly in Chrome or Edge via <strong>Improv Wi-Fi</strong>.</li>
+<li><strong>Zero-Wear Steady State:</strong> 3-retry hysteresis prevents false alarms and writes to flash/MicroSD <strong>only when a service actually transitions</strong> between <code>ONLINE</code> and <code>OFFLINE</code>.</li>
+<li><strong>Built for Homelabs, Ready for Business:</strong> Free forever for personal homelabs and hobbyists, with a <strong>30-day free evaluation trial</strong> for companies. Equipped with a full REST API (OpenAPI 3 / Swagger UI), JSON backup/restore for rapid multi-device provisioning, and hardened security (physical BOOT button lock, SSRF &amp; DNS rebinding protection) for commercial and MSP deployments.</li>
+</ul>
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Multi-board support</strong>: Native configurations for <code>esp32-s3-cam</code> (MicroSD slot), <code>esp32-s3</code> (LittleFS), <code>esp32</code> (classic dual-core ESP32-WROOM-32), <code>esp32-c3</code> (single-core RISC-V), <code>esp32-c6</code> (single-core RISC-V with Wi-Fi 6), and <code>esp32-c5</code> (single-core RISC-V with Dual-Band 2.4/5GHz Wi-Fi 6) via <code>devices.h</code></li>
+<li><strong>WiFi AP/STA &amp; Improv Serial mode</strong>: Easy configuration via browser-based <strong>Improv Wi-Fi</strong> (over USB Serial in ESP Web Tools), built-in captive portal access point, or connection to existing WiFi (supports 2.4 GHz and 5 GHz Dual-Band Wi-Fi 6)</li>
+<li><strong>Dual storage backends</strong>: Supports FAT32 MicroSD (1-bit SD_MMC) or internal SPI Flash with wear-leveling (LittleFS)</li>
+<li><strong>OTA Firmware updates</strong>: Wireless updates via Web UI or PlatformIO (<code>*-ota</code> environments)</li>
+<li><strong>Modern Web UI</strong>: Responsive Bootstrap 5 interface with dark mode, live status filtering, and entity management</li>
+<li><strong>Interactive API Docs (Swagger UI)</strong>: Available directly on the device at <code>/api/docs</code> (or <code>/swagger</code>) and for static hosting in <a href="./docs.html?doc=api"><code>docs/api/</code></a></li>
+<li><strong>WebSocket live stream</strong>: Real-time log streaming and instant UI updates without polling</li>
+<li><strong>Discord notifications</strong>: Rich embed notifications sent to a configured Discord webhook on status change</li>
+<li><strong>Config backup &amp; restore</strong>: Export and import configuration and monitored entity snapshots in JSON format</li>
+<li><strong>File Manager</strong>: Built-in web file manager for browsing, uploading, downloading, and managing files during development</li>
+<li><strong>mDNS &amp; SNTP</strong>: Access via <code>http://&lt;hostname&gt;.local/</code> and automatic NTP time synchronization</li>
+<li><strong>LED indicators</strong>: Visual feedback via addressable RGB LED (WS2812B) and optional status LED</li>
+</ul>
+<h2 id="hardware-board-profiles">Hardware &amp; Board Profiles</h2>
+<p>The project uses <a href="https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/include/devices.h" rel="noopener noreferrer" target="_blank"><code>include/devices.h</code></a> to define board pins and available hardware features (<code>HAS_SD_CARD</code>, <code>HAS_STATUS_LED</code>, <code>HAS_RGB_LED</code>) based on the active PlatformIO build environment:</p>
+<table>
+<thead>
+<tr>
+<th>Feature / Pin</th>
+<th><code>esp32-s3-cam</code></th>
+<th><code>esp32-s3</code></th>
+<th><code>esp32</code></th>
+<th><code>esp32-c3</code></th>
+<th><code>esp32-c6</code></th>
+<th><code>esp32-c5</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Target Board</strong></td>
+<td>ESP32-S3 CAM Dev Board</td>
+<td>ESP32-S3 DevKitC-1 / WROOM-1</td>
+<td>ESP32-WROOM-32 / NodeMCU-32S</td>
+<td>ESP32-C3 SuperMini / DevKitM-1</td>
+<td>ESP32-C6 DevKitM-1 / DevKitC-1</td>
+<td>ESP32-C5 DevKitC-1</td>
+</tr>
+<tr>
+<td><strong>Architecture</strong></td>
+<td>Dual-core Xtensa LX7</td>
+<td>Dual-core Xtensa LX7</td>
+<td>Dual-core Xtensa LX6</td>
+<td>Single-core RISC-V</td>
+<td>Single-core RISC-V (Wi-Fi 6)</td>
+<td>Single-core RISC-V (2.4/5GHz Wi-Fi 6)</td>
+</tr>
+<tr>
+<td><strong>Storage Backend</strong></td>
+<td>MicroSD Card (<code>SD_MMC</code>, 1-bit)</td>
+<td>Internal Flash (<code>LittleFS</code>, 16MB)</td>
+<td>Internal Flash (<code>LittleFS</code>, 4MB)</td>
+<td>Internal Flash (<code>LittleFS</code>, 4MB)</td>
+<td>Internal Flash (<code>LittleFS</code>, 4MB)</td>
+<td>Internal Flash (<code>LittleFS</code>, 4MB)</td>
+</tr>
+<tr>
+<td><strong>Status LED</strong></td>
+<td>GPIO 2 (<code>HAS_STATUS_LED</code>)</td>
+<td>None</td>
+<td>GPIO 2 (<code>HAS_STATUS_LED</code>)</td>
+<td>GPIO 8 (<code>HAS_STATUS_LED</code>)</td>
+<td>None</td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>RGB LED (WS2812B)</strong></td>
+<td>GPIO 48 (<code>HAS_RGB_LED</code>)</td>
+<td>GPIO 48 (<code>HAS_RGB_LED</code>)</td>
+<td>None</td>
+<td>None</td>
+<td>GPIO 8 (<code>HAS_RGB_LED</code>)</td>
+<td>GPIO 27 (<code>HAS_RGB_LED</code>)</td>
+</tr>
+<tr>
+<td><strong>Boot Button</strong></td>
+<td>GPIO 0 (<code>BOOT_BTN_PIN</code>)</td>
+<td>GPIO 0 (<code>BOOT_BTN_PIN</code>)</td>
+<td>GPIO 0 (<code>BOOT_BTN_PIN</code>)</td>
+<td>GPIO 9 (<code>BOOT_BTN_PIN</code>)</td>
+<td>GPIO 9 (<code>BOOT_BTN_PIN</code>)</td>
+<td>GPIO 28 (<code>BOOT_BTN_PIN</code>)</td>
+</tr>
+<tr>
+<td><strong>SD CMD / DATA / CLK</strong></td>
+<td>GPIO 38 / 40 / 39</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table>
+<h2 id="quick-start-installation">Quick Start &amp; Installation</h2>
+<h3 id="flash-via-usb-platformio">Flash via USB (PlatformIO)</h3>
+<pre><code class="language-bash"># Build and flash firmware for your board via USB
+pio run -e esp32-s3-cam --target upload
+# Or: esp32-s3 | esp32 | esp32-c3 | esp32-c6 | esp32-c5
+
+# Production release build (disables File Manager &amp; memory stats logging, sets log level to INFO):
+# RELEASE=1 pio run -e esp32-s3-cam --target upload
+
+# Monitor serial output (115200 8N1)
+pio device monitor
+</code></pre>
+<blockquote>
+<p><strong>Web Flasher &amp; Improv Wi-Fi (ESP Web Tools):</strong> Pre-merged <code>dist/&lt;env&gt;.bin</code> images and <code>dist/manifest.json</code> can also be generated via <code>pio run -t dist</code> for one-click browser flashing and serial Wi-Fi provisioning via <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a> and <a href="https://www.improv-wifi.com/">Improv Wi-Fi</a>.</p>
+</blockquote>
+<h3 id="initial-setup">Initial Setup</h3>
+<h4 id="option-a-browser-provisioning-via-improv-wi-fi-usb-serial">Option A: Browser Provisioning via Improv Wi-Fi (USB Serial)</h4>
+<ol>
+<li>Flash the firmware from the Web Flasher (or connect an already flashed board via <strong>Connect</strong> in ESP Web Tools).</li>
+<li>Once the device boots, select <strong>Connect to Wi-Fi</strong> in the browser dialog, choose your Wi-Fi network from the scanned list, and enter the password.</li>
+<li>The device connects to your network, saves <code>/config.json</code>, returns a direct <strong>Visit Device</strong> link (<code>http://&lt;hostname&gt;.local/</code>), and reboots into normal monitoring mode.</li>
+</ol>
+<h4 id="option-b-captive-portal-access-point">Option B: Captive Portal Access Point</h4>
+<ol>
+<li><strong>Power on the device</strong>: If no configuration exists, the device boots into Access Point (AP) mode. On first boot (or if <code>/web/index.html</code> is missing), the firmware automatically unpacks its embedded web UI archive into storage (<code>/web/</code>), so no manual file uploading is required.</li>
+<li><strong>Connect to AP</strong>:</li>
+<li><strong>SSID</strong>: <code>ESP32-Service-Uptime-Monitor</code></li>
+<li><strong>Security</strong>: Open (no password required for initial setup)</li>
+<li><strong>Captive Portal IP</strong>: <code>192.168.4.1</code></li>
+<li><strong>Open browser</strong>: Navigate to <code>http://192.168.4.1/</code> (most devices trigger the captive portal automatically).</li>
+<li><strong>Configure Wi-Fi</strong>: Enter your network credentials and click <strong>Save</strong>.</li>
+<li><strong>Configure Discord</strong> (optional): Add your Discord webhook URL to receive notifications.</li>
+<li><strong>Device reboots</strong>: Reconnects to your Wi-Fi network and starts monitoring. The web dashboard will be available at <code>http://esp32-service-uptime-monitor.local/</code> (or your configured hostname) or via its assigned DHCP IP address.</li>
+</ol>
+<h2 id="usage">Usage</h2>
+<h3 id="web-interface">Web Interface</h3>
+<p>Access the dashboard at <code>http://&lt;hostname&gt;.local/</code> (default: <code>http://esp32-service-uptime-monitor.local/</code>) or <code>http://&lt;device-ip&gt;/</code>.</p>
+<blockquote class="markdown-alert markdown-alert-tip">
+<p><strong>Hostname &amp; mDNS Compatibility:</strong> In accordance with RFC 1123, device hostnames only allow lowercase ASCII letters (<code>a-z</code>), digits (<code>0-9</code>), and hyphens (<code>-</code>). Any spaces, dots, or underscores entered via the web interface are automatically sanitized to hyphens to ensure seamless mDNS resolution across all operating systems, including Windows, macOS, iOS, Android, and Linux.</p>
+</blockquote>
+<ul>
+<li><strong>Main Dashboard (<code>/</code>)</strong>: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature) and device log terminal.</li>
+<li><strong>Configuration Page (<code>/config</code>)</strong>: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, OTA update token, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.</li>
+<li><strong>Interactive API Documentation (<code>/api/docs</code> or <code>/swagger</code>)</strong>: On-device Swagger UI backed by <code>/api/openapi.yaml</code> (also deployable statically to GitHub Pages from <a href="./docs.html?doc=api"><code>docs/api/</code></a>).</li>
+<li><strong>File Manager (<code>/fileManager</code>)</strong>: Browse directories, upload files, download files, delete items, and create folders. Can be completely disabled in production releases from the command line (<code>DISABLE_FILE_MANAGER=1 pio run</code> or <code>RELEASE=1 pio run</code>), via <code>#define DISABLE_FILE_MANAGER</code> in <code>include/Config.h</code>, or <code>-D DISABLE_FILE_MANAGER</code> in <code>platformio.ini</code>, omitting <code>fileManager.html</code> from storage and saving ~15 KB flash.</li>
+</ul>
+<h3 id="configuration-protection-factory-reset">Configuration Protection &amp; Factory Reset</h3>
+<p>The hardware <strong>BOOT</strong> button controls configuration mode and factory reset:
+- <strong>Short Press (&lt; 5s)</strong>: Toggles configuration access. When enabled, the Settings icon and a real-time countdown badge (<code>10:00</code>) appear in the web header/menu, and <code>/config</code>, entity editing, and management routes are unlocked. For security, configuration mode automatically times out after <strong>10 minutes of inactivity</strong> (each interaction resets the timer).
+- <strong>Long Press (≥ 10s)</strong>: Initiates an immediate <strong>Factory Reset</strong> — deletes stored configurations and entities (<code>config.json</code>, <code>monitored_entities.json</code>) and restarts the device into Open Setup AP mode.</p>
+<h2 id="api-overview">API Overview</h2>
+<p>Full interactive request/response schemas and live testing are available in the Swagger UI at <code>http://&lt;device-address&gt;/api/docs</code> and in <a href="./api/openapi.yaml"><code>docs/api/openapi.yaml</code></a>.</p>
+<h3 id="system-monitoring">System &amp; Monitoring</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/health</code></td>
+<td>Health check (<code>{"status":"UP"}</code>)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/sysinfo</code></td>
+<td>Basic system stats (heap, PSRAM, temperature, uptime, version, RSSI)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/sysinfo/details</code></td>
+<td>Detailed device, memory, storage, network, monitoring, and firmware diagnostics</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/summary</code></td>
+<td>Monitoring summary (total, online, offline counts)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/monitoredentities</code></td>
+<td>List all monitored entities</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/monitoredentity/{name}</code></td>
+<td>Retrieve details for a specific entity</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/monitoredentity</code></td>
+<td>Add a new monitored entity</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/monitoredentity/{name}</code></td>
+<td>Update an existing entity</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/monitoredentity/{name}</code></td>
+<td>Delete an entity</td>
+</tr>
+<tr>
+<td><code>WS</code></td>
+<td><code>/ws</code></td>
+<td>WebSocket connection for real-time state updates and live log stream</td>
+</tr>
+</tbody>
+</table>
+<h3 id="configuration-updates">Configuration &amp; Updates</h3>
+<p><em>(Configuration endpoints require BOOT button unlock or AP mode; otherwise they return <code>403 Forbidden</code>. Alternatively, OTA and web archive endpoints accept an <code>X-PlatformIO-Upload</code> HTTP header matching the configured <code>otaToken</code>.)</em></p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/config</code></td>
+<td>Retrieve current configuration (sensitive secrets masked as <code>******</code>)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/config</code></td>
+<td>Update configuration parameters</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/config/backup</code></td>
+<td>Download complete configuration and entity backup JSON (<code>Cache-Control: no-store</code>; contains Wi-Fi and webhook secrets)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/config/restore</code></td>
+<td>Restore configuration and entities from backup JSON (<code>multipart/form-data</code>)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/config/factoryReset</code></td>
+<td>Reset settings to factory defaults</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/config/test-led</code></td>
+<td>Preview RGB LED brightness (cyan pulse)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/wifiscan</code></td>
+<td>Trigger/poll non-blocking Wi-Fi network scan</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/testDiscord</code></td>
+<td>Send a test notification to a Discord webhook URL</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/web/upload-archive</code></td>
+<td>Upload and unpack <code>web.zip</code> archive into <code>/web</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/ota/start</code></td>
+<td>Initialize native firmware OTA session (<code>mode=fr</code>, optional <code>hash</code> MD5)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/ota/upload</code></td>
+<td>Firmware binary upload handled natively via <code>Update.h</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="security-considerations">Security Considerations</h3>
+<ul>
+<li><strong>CSRF &amp; DNS Rebinding Protection</strong>: State-mutating endpoints enforce <code>Content-Type: application/json</code> and validate the <code>Host</code> (DNS rebinding protection against foreign domains) and <code>Origin</code>/<code>Referer</code> headers.</li>
+<li><strong>Physical BOOT Button Authorization</strong>: Management endpoints and log level alterations require physical activation via the BOOT button (10-minute auto-expiry with visual countdown).</li>
+<li><strong>SSRF &amp; Address Validation</strong>: Monitored addresses and webhook URLs are strictly validated to HTTP/HTTPS schemes; local loopback (<code>127.0.0.0/8</code>, <code>::1</code>), link-local, and broadcast IP targets are blocked to prevent Server-Side Request Forgery.</li>
+<li><strong>WebSocket &amp; Log Hygiene</strong>: Live log streaming (<code>/ws</code>) is restricted to trusted local origins (maximum 3 concurrent log subscribers). In production release builds (<code>RELEASE=1</code>), <code>DEBUG</code>/<code>TRACE</code>/<code>VERBOSE</code> logs and runtime log-level elevation above <code>INFO</code> are disabled. Monitored query parameters (<code>?token=...</code>) and fragments are stripped from HTTP check log messages, and format strings are strictly enforced.</li>
+<li><strong>OTA Hardening</strong>: OTA firmware and web archive uploads are disabled in open AP setup mode and protected against brute-force token guessing via constant-time comparison and automatic 60-second lockout after 5 consecutive failures.</li>
+<li><strong>Secret Masking</strong>: Passwords, OTA tokens, and Discord webhook authorization tokens are masked as <code>******</code> when retrieving device configuration via <code>GET /api/config</code>.</li>
+</ul>
+<h2 id="status-indicators">Status Indicators</h2>
+<h3 id="rgb-led-has_rgb_led">RGB LED (<code>HAS_RGB_LED</code>)</h3>
+<ul>
+<li><strong>Off</strong>: All services online (steady state)</li>
+<li><strong>Pulsing Burgundy / Magenta</strong>: One or more services are offline</li>
+<li><strong>Pulsing Amber</strong>: Access Point (configuration) mode active</li>
+<li><strong>Pulsing Red</strong>: System error (storage or critical fault)</li>
+<li><strong>Cyan</strong>: LED brightness test active</li>
+</ul>
+<h3 id="status-led-has_status_led">Status LED (<code>HAS_STATUS_LED</code>)</h3>
+<ul>
+<li><strong>Blink</strong>: Active network check cycle executing</li>
+</ul>
+<h2 id="configuration-files">Configuration Files</h2>
+<p>The device stores its persistent state in JSON format in the root of the filesystem:</p>
+<h3 id="configjson"><code>/config.json</code></h3>
+<pre><code class="language-json">{
+  "wifiSSID": "YourNetworkSSID",
+  "wifiPassword": "YourPassword",
+  "sntpServer": "pool.ntp.org",
+  "offsetHours": 1,
+  "checkInterval": 60,
+  "discordWebhookURL": "https://discord.com/api/webhooks/...",
+  "hostname": "esp32-service-uptime-monitor",
+  "logLevel": 8,
+  "logLevelName": "DEBUG",
+  "ledBrightness": 50,
+  "otaToken": "your-ota-token"
+}
+</code></pre>
+<h3 id="monitored_entitiesjson"><code>/monitored_entities.json</code></h3>
+<pre><code class="language-json">[
+  {
+    "name": "Router",
+    "address": "http://192.168.0.1/",
+    "icon": "mdi-router-wireless",
+    "isOnline": true,
+    "notification": true,
+    "disabled": false,
+    "lastChanged": 1700000000
+  }
+]
+</code></pre>
+<h2 id="development-contributing">Development &amp; Contributing</h2>
+<p>For multi-board builds, OTA targets, Web UI asset packing (<code>packweb</code> / <code>uploadweb</code>), OpenAPI doc generation flags (<code>--strict</code>, <code>--include-internal</code>), unit testing (<code>pio test -e native</code>, Vitest), and contribution guidelines, see <strong><a href="./docs.html?doc=contributing">CONTRIBUTING.md</a></strong>.</p>
+<h2 id="license">License</h2>
+<p>This project uses a <strong>Dual License (Personal &amp; Commercial)</strong> — see <a href="./docs.html?doc=license"><code>LICENSE</code></a> for the full terms:</p>
+<ul>
+<li><strong>Personal / Home Use (Free):</strong> Individuals may use, compile, and modify the software free of charge for private, personal, non-commercial home/hobby monitoring, subject to keeping copyright notices intact.</li>
+<li><strong>Companies, Public Institutions &amp; Commercial Use (30-Day Free Trial, then Paid):</strong> Organizations may internally evaluate and test the software <strong>free of charge for up to 30 days</strong>. Continued production use, MSP deployments, or commercial hardware bundles require a separate <strong>Commercial License</strong>. Please reach out via the <a href="https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorReadme&amp;utm_medium=referral&amp;utm_campaign=commercial_license">contact form</a> or the project repository (<a href="https://github.com/gyengus/esp32-service-uptime-monitor">https://github.com/gyengus/esp32-service-uptime-monitor</a>) for commercial licensing inquiries.</li>
+</ul>
+<h2 id="donations">Donations</h2>
+<p>If you find this project useful and would like to support its development:
+- <strong>Bitcoin</strong>: <code>bc1qx4q5epl7nsyu9mum8edrvp2my8tut0enrz7kcn</code>
+- <strong>EVM</strong>: <code>0x9F0a70A7306DF3fc072446cAF540F6766a4CC4E8</code></p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./docs.html?doc=readme">Documentation</a>
+        <a href="./docs.html?doc=api">API (Swagger)</a>
+        <a href="./docs.html?doc=contributing">Contributing</a>
+        
+        <a href="./docs.html?doc=license">License</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+        <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const THEME_KEY = "uptime-docs-theme";
+    const SUN_SVG = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    const MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+    function getEffectiveTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      themeIcon.innerHTML = theme === "light" ? MOON_SVG : SUN_SVG;
+    }
+
+    applyTheme(getEffectiveTheme());
+    themeToggle.addEventListener("click", () => {
+      const next = getEffectiveTheme() === "light" ? "dark" : "light";
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    });
+  </script>
+</body>
+</html>

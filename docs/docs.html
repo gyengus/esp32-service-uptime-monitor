@@ -72,6 +72,7 @@
     const DOCS = {
       readme: {
         title: "Documentation — ESP32 Service Uptime Monitor",
+        prerendered: "./readme.html",
         paths: ["./content/README.md", "../README.md"],
         rawUrl: "https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/README.md",
         type: "markdown"
@@ -82,18 +83,21 @@
       },
       contributing: {
         title: "Contributing — ESP32 Service Uptime Monitor",
+        prerendered: "./contributing.html",
         paths: ["./content/CONTRIBUTING.md", "../CONTRIBUTING.md"],
         rawUrl: "https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/CONTRIBUTING.md",
         type: "markdown"
       },
       changelog: {
         title: "Changelog — ESP32 Service Uptime Monitor",
+        prerendered: "./changelog.html",
         paths: ["./content/CHANGELOG.md", "../CHANGELOG.md"],
         rawUrl: "https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/CHANGELOG.md",
         type: "markdown"
       },
       license: {
         title: "License — ESP32 Service Uptime Monitor",
+        prerendered: "./license.html",
         paths: ["./content/LICENSE", "../LICENSE"],
         rawUrl: "https://github.com/gyengus/esp32-service-uptime-monitor/blob/master/LICENSE",
         type: "plain"
@@ -170,6 +174,26 @@
 
       contentEl.classList.remove("is-swagger");
       contentEl.innerHTML = "<p>Loading document…</p>";
+
+      // 1. Try pre-rendered HTML first (fast, fully resolved links, SEO-consistent)
+      if (spec.prerendered) {
+        try {
+          const preRes = await fetch(spec.prerendered);
+          if (preRes.ok) {
+            const preHtml = await preRes.text();
+            const docParser = new DOMParser();
+            const parsedDoc = docParser.parseFromString(preHtml, "text/html");
+            const renderedArticle = parsedDoc.getElementById("docContent");
+            if (renderedArticle) {
+              contentEl.innerHTML = renderedArticle.innerHTML;
+              return;
+            }
+          }
+        } catch {
+          // Fall back to dynamic markdown rendering below
+        }
+      }
+
       const text = await fetchFirstAvailable(spec.paths);
 
       if (!text) {

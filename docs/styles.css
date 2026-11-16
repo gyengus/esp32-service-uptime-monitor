@@ -1215,6 +1215,30 @@ code {
   color: var(--text-muted);
 }
 
+.markdown-alert {
+  border-left-width: 4px;
+}
+
+.markdown-alert-note {
+  border-left-color: var(--info);
+}
+
+.markdown-alert-tip {
+  border-left-color: var(--accent);
+}
+
+.markdown-alert-important {
+  border-left-color: var(--magenta);
+}
+
+.markdown-alert-warning {
+  border-left-color: var(--warning);
+}
+
+.markdown-alert-caution {
+  border-left-color: var(--danger);
+}
+
 /* Licensing & Support */
 .grid-2 {
   display: grid;
