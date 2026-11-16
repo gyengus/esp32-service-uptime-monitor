@@ -1093,7 +1093,10 @@ function updateLiveSysinfoModalFields(data) {
     }
 
     if (data.temperature !== undefined && data.temperature !== null) {
-        $('#sysTemp').html(`${data.temperature.toFixed(1)} °C <span class="text-muted">(internal)</span>`);
+        const temp = Number(data.temperature);
+        if (!isNaN(temp)) {
+            $('#sysTemp').empty().text(`${temp.toFixed(1)} °C `).append('<span class="text-muted">(internal)</span>');
+        }
     } else if (lastDetailedSysinfo && lastDetailedSysinfo.device && !lastDetailedSysinfo.device.hasTempSensor) {
         $('#sysTemp').text('N/A');
     }

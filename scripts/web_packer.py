@@ -26,7 +26,7 @@ def get_git_commit_hash(project_dir):
         return "unknown"
 
 def minify_html(text, project_dir=None):
-    text = re.sub(r'<!--(?!\s*\[if).*?-->', '', text, flags=re.DOTALL)
+    text = re.sub(r'<!--(?!\s*\[if).*?(?:-->|--!>)', '', text, flags=re.DOTALL)
 
     def process_script(match):
         open_tag = match.group(1)
