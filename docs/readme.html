@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Documentation — ESP32 Service Uptime Monitor</title>
   <meta name="description" content="Comprehensive documentation for ESP32 Service Uptime Monitor: multi-board setup, hardware pinouts, REST API, Web UI, and security." />
-  <link rel="canonical" href="https://esp32-service-uptime-monitor.com/docs.html?doc=readme" />
+  <link rel="canonical" href="https://esp32-service-uptime-monitor.com/readme.html" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
   <meta property="og:title" content="Documentation — ESP32 Service Uptime Monitor" />
   <meta property="og:description" content="Comprehensive documentation for ESP32 Service Uptime Monitor: multi-board setup, hardware pinouts, REST API, Web UI, and security." />
-  <meta property="og:url" content="https://esp32-service-uptime-monitor.com/docs.html?doc=readme" />
+  <meta property="og:url" content="https://esp32-service-uptime-monitor.com/readme.html" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Documentation — ESP32 Service Uptime Monitor" />
   <meta name="twitter:description" content="Comprehensive documentation for ESP32 Service Uptime Monitor: multi-board setup, hardware pinouts, REST API, Web UI, and security." />
@@ -31,11 +31,11 @@
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="./">Overview &amp; Flasher</a>
-        <a href="./docs.html?doc=readme" aria-current="page">Documentation</a>
-        <a href="./docs.html?doc=api">API (Swagger)</a>
-        <a href="./docs.html?doc=contributing">Contributing</a>
+        <a href="./readme.html" aria-current="page">Documentation</a>
+        <a href="./api/">API (Swagger)</a>
+        <a href="./contributing.html">Contributing</a>
         
-        <a href="./docs.html?doc=license">License</a>
+        <a href="./license.html">License</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
         <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
@@ -51,9 +51,9 @@
 <p><strong>Who watches your monitoring server when the server itself goes down?</strong></p>
 <p>Turn any $4 ESP32 into a standalone, ultra-low-power (&lt; 1 W) hardware uptime appliance. Periodically check HTTP/HTTPS services from an independent microcontroller, get instant <strong>Discord webhook alerts</strong> on status changes, monitor live telemetry over <strong>WebSockets</strong>, and see outages at a glance via <strong>RGB LED indicators</strong> — with zero cloud subscriptions and zero VM overhead.</p>
 <p><a href="https://esp32-service-uptime-monitor.com/#flasher"><img alt="Web Flasher" src="https://img.shields.io/badge/Web_Flasher-Install_in_Browser-10b981?style=for-the-badge&amp;logo=espressif&amp;logoColor=white"/></a>
-<a href="https://esp32-service-uptime-monitor/"><img alt="Live Preview &amp; Docs" src="https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge"/></a>
-<a href="https://esp32-service-uptime-monitor.com/docs.html?doc=api"><img alt="OpenAPI 3.0" src="https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&amp;logo=swagger&amp;logoColor=black"/></a>
-<a href="./docs.html?doc=license"><img alt="License" src="https://img.shields.io/badge/License-Free_for_Personal_%7C_30--Day_Business_Trial-f59e0b?style=for-the-badge"/></a></p>
+<a href="https://esp32-service-uptime-monitor.com/"><img alt="Live Preview &amp; Docs" src="https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge"/></a>
+<a href="https://esp32-service-uptime-monitor.com/api/"><img alt="OpenAPI 3.0" src="https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&amp;logo=swagger&amp;logoColor=black"/></a>
+<a href="./license.html"><img alt="License" src="https://img.shields.io/badge/License-Free_for_Personal_%7C_30--Day_Business_Trial-f59e0b?style=for-the-badge"/></a></p>
 <h2 id="why-a-dedicated-hardware-uptime-monitor">Why a Dedicated Hardware Uptime Monitor?</h2>
 <ul>
 <li><strong>Out-of-Band Independence:</strong> Containerized monitors (like Uptime Kuma or Prometheus) go down with your hypervisor, NAS, or Docker host. An independent ESP32 keeps watching and alerts you even when your primary server crashes.</li>
@@ -68,7 +68,7 @@
 <li><strong>Dual storage backends</strong>: Supports FAT32 MicroSD (1-bit SD_MMC) or internal SPI Flash with wear-leveling (LittleFS)</li>
 <li><strong>OTA Firmware updates</strong>: Wireless updates via Web UI or PlatformIO (<code>*-ota</code> environments)</li>
 <li><strong>Modern Web UI</strong>: Responsive Bootstrap 5 interface with dark mode, live status filtering, and entity management</li>
-<li><strong>Interactive API Docs (Swagger UI)</strong>: Available directly on the device at <code>/api/docs</code> (or <code>/swagger</code>) and for static hosting in <a href="./docs.html?doc=api"><code>docs/api/</code></a></li>
+<li><strong>Interactive API Docs (Swagger UI)</strong>: Available directly on the device at <code>/api/docs</code> (or <code>/swagger</code>) and for static hosting in <a href="./api/"><code>docs/api/</code></a></li>
 <li><strong>WebSocket live stream</strong>: Real-time log streaming and instant UI updates without polling</li>
 <li><strong>Discord notifications</strong>: Rich embed notifications sent to a configured Discord webhook on status change</li>
 <li><strong>Config backup &amp; restore</strong>: Export and import configuration and monitored entity snapshots in JSON format</li>
@@ -199,7 +199,7 @@ pio device monitor
 <ul>
 <li><strong>Main Dashboard (<code>/</code>)</strong>: Real-time status cards, filtering (ALL / ONLINE / OFFLINE), quick actions, footer system metrics (uptime, heap, RSSI, temperature) and device log terminal.</li>
 <li><strong>Configuration Page (<code>/config</code>)</strong>: Wi-Fi credentials, SNTP server, timezone offset, check interval, Discord webhook, OTA update token, LED brightness slider and live test, backup/restore, OTA firmware upload, and Web UI archive upload.</li>
-<li><strong>Interactive API Documentation (<code>/api/docs</code> or <code>/swagger</code>)</strong>: On-device Swagger UI backed by <code>/api/openapi.yaml</code> (also deployable statically to GitHub Pages from <a href="./docs.html?doc=api"><code>docs/api/</code></a>).</li>
+<li><strong>Interactive API Documentation (<code>/api/docs</code> or <code>/swagger</code>)</strong>: On-device Swagger UI backed by <code>/api/openapi.yaml</code> (also deployable statically to GitHub Pages from <a href="./api/"><code>docs/api/</code></a>).</li>
 <li><strong>File Manager (<code>/fileManager</code>)</strong>: Browse directories, upload files, download files, delete items, and create folders. Can be completely disabled in production releases from the command line (<code>DISABLE_FILE_MANAGER=1 pio run</code> or <code>RELEASE=1 pio run</code>), via <code>#define DISABLE_FILE_MANAGER</code> in <code>include/Config.h</code>, or <code>-D DISABLE_FILE_MANAGER</code> in <code>platformio.ini</code>, omitting <code>fileManager.html</code> from storage and saving ~15 KB flash.</li>
 </ul>
 <h3 id="configuration-protection-factory-reset">Configuration Protection &amp; Factory Reset</h3>
@@ -391,9 +391,9 @@ pio device monitor
 ]
 </code></pre>
 <h2 id="development-contributing">Development &amp; Contributing</h2>
-<p>For multi-board builds, OTA targets, Web UI asset packing (<code>packweb</code> / <code>uploadweb</code>), OpenAPI doc generation flags (<code>--strict</code>, <code>--include-internal</code>), unit testing (<code>pio test -e native</code>, Vitest), and contribution guidelines, see <strong><a href="./docs.html?doc=contributing">CONTRIBUTING.md</a></strong>.</p>
+<p>For multi-board builds, OTA targets, Web UI asset packing (<code>packweb</code> / <code>uploadweb</code>), OpenAPI doc generation flags (<code>--strict</code>, <code>--include-internal</code>), unit testing (<code>pio test -e native</code>, Vitest), and contribution guidelines, see <strong><a href="./contributing.html">CONTRIBUTING.md</a></strong>.</p>
 <h2 id="license">License</h2>
-<p>This project uses a <strong>Dual License (Personal &amp; Commercial)</strong> — see <a href="./docs.html?doc=license"><code>LICENSE</code></a> for the full terms:</p>
+<p>This project uses a <strong>Dual License (Personal &amp; Commercial)</strong> — see <a href="./license.html"><code>LICENSE</code></a> for the full terms:</p>
 <ul>
 <li><strong>Personal / Home Use (Free):</strong> Individuals may use, compile, and modify the software free of charge for private, personal, non-commercial home/hobby monitoring, subject to keeping copyright notices intact.</li>
 <li><strong>Companies, Public Institutions &amp; Commercial Use (30-Day Free Trial, then Paid):</strong> Organizations may internally evaluate and test the software <strong>free of charge for up to 30 days</strong>. Continued production use, MSP deployments, or commercial hardware bundles require a separate <strong>Commercial License</strong>. Please reach out via the <a href="https://gyengus.hu/kapcsolat?utm_source=uptimeMonitorReadme&amp;utm_medium=referral&amp;utm_campaign=commercial_license">contact form</a> or the project repository (<a href="https://github.com/gyengus/esp32-service-uptime-monitor">https://github.com/gyengus/esp32-service-uptime-monitor</a>) for commercial licensing inquiries.</li>
@@ -409,11 +409,11 @@ pio device monitor
     <div class="container">
       <div class="footer-links">
         <a href="./">Overview &amp; Flasher</a>
-        <a href="./docs.html?doc=readme">Documentation</a>
-        <a href="./docs.html?doc=api">API (Swagger)</a>
-        <a href="./docs.html?doc=contributing">Contributing</a>
+        <a href="./readme.html">Documentation</a>
+        <a href="./api/">API (Swagger)</a>
+        <a href="./contributing.html">Contributing</a>
         
-        <a href="./docs.html?doc=license">License</a>
+        <a href="./license.html">License</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
         <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>

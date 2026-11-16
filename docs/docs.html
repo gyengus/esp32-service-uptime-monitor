@@ -5,15 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Documentation — ESP32 Service Uptime Monitor</title>
   <meta name="description" content="Official documentation, hardware pinouts, setup guide, interactive Swagger/OpenAPI reference, and licensing terms for the ESP32 Service Uptime Monitor." />
-  <link rel="canonical" href="https://esp32-service-uptime-monitor.com/docs.html" />
-  <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
-  <meta property="og:title" content="Documentation &amp; API Reference — ESP32 Service Uptime Monitor" />
-  <meta property="og:description" content="Official documentation, board pinouts, Improv Wi-Fi setup guide, and interactive OpenAPI/Swagger specification." />
-  <meta property="og:url" content="https://esp32-service-uptime-monitor.com/docs.html" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Documentation &amp; API Reference — ESP32 Service Uptime Monitor" />
-  <meta name="twitter:description" content="Official documentation, board pinouts, Improv Wi-Fi setup guide, and interactive OpenAPI/Swagger specification." />
+  <link rel="canonical" href="https://esp32-service-uptime-monitor.com/readme.html" />
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const doc = params.get("doc") || "readme";
+      const routes = {
+        readme: "./readme.html",
+        api: "./api/",
+        contributing: "./contributing.html",
+        changelog: "./changelog.html",
+        license: "./license.html"
+      };
+      window.location.replace(routes[doc] || "./readme.html");
+    })();
+  </script>
+  <meta http-equiv="refresh" content="0; url=./readme.html" />
+  <meta name="robots" content="noindex, follow" />
   <link rel="stylesheet" href="./styles.css" />
   <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
   <script>

@@ -85,11 +85,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="./">Overview &amp; Flasher</a>
-        <a href="./docs.html?doc=readme"{nav_readme_attr}>Documentation</a>
-        <a href="./docs.html?doc=api"{nav_api_attr}>API (Swagger)</a>
-        <a href="./docs.html?doc=contributing"{nav_contributing_attr}>Contributing</a>
+        <a href="./readme.html"{nav_readme_attr}>Documentation</a>
+        <a href="./api/"{nav_api_attr}>API (Swagger)</a>
+        <a href="./contributing.html"{nav_contributing_attr}>Contributing</a>
         {nav_changelog_item}
-        <a href="./docs.html?doc=license"{nav_license_attr}>License</a>
+        <a href="./license.html"{nav_license_attr}>License</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
         <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
@@ -109,11 +109,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div class="container">
       <div class="footer-links">
         <a href="./">Overview &amp; Flasher</a>
-        <a href="./docs.html?doc=readme">Documentation</a>
-        <a href="./docs.html?doc=api">API (Swagger)</a>
-        <a href="./docs.html?doc=contributing">Contributing</a>
+        <a href="./readme.html">Documentation</a>
+        <a href="./api/">API (Swagger)</a>
+        <a href="./contributing.html">Contributing</a>
         {footer_changelog_item}
-        <a href="./docs.html?doc=license">License</a>
+        <a href="./license.html">License</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
         <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>
@@ -176,15 +176,15 @@ def fix_html_links_and_alerts(html_content: str) -> str:
 
         # Inter-doc links on site:
         if href in ("README.md", "./README.md"):
-            a["href"] = "./docs.html?doc=readme"
+            a["href"] = "./readme.html"
         elif href in ("CONTRIBUTING.md", "./CONTRIBUTING.md"):
-            a["href"] = "./docs.html?doc=contributing"
+            a["href"] = "./contributing.html"
         elif href in ("CHANGELOG.md", "./CHANGELOG.md"):
-            a["href"] = "./docs.html?doc=changelog"
+            a["href"] = "./changelog.html"
         elif href in ("LICENSE", "./LICENSE"):
-            a["href"] = "./docs.html?doc=license"
+            a["href"] = "./license.html"
         elif href in ("docs/api/index.html", "./docs/api/index.html", "docs/api/"):
-            a["href"] = "./docs.html?doc=api"
+            a["href"] = "./api/"
         elif href.startswith("docs/api/"):
             # e.g. docs/api/openapi.yaml -> ./api/openapi.yaml
             a["href"] = "./api/" + href[len("docs/api/"):]
@@ -202,8 +202,8 @@ def render_all(project_dir: Path, output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
     has_changelog = (project_dir / "CHANGELOG.md").exists()
 
-    nav_changelog_item = '<a href="./docs.html?doc=changelog">Changelog</a>' if has_changelog else ""
-    footer_changelog_item = '<a href="./docs.html?doc=changelog">Changelog</a>' if has_changelog else ""
+    nav_changelog_item = '<a href="./changelog.html">Changelog</a>' if has_changelog else ""
+    footer_changelog_item = '<a href="./changelog.html">Changelog</a>' if has_changelog else ""
 
     md_converter = markdown.Markdown(extensions=["extra", "tables", "fenced_code", "toc"])
 
@@ -226,7 +226,7 @@ def render_all(project_dir: Path, output_dir: Path):
             inner_html = md_converter.convert(raw_text)
             inner_content = fix_html_links_and_alerts(inner_html)
 
-        canonical_url = f"{SITE_BASE_URL}docs.html?doc={key}"
+        canonical_url = f"{SITE_BASE_URL}{spec['output']}"
 
         page_html = HTML_TEMPLATE.format(
             title=spec["title"],
