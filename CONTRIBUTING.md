@@ -143,7 +143,7 @@ Open `http://localhost:8000/` in your browser and enter your ESP32 IP or mDNS ho
 
 ### Static Site Building & Local Preview
 
-Documentation Markdown files (`README.md`, `CONTRIBUTING.md`, `LICENSE`, `CHANGELOG.md`) are pre-rendered into static HTML (`readme.html`, `contributing.html`, `license.html`) for deployment on [esp32-service-uptime-monitor.com](https://esp32-service-uptime-monitor.com/). Shared layout components (header, navigation, footer, analytics) are maintained centrally in `templates/` and automatically synchronized across both the landing page (`docs/index.html`) and documentation pages.
+Documentation Markdown files (`README.md`, `CONTRIBUTING.md`, `LICENSE`, `CHANGELOG.md`) are pre-rendered into static HTML (`readme.html`, `contributing.html`, `license.html`, `changelog.html`) for deployment on [esp32-service-uptime-monitor.com](https://esp32-service-uptime-monitor.com/). Shared layout components (header, navigation, footer, analytics) are maintained centrally in `templates/` and automatically synchronized across both the landing page (`docs/index.html`) and documentation pages.
 
 ```bash
 # Assembles the full site in _site/ and serves at http://localhost:8765/ with live reload
@@ -158,8 +158,8 @@ python3 scripts/preview_site.py --no-watch
 # Build/assemble the site only without starting the HTTP preview server
 python3 scripts/preview_site.py --build-only
 
-# Or pre-render documentation and synchronize templates into docs/ directly
-python3 scripts/render_docs.py docs/
+# Or pre-render documentation into _site/ directly
+python3 scripts/render_docs.py
 ```
 
 **Features of `preview_site.py`:**

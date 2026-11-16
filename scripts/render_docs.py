@@ -183,7 +183,18 @@ def fix_html_links_and_alerts(html_content: str) -> str:
 
 def render_all(project_dir: Path, output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
-    has_changelog = (project_dir / "CHANGELOG.md").exists()
+
+    # Ensure CHANGELOG.md exists for documentation pre-rendering
+    changelog_path = project_dir / "CHANGELOG.md"
+    if not changelog_path.exists():
+        try:
+            import changelog
+            changelog_text = changelog.generate_full_changelog()
+            changelog_path.write_text(changelog_text, encoding="utf-8")
+        except Exception:
+            pass
+
+    has_changelog = changelog_path.exists()
 
     templates = load_templates(project_dir)
 
@@ -243,6 +254,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         out_target = Path(sys.argv[1]).resolve()
     else:
-        out_target = proj_dir / "docs"
+        out_target = proj_dir / "_site"
 
     render_all(proj_dir, out_target)
