@@ -3,7 +3,21 @@ import os
 import re
 
 project_dir = env.get("PROJECT_DIR", ".")
-is_release = os.environ.get("RELEASE", "").strip().lower() in ("1", "true", "yes", "on")
+
+def check_is_release():
+    val = os.environ.get("RELEASE")
+    if val is not None and val.strip() != "":
+        return val.strip().lower() in ("1", "true", "yes", "on")
+
+    # If RELEASE is not explicitly set, auto-detect CI tag release builds
+    if os.environ.get("CI_COMMIT_TAG"):
+        return True
+    if os.environ.get("GITHUB_REF_TYPE") == "tag" or os.environ.get("GITHUB_REF", "").startswith("refs/tags/"):
+        return True
+
+    return False
+
+is_release = check_is_release()
 
 def check_flag(flag_name, env_vars, config_h_macro):
     # 1. Release mode enables all disable flags
