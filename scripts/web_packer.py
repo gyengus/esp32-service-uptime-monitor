@@ -58,8 +58,8 @@ def minify_html(text, project_dir=None):
         placeholders.append(process_style(m))
         return f"___BLOCK_PLACEHOLDER_{len(placeholders)-1}___"
 
-    text = re.sub(r'(<script[^>]*>)([\s\S]*?)(</script>)', save_script, text, flags=re.IGNORECASE)
-    text = re.sub(r'(<style[^>]*>)([\s\S]*?)(</style>)', save_style, text, flags=re.IGNORECASE)
+    text = re.sub(r'(<script\b[^>]*>)([\s\S]*?)(</script\b[^>]*>)', save_script, text, flags=re.IGNORECASE)
+    text = re.sub(r'(<style\b[^>]*>)([\s\S]*?)(</style\b[^>]*>)', save_style, text, flags=re.IGNORECASE)
 
     text = re.sub(r'>\s+<', '><', text)
     text = re.sub(r'\s+', ' ', text)
