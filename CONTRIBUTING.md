@@ -9,7 +9,7 @@ Thank you for contributing to **ESP32 Service Uptime Monitor**. This guide cover
 ## Prerequisites
 
 - [PlatformIO Core (CLI)](https://platformio.org/install/cli) or PlatformIO IDE
-- **Python 3** with **PyYAML** (`pip install pyyaml`) — required for OpenAPI specification generation (`PyYAML` is installed in the PlatformIO Python environment when running `pio run`)
+- **Python 3** with **PyYAML**, **markdown**, and **beautifulsoup4** (`pip install pyyaml markdown beautifulsoup4`) — required for OpenAPI specification generation and documentation pre-rendering
 - **Node.js & npm** — required for Web UI unit tests and `terser` JS minification (`npm --prefix web install`)
 
 ---
@@ -141,17 +141,31 @@ python3 -m http.server 8000 --directory docs/api
 
 Open `http://localhost:8000/` in your browser and enter your ESP32 IP or mDNS hostname in the **Servers → `host`** field.
 
-### Local GitHub Pages Site Preview
+### Static Site Building & Local Preview
 
-To build and preview the complete static website locally (with pre-rendered HTML docs, Swagger UI, Web Flasher assets, and link resolution):
+Documentation Markdown files (`README.md`, `CONTRIBUTING.md`, `LICENSE`, `CHANGELOG.md`) are pre-rendered into static HTML (`readme.html`, `contributing.html`, `license.html`) for deployment on [esp32-service-uptime-monitor.com](https://esp32-service-uptime-monitor.com/). Shared layout components (header, navigation, footer, analytics) are maintained centrally in `templates/` and automatically synchronized across both the landing page (`docs/index.html`) and documentation pages.
 
 ```bash
-# Assembles the site and serves it at http://localhost:8765/
+# Assembles the full site in _site/ and serves at http://localhost:8765/ with live reload
 python3 scripts/preview_site.py
 
-# Or build only without starting the HTTP server
+# Custom port or disable automatic browser opening
+python3 scripts/preview_site.py --port 8080 --no-browser
+
+# Disable file watching and live reload
+python3 scripts/preview_site.py --no-watch
+
+# Build/assemble the site only without starting the HTTP preview server
 python3 scripts/preview_site.py --build-only
+
+# Or pre-render documentation and synchronize templates into docs/ directly
+python3 scripts/render_docs.py docs/
 ```
+
+**Features of `preview_site.py`:**
+- **File Watcher:** Automatically monitors `docs/`, `templates/`, and root Markdown files for changes.
+- **Browser Live Reload:** Injects a lightweight Server-Sent Events (SSE) listener into HTML pages to automatically refresh open browser tabs upon save.
+- **Zero Cache Latency:** Disables browser caching (`Cache-Control: no-cache`) during preview so styling and template updates appear immediately.
 
 ---
 

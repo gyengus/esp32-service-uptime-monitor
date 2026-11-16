@@ -56,7 +56,7 @@
 <h2 id="prerequisites">Prerequisites</h2>
 <ul>
 <li><a href="https://platformio.org/install/cli">PlatformIO Core (CLI)</a> or PlatformIO IDE</li>
-<li><strong>Python 3</strong> with <strong>PyYAML</strong> (<code>pip install pyyaml</code>) — required for OpenAPI specification generation (<code>PyYAML</code> is installed in the PlatformIO Python environment when running <code>pio run</code>)</li>
+<li><strong>Python 3</strong> with <strong>PyYAML</strong>, <strong>markdown</strong>, and <strong>beautifulsoup4</strong> (<code>pip install pyyaml markdown beautifulsoup4</code>) — required for OpenAPI specification generation and documentation pre-rendering</li>
 <li><strong>Node.js &amp; npm</strong> — required for Web UI unit tests and <code>terser</code> JS minification (<code>npm --prefix web install</code>)</li>
 </ul>
 <hr/>
@@ -160,14 +160,27 @@ python3 scripts/openapi_generator.py --project-dir /path/to/repo
 <pre><code class="language-bash">python3 -m http.server 8000 --directory docs/api
 </code></pre>
 <p>Open <code>http://localhost:8000/</code> in your browser and enter your ESP32 IP or mDNS hostname in the <strong>Servers → <code>host</code></strong> field.</p>
-<h3 id="local-github-pages-site-preview">Local GitHub Pages Site Preview</h3>
-<p>To build and preview the complete static website locally (with pre-rendered HTML docs, Swagger UI, Web Flasher assets, and link resolution):</p>
-<pre><code class="language-bash"># Assembles the site and serves it at http://localhost:8765/
+<h3 id="static-site-building-local-preview">Static Site Building &amp; Local Preview</h3>
+<p>Documentation Markdown files (<code>README.md</code>, <code>CONTRIBUTING.md</code>, <code>LICENSE</code>, <code>CHANGELOG.md</code>) are pre-rendered into static HTML (<code>readme.html</code>, <code>contributing.html</code>, <code>license.html</code>) for deployment on <a href="https://esp32-service-uptime-monitor.com/">esp32-service-uptime-monitor.com</a>. Shared layout components (header, navigation, footer, analytics) are maintained centrally in <code>templates/</code> and automatically synchronized across both the landing page (<code>docs/index.html</code>) and documentation pages.</p>
+<pre><code class="language-bash"># Assembles the full site in _site/ and serves at http://localhost:8765/ with live reload
 python3 scripts/preview_site.py
 
-# Or build only without starting the HTTP server
+# Custom port or disable automatic browser opening
+python3 scripts/preview_site.py --port 8080 --no-browser
+
+# Disable file watching and live reload
+python3 scripts/preview_site.py --no-watch
+
+# Build/assemble the site only without starting the HTTP preview server
 python3 scripts/preview_site.py --build-only
+
+# Or pre-render documentation and synchronize templates into docs/ directly
+python3 scripts/render_docs.py docs/
 </code></pre>
+<p><strong>Features of <code>preview_site.py</code>:</strong>
+- <strong>File Watcher:</strong> Automatically monitors <code>docs/</code>, <code>templates/</code>, and root Markdown files for changes.
+- <strong>Browser Live Reload:</strong> Injects a lightweight Server-Sent Events (SSE) listener into HTML pages to automatically refresh open browser tabs upon save.
+- <strong>Zero Cache Latency:</strong> Disables browser caching (<code>Cache-Control: no-cache</code>) during preview so styling and template updates appear immediately.</p>
 <hr/>
 <h2 id="testing-quality-assurance">Testing &amp; Quality Assurance</h2>
 <pre><code class="language-bash"># Run all native C++ unit tests (Unity + ArduinoFake)
