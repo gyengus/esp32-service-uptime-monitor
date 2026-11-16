@@ -25,12 +25,12 @@
 <body>
   <header class="site-header">
     <div class="container nav-inner">
-      <a class="brand" href="./index.html">
+      <a class="brand" href="./">
         <span class="status-dot" aria-hidden="true"></span>
         <span>ESP32 Service Uptime Monitor</span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
-        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./">Overview &amp; Flasher</a>
         <a href="./docs.html?doc=readme">Documentation</a>
         <a href="./docs.html?doc=api">API (Swagger)</a>
         <a href="./docs.html?doc=contributing" aria-current="page">Contributing</a>
@@ -161,13 +161,13 @@ python3 scripts/openapi_generator.py --project-dir /path/to/repo
 </code></pre>
 <p>Open <code>http://localhost:8000/</code> in your browser and enter your ESP32 IP or mDNS hostname in the <strong>Servers → <code>host</code></strong> field.</p>
 <h3 id="local-github-pages-site-preview">Local GitHub Pages Site Preview</h3>
-<p>To preview the full static GitHub Pages site (<code>docs/index.html</code>, <code>docs/docs.html</code>, and <code>docs/api/index.html</code>) with local <code>README.md</code>, <code>CONTRIBUTING.md</code>, and <code>LICENSE</code> resolution, start a local HTTP server from the repository root:</p>
-<pre><code class="language-bash">python3 -m http.server 8765
+<p>To build and preview the complete static website locally (with pre-rendered HTML docs, Swagger UI, Web Flasher assets, and link resolution):</p>
+<pre><code class="language-bash"># Assembles the site and serves it at http://localhost:8765/
+python3 scripts/preview_site.py
+
+# Or build only without starting the HTTP server
+python3 scripts/preview_site.py --build-only
 </code></pre>
-<p>Then open in your browser:
-- <strong>Overview &amp; Web Flasher:</strong> <code>http://localhost:8765/docs/index.html</code>
-- <strong>Documentation Reader:</strong> <code>http://localhost:8765/docs/docs.html</code>
-- <strong>Swagger API Docs:</strong> <code>http://localhost:8765/docs/api/index.html</code></p>
 <hr/>
 <h2 id="testing-quality-assurance">Testing &amp; Quality Assurance</h2>
 <pre><code class="language-bash"># Run all native C++ unit tests (Unity + ArduinoFake)
@@ -209,7 +209,7 @@ pio check
   <footer class="site-footer">
     <div class="container">
       <div class="footer-links">
-        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./">Overview &amp; Flasher</a>
         <a href="./docs.html?doc=readme">Documentation</a>
         <a href="./docs.html?doc=api">API (Swagger)</a>
         <a href="./docs.html?doc=contributing">Contributing</a>

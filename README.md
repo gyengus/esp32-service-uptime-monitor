@@ -6,7 +6,7 @@ Turn any $4 ESP32 into a standalone, ultra-low-power (< 1 W) hardware uptime app
 
 [![Web Flasher](https://img.shields.io/badge/Web_Flasher-Install_in_Browser-10b981?style=for-the-badge&logo=espressif&logoColor=white)](https://esp32-service-uptime-monitor.com/#flasher)
 [![Live Preview & Docs](https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge)](https://esp32-service-uptime-monitor/)
-[![OpenAPI 3.0](https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&logo=swagger&logoColor=black)](https://esp32-service-uptime-monitor/docs.html?doc=api)
+[![OpenAPI 3.0](https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&logo=swagger&logoColor=black)](https://esp32-service-uptime-monitor.com/docs.html?doc=api)
 [![License](https://img.shields.io/badge/License-Free_for_Personal_%7C_30--Day_Business_Trial-f59e0b?style=for-the-badge)](LICENSE)
 
 ## Why a Dedicated Hardware Uptime Monitor?

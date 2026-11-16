@@ -143,16 +143,15 @@ Open `http://localhost:8000/` in your browser and enter your ESP32 IP or mDNS ho
 
 ### Local GitHub Pages Site Preview
 
-To preview the full static GitHub Pages site (`docs/index.html`, `docs/docs.html`, and `docs/api/index.html`) with local `README.md`, `CONTRIBUTING.md`, and `LICENSE` resolution, start a local HTTP server from the repository root:
+To build and preview the complete static website locally (with pre-rendered HTML docs, Swagger UI, Web Flasher assets, and link resolution):
 
 ```bash
-python3 -m http.server 8765
-```
+# Assembles the site and serves it at http://localhost:8765/
+python3 scripts/preview_site.py
 
-Then open in your browser:
-- **Overview & Web Flasher:** `http://localhost:8765/docs/index.html`
-- **Documentation Reader:** `http://localhost:8765/docs/docs.html`
-- **Swagger API Docs:** `http://localhost:8765/docs/api/index.html`
+# Or build only without starting the HTTP server
+python3 scripts/preview_site.py --build-only
+```
 
 ---
 

@@ -79,12 +79,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <body>
   <header class="site-header">
     <div class="container nav-inner">
-      <a class="brand" href="./index.html">
+      <a class="brand" href="./">
         <span class="status-dot" aria-hidden="true"></span>
         <span>ESP32 Service Uptime Monitor</span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
-        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./">Overview &amp; Flasher</a>
         <a href="./docs.html?doc=readme"{nav_readme_attr}>Documentation</a>
         <a href="./docs.html?doc=api"{nav_api_attr}>API (Swagger)</a>
         <a href="./docs.html?doc=contributing"{nav_contributing_attr}>Contributing</a>
@@ -108,7 +108,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <footer class="site-footer">
     <div class="container">
       <div class="footer-links">
-        <a href="./index.html">Overview &amp; Flasher</a>
+        <a href="./">Overview &amp; Flasher</a>
         <a href="./docs.html?doc=readme">Documentation</a>
         <a href="./docs.html?doc=api">API (Swagger)</a>
         <a href="./docs.html?doc=contributing">Contributing</a>
