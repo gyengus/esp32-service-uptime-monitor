@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}" />
+  <link rel="canonical" href="{{canonical_url}}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
+  <meta property="og:title" content="{{title}}" />
+  <meta property="og:description" content="{{description}}" />
+  <meta property="og:url" content="{{canonical_url}}" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="{{title}}" />
+  <meta name="twitter:description" content="{{description}}" />
+  <link rel="stylesheet" href="./styles.css" />
+  {{analytics}}
+</head>
+<body>
+  {{header}}
+
+  <main class="container docs-layout">
+    <article id="docContent" class="markdown-body">
+      {{content}}
+    </article>
+  </main>
+
+  {{footer}}
+
+  <script>
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const THEME_KEY = "uptime-docs-theme";
+    const SUN_SVG = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    const MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+    function getEffectiveTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      if (themeIcon) {
+        themeIcon.innerHTML = theme === "light" ? MOON_SVG : SUN_SVG;
+      }
+    }
+
+    applyTheme(getEffectiveTheme());
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        const next = getEffectiveTheme() === "light" ? "dark" : "light";
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -16,34 +16,34 @@
   <meta name="twitter:description" content="Comprehensive documentation for ESP32 Service Uptime Monitor: multi-board setup, hardware pinouts, REST API, Web UI, and security." />
   <link rel="stylesheet" href="./styles.css" />
   <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-  </script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+</script>
 </head>
 <body>
   <header class="site-header">
-    <div class="container nav-inner">
-      <a class="brand" href="./">
-        <span class="status-dot" aria-hidden="true"></span>
-        <span>ESP32 Service Uptime Monitor</span>
-      </a>
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="./">Overview &amp; Flasher</a>
-        <a href="./readme.html" aria-current="page">Documentation</a>
-        <a href="./api/">API (Swagger)</a>
-        <a href="./contributing.html">Contributing</a>
-        
-        <a href="./license.html">License</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
-        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
-          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
-        </button>
-      </nav>
-    </div>
-  </header>
+  <div class="container nav-inner">
+    <a class="brand" href="./">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span>ESP32 Service Uptime Monitor</span>
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="./">Overview &amp; Flasher</a>
+      <a href="./readme.html" aria-current="page">Documentation</a>
+      <a href="./api/">API (Swagger)</a>
+      <a href="./contributing.html">Contributing</a>
+      
+      <a href="./license.html">License</a>
+      <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
+      <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+      <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+      </button>
+    </nav>
+  </div>
+</header>
 
   <main class="container docs-layout">
     <article id="docContent" class="markdown-body">
@@ -406,20 +406,20 @@ pio device monitor
   </main>
 
   <footer class="site-footer">
-    <div class="container">
-      <div class="footer-links">
-        <a href="./">Overview &amp; Flasher</a>
-        <a href="./readme.html">Documentation</a>
-        <a href="./api/">API (Swagger)</a>
-        <a href="./contributing.html">Contributing</a>
-        
-        <a href="./license.html">License</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
-        <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>
-      </div>
+  <div class="container">
+    <div class="footer-links">
+      <a href="./">Overview &amp; Flasher</a>
+      <a href="./readme.html">Documentation</a>
+      <a href="./api/">API (Swagger)</a>
+      <a href="./contributing.html">Contributing</a>
+      
+      <a href="./license.html">License</a>
+      <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
+      <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
+      <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>
     </div>
-  </footer>
+  </div>
+</footer>
 
   <script>
     const themeToggle = document.getElementById("themeToggle");
@@ -436,15 +436,19 @@ pio device monitor
 
     function applyTheme(theme) {
       document.documentElement.setAttribute("data-theme", theme);
-      themeIcon.innerHTML = theme === "light" ? MOON_SVG : SUN_SVG;
+      if (themeIcon) {
+        themeIcon.innerHTML = theme === "light" ? MOON_SVG : SUN_SVG;
+      }
     }
 
     applyTheme(getEffectiveTheme());
-    themeToggle.addEventListener("click", () => {
-      const next = getEffectiveTheme() === "light" ? "dark" : "light";
-      localStorage.setItem(THEME_KEY, next);
-      applyTheme(next);
-    });
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        const next = getEffectiveTheme() === "light" ? "dark" : "light";
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+      });
+    }
   </script>
 </body>
 </html>

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
 Pre-renders Markdown documentation (README, CONTRIBUTING, CHANGELOG, LICENSE)
-into clean, static HTML files for GitHub Pages deployment.
+and synchronizes shared site components (header, footer, analytics)
+from templates/ into static HTML files for deployment and local preview.
 
 Benefits:
-- Eliminates client-side JS markdown parsing and layout shift (CLS).
-- Provides 100% crawlable, pre-rendered semantic HTML with unique metadata for SEO.
-- Resolves GitHub repo links (e.g. include/devices.h, docs/api/index.html, LICENSE)
-  so they work seamlessly both on the static website and on GitHub.
+- Eliminates code duplication: Header, footer, nav, and analytics are maintained in one place (templates/).
+- 100% crawlable, pre-rendered semantic HTML with unique metadata for SEO.
+- Zero client-side markdown parsing or layout shift (CLS).
+- Seamless link resolution between GitHub repository and static website.
 """
 
 import os
@@ -52,103 +53,85 @@ DOCS_CONFIG = {
     },
 }
 
-HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{title}</title>
-  <meta name="description" content="{description}" />
-  <link rel="canonical" href="{canonical_url}" />
-  <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="ESP32 Service Uptime Monitor" />
-  <meta property="og:title" content="{title}" />
-  <meta property="og:description" content="{description}" />
-  <meta property="og:url" content="{canonical_url}" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="{title}" />
-  <meta name="twitter:description" content="{description}" />
-  <link rel="stylesheet" href="./styles.css" />
-  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){{dataLayer.push(arguments);}}
-    gtag('js', new Date());
-  </script>
-</head>
-<body>
-  <header class="site-header">
-    <div class="container nav-inner">
-      <a class="brand" href="./">
-        <span class="status-dot" aria-hidden="true"></span>
-        <span>ESP32 Service Uptime Monitor</span>
-      </a>
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="./">Overview &amp; Flasher</a>
-        <a href="./readme.html"{nav_readme_attr}>Documentation</a>
-        <a href="./api/"{nav_api_attr}>API (Swagger)</a>
-        <a href="./contributing.html"{nav_contributing_attr}>Contributing</a>
-        {nav_changelog_item}
-        <a href="./license.html"{nav_license_attr}>License</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
-        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
-          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
-        </button>
-      </nav>
-    </div>
-  </header>
 
-  <main class="container docs-layout">
-    <article id="docContent" class="markdown-body">
-      {content}
-    </article>
-  </main>
+def render_template(template_str: str, context: dict) -> str:
+    """Replaces {{key}} placeholders with context values."""
+    result = template_str
+    for key, value in context.items():
+        result = result.replace(f"{{{{{key}}}}}", str(value))
+    return result
 
-  <footer class="site-footer">
-    <div class="container">
-      <div class="footer-links">
-        <a href="./">Overview &amp; Flasher</a>
-        <a href="./readme.html">Documentation</a>
-        <a href="./api/">API (Swagger)</a>
-        <a href="./contributing.html">Contributing</a>
-        {footer_changelog_item}
-        <a href="./license.html">License</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
-        <span class="footer-author">Created by <a href="https://gyengus.hu/?utm_source=uptimeMonitorPage" target="_blank" rel="noopener">Gyengus</a></span>
-      </div>
-    </div>
-  </footer>
 
-  <script>
-    const themeToggle = document.getElementById("themeToggle");
-    const themeIcon = document.getElementById("themeIcon");
-    const THEME_KEY = "uptime-docs-theme";
-    const SUN_SVG = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-    const MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+def load_templates(project_dir: Path) -> dict:
+    tpl_dir = project_dir / "templates"
+    return {
+        "header": (tpl_dir / "header.html").read_text(encoding="utf-8"),
+        "footer": (tpl_dir / "footer.html").read_text(encoding="utf-8"),
+        "analytics": (tpl_dir / "analytics.html").read_text(encoding="utf-8"),
+        "doc_layout": (tpl_dir / "doc_layout.html").read_text(encoding="utf-8"),
+    }
 
-    function getEffectiveTheme() {{
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === "light" || saved === "dark") return saved;
-      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-    }}
 
-    function applyTheme(theme) {{
-      document.documentElement.setAttribute("data-theme", theme);
-      themeIcon.innerHTML = theme === "light" ? MOON_SVG : SUN_SVG;
-    }}
+def get_header_html(tpl_header: str, active_nav: str = "", has_changelog: bool = False) -> str:
+    if has_changelog:
+        active_attr = ' aria-current="page"' if active_nav == "changelog" else ""
+        nav_changelog_item = f'<a href="./changelog.html"{active_attr}>Changelog</a>'
+    else:
+        nav_changelog_item = ""
 
-    applyTheme(getEffectiveTheme());
-    themeToggle.addEventListener("click", () => {{
-      const next = getEffectiveTheme() === "light" ? "dark" : "light";
-      localStorage.setItem(THEME_KEY, next);
-      applyTheme(next);
-    }});
-  </script>
-</body>
-</html>
-"""
+    context = {
+        "nav_overview_attr": ' aria-current="page"' if active_nav == "overview" else "",
+        "nav_readme_attr": ' aria-current="page"' if active_nav == "readme" else "",
+        "nav_api_attr": ' aria-current="page"' if active_nav == "api" else "",
+        "nav_contributing_attr": ' aria-current="page"' if active_nav == "contributing" else "",
+        "nav_license_attr": ' aria-current="page"' if active_nav == "license" else "",
+        "nav_changelog_item": nav_changelog_item,
+    }
+    return render_template(tpl_header, context)
+
+
+def get_footer_html(tpl_footer: str, has_changelog: bool = False) -> str:
+    footer_changelog_item = '<a href="./changelog.html">Changelog</a>' if has_changelog else ""
+    return render_template(tpl_footer, {"footer_changelog_item": footer_changelog_item})
+
+
+def sync_components_in_file(file_path: Path, header_html: str, footer_html: str, analytics_html: str) -> bool:
+    """Updates <!-- COMPONENT: ... --> blocks inside an HTML file."""
+    if not file_path.exists():
+        return False
+
+    content = file_path.read_text(encoding="utf-8")
+    original = content
+
+    if "<!-- COMPONENT: HEADER -->" in content:
+        content = re.sub(
+            r"<!-- COMPONENT: HEADER -->.*?<!-- /COMPONENT: HEADER -->",
+            f"<!-- COMPONENT: HEADER -->\n  {header_html.strip()}\n  <!-- /COMPONENT: HEADER -->",
+            content,
+            flags=re.DOTALL,
+        )
+
+    if "<!-- COMPONENT: FOOTER -->" in content:
+        content = re.sub(
+            r"<!-- COMPONENT: FOOTER -->.*?<!-- /COMPONENT: FOOTER -->",
+            f"<!-- COMPONENT: FOOTER -->\n  {footer_html.strip()}\n  <!-- /COMPONENT: FOOTER -->",
+            content,
+            flags=re.DOTALL,
+        )
+
+    if "<!-- COMPONENT: ANALYTICS -->" in content:
+        content = re.sub(
+            r"<!-- COMPONENT: ANALYTICS -->.*?<!-- /COMPONENT: ANALYTICS -->",
+            f"<!-- COMPONENT: ANALYTICS -->\n  {analytics_html.strip()}\n  <!-- /COMPONENT: ANALYTICS -->",
+            content,
+            flags=re.DOTALL,
+        )
+
+    if content != original:
+        file_path.write_text(content, encoding="utf-8")
+        print(f"[SYNC] Updated shared components in {file_path}")
+        return True
+    return False
 
 
 def fix_html_links_and_alerts(html_content: str) -> str:
@@ -202,9 +185,18 @@ def render_all(project_dir: Path, output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
     has_changelog = (project_dir / "CHANGELOG.md").exists()
 
-    nav_changelog_item = '<a href="./changelog.html">Changelog</a>' if has_changelog else ""
-    footer_changelog_item = '<a href="./changelog.html">Changelog</a>' if has_changelog else ""
+    templates = load_templates(project_dir)
 
+    # 1. Synchronize components in docs/index.html (and output_dir/index.html if distinct)
+    overview_header = get_header_html(templates["header"], active_nav="overview", has_changelog=has_changelog)
+    footer_html = get_footer_html(templates["footer"], has_changelog=has_changelog)
+    analytics_html = templates["analytics"]
+
+    sync_components_in_file(project_dir / "docs" / "index.html", overview_header, footer_html, analytics_html)
+    if output_dir != (project_dir / "docs"):
+        sync_components_in_file(output_dir / "index.html", overview_header, footer_html, analytics_html)
+
+    # 2. Pre-render markdown docs
     md_converter = markdown.Markdown(extensions=["extra", "tables", "fenced_code", "toc"])
 
     for key, spec in DOCS_CONFIG.items():
@@ -227,19 +219,19 @@ def render_all(project_dir: Path, output_dir: Path):
             inner_content = fix_html_links_and_alerts(inner_html)
 
         canonical_url = f"{SITE_BASE_URL}{spec['output']}"
+        doc_header = get_header_html(templates["header"], active_nav=key, has_changelog=has_changelog)
 
-        page_html = HTML_TEMPLATE.format(
-            title=spec["title"],
-            description=spec["description"],
-            canonical_url=canonical_url,
-            nav_readme_attr=' aria-current="page"' if key == "readme" else "",
-            nav_api_attr=' aria-current="page"' if key == "api" else "",
-            nav_contributing_attr=' aria-current="page"' if key == "contributing" else "",
-            nav_license_attr=' aria-current="page"' if key == "license" else "",
-            nav_changelog_item=nav_changelog_item,
-            footer_changelog_item=footer_changelog_item,
-            content=inner_content,
-        )
+        page_context = {
+            "title": spec["title"],
+            "description": spec["description"],
+            "canonical_url": canonical_url,
+            "analytics": analytics_html,
+            "header": doc_header,
+            "content": inner_content,
+            "footer": footer_html,
+        }
+
+        page_html = render_template(templates["doc_layout"], page_context)
 
         out_file = output_dir / spec["output"]
         out_file.write_text(page_html, encoding="utf-8")
@@ -249,8 +241,8 @@ def render_all(project_dir: Path, output_dir: Path):
 if __name__ == "__main__":
     proj_dir = Path(__file__).resolve().parent.parent
     if len(sys.argv) > 1:
-        out_dir = Path(sys.argv[1]).resolve()
+        out_target = Path(sys.argv[1]).resolve()
     else:
-        out_dir = proj_dir / "docs"
+        out_target = proj_dir / "docs"
 
-    render_all(proj_dir, out_dir)
+    render_all(proj_dir, out_target)
