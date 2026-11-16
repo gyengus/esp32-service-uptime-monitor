@@ -10,6 +10,7 @@ stages:
   - test
   - gemini-review
   - build
+  - site
 
 include:
   - template: Security/SAST.gitlab-ci.yml
@@ -95,6 +96,31 @@ build:
   artifacts:
     paths:
       - dist/
+    expire_in: 1 week
+
+build:site:
+  stage: site
+  image: python:3.11
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH == "test"
+  needs:
+    - job: build
+      artifacts: true
+  cache:
+    key:
+      prefix: "site"
+      files:
+        - scripts/render_docs.py
+    paths:
+      - .cache/pip/
+  before_script:
+    - pip install markdown beautifulsoup4
+  script:
+    - python3 scripts/preview_site.py --build-only
+  artifacts:
+    paths:
+      - _site/
     expire_in: 1 week
 
 # Explicit overrides for security jobs to ensure they run in correct stages and MRs

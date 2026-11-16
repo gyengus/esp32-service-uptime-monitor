@@ -18,6 +18,7 @@ Usage:
 
 import argparse
 import http.server
+import json
 import os
 import queue
 import shutil
@@ -104,6 +105,25 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
         manifest_file = dist_dir / "manifest.json"
         if manifest_file.exists():
             shutil.copy2(manifest_file, firmware_dir / "manifest.json")
+            try:
+                data = json.loads(manifest_file.read_text(encoding="utf-8"))
+                for build in data.get("builds", []):
+                    parts = build.get("parts", [])
+                    if not parts:
+                        continue
+                    bin_path = parts[0].get("path", "")
+                    env_name = bin_path.removesuffix(".bin")
+                    board_manifest = {
+                        "name": f"ESP32 Service Uptime Monitor ({env_name})",
+                        "new_install_prompt_erase": True,
+                        "builds": [build],
+                    }
+                    (firmware_dir / f"manifest-{env_name}.json").write_text(
+                        json.dumps(board_manifest, indent=2),
+                        encoding="utf-8",
+                    )
+            except Exception:
+                pass
 
     return out_dir
 
