@@ -1,7 +1,9 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
-#define FIRMWARE_VERSION "0.0.1-SNAPSHOT"
+#ifndef FIRMWARE_VERSION
+    #define FIRMWARE_VERSION "0.0.1-SNAPSHOT"
+#endif
 
 #ifndef COMMIT_HASH
     #define COMMIT_HASH "unknown"

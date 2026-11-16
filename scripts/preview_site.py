@@ -88,6 +88,16 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
             else:
                 shutil.copy2(item, dest)
 
+    # 1.5 Ensure CHANGELOG.md exists for documentation pre-rendering
+    changelog_path = project_dir / "CHANGELOG.md"
+    if not changelog_path.exists():
+        try:
+            import changelog
+            changelog_text = changelog.generate_full_changelog()
+            changelog_path.write_text(changelog_text, encoding="utf-8")
+        except Exception:
+            pass
+
     # 2. Pre-render documentation HTML directly into the site root
     render_docs.render_all(project_dir, out_dir)
 
@@ -104,9 +114,19 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
             shutil.copy2(bin_file, firmware_dir / bin_file.name)
         manifest_file = dist_dir / "manifest.json"
         if manifest_file.exists():
-            shutil.copy2(manifest_file, firmware_dir / "manifest.json")
+            try:
+                import git_version
+                firmware_version = git_version.get_firmware_version()
+            except Exception:
+                firmware_version = os.environ.get("CI_COMMIT_TAG") or "latest"
+
             try:
                 data = json.loads(manifest_file.read_text(encoding="utf-8"))
+                data["version"] = firmware_version
+                (firmware_dir / "manifest.json").write_text(
+                    json.dumps(data, indent=2),
+                    encoding="utf-8",
+                )
                 for build in data.get("builds", []):
                     parts = build.get("parts", [])
                     if not parts:
@@ -115,6 +135,7 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
                     env_name = bin_path.removesuffix(".bin")
                     board_manifest = {
                         "name": f"ESP32 Service Uptime Monitor ({env_name})",
+                        "version": firmware_version,
                         "new_install_prompt_erase": True,
                         "builds": [build],
                     }
@@ -123,7 +144,7 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
                         encoding="utf-8",
                     )
             except Exception:
-                pass
+                shutil.copy2(manifest_file, firmware_dir / "manifest.json")
 
     return out_dir
 

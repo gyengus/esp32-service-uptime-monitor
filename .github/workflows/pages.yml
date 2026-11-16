@@ -1,21 +1,22 @@
-name: Deploy GitHub Pages
+name: Release and Deploy Pages
 
 on:
   push:
-    branches: ["master"]
+    tags:
+      - '*'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "release-and-pages"
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,6 +28,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -42,7 +44,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pip
             ~/.platformio/.cache
             ~/.platformio/platforms
             ~/.platformio/packages
@@ -50,67 +51,41 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pio-
 
-      - name: Install PlatformIO, PyYAML, markdown, beautifulsoup4
+      - name: Install build and documentation tools
         run: |
           python -m pip install --upgrade pip
           pip install platformio pyyaml markdown beautifulsoup4
 
-      - name: Build release firmware images for Web Flasher
+      - name: Build firmware images for all boards
         env:
           RELEASE: "1"
-        run: pio run -t dist
+        run: pio run
 
-      - name: Pre-render Markdown Documentation to Static HTML
+      - name: Generate Release Notes and Changelog
         run: |
-          python3 scripts/render_docs.py docs/
+          python3 scripts/changelog.py --release-notes > release_notes.md
+          python3 scripts/changelog.py --full > CHANGELOG.md
 
-      - name: Assemble static site
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          body_path: release_notes.md
+          files: |
+            dist/*.bin
+            dist/web.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Assemble static documentation site
         run: |
-          rm -rf _site
-          mkdir -p _site/content _site/firmware
-          cp -r docs/* _site/
-          cp README.md CONTRIBUTING.md LICENSE _site/content/
-          [ -f CHANGELOG.md ] && cp CHANGELOG.md _site/content/ || true
-          cp dist/*.bin _site/firmware/
-
-          python3 - << 'EOF'
-          import json
-          import os
-          from pathlib import Path
-
-          dist_manifest = Path("dist/manifest.json")
-          out_dir = Path("_site/firmware")
-
-          if dist_manifest.exists():
-              data = json.loads(dist_manifest.read_text(encoding="utf-8"))
-              version = os.environ.get("GITHUB_SHA", "latest")[:7]
-              # Write combined manifest
-              data["version"] = version
-              (out_dir / "manifest.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
-
-              # Write per-board manifests so variants sharing a chipFamily (e.g. esp32-s3 vs esp32-s3-cam) stay distinct
-              for build in data.get("builds", []):
-                  parts = build.get("parts", [])
-                  if not parts:
-                      continue
-                  bin_path = parts[0].get("path", "")
-                  env_name = bin_path.removesuffix(".bin")
-                  board_manifest = {
-                      "name": f"ESP32 Service Uptime Monitor ({env_name})",
-                      "version": version,
-                      "new_install_prompt_erase": True,
-                      "builds": [build],
-                  }
-                  (out_dir / f"manifest-{env_name}.json").write_text(
-                      json.dumps(board_manifest, indent=2),
-                      encoding="utf-8",
-                  )
-          EOF
+          python3 scripts/preview_site.py --build-only
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: "_site"
@@ -120,7 +95,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-and-release
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

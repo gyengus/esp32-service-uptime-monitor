@@ -40,6 +40,10 @@ CLAUDE.md
 .npm/
 .venv/
 
+# Release and changelog auto-generated files
+CHANGELOG.md
+release_notes.md
+
 # Node / Frontend testing
 node_modules/
 coverage/
