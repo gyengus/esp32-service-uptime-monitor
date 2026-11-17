@@ -1032,9 +1032,11 @@
         contactStatus.textContent = "";
 
         const payload = {
+          site: "ESP32 Service Uptime Monitor",
+          inquiryType: inquiryType,
           name: name,
           email: email,
-          message: `[Inquiry Type: ${inquiryType}]\n\n${rawMessage}`,
+          message: rawMessage,
           botcheck: botcheck
         };
 
