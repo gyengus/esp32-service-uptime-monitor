@@ -6,6 +6,8 @@ on:
     branches:
       - master
     paths:
+      - '.github/workflows/deploy-site.yml'
+      - 'requirements.txt'
       - 'README.md'
       - 'CONTRIBUTING.md'
       - 'LICENSE'
@@ -15,6 +17,9 @@ on:
       - 'scripts/preview_site.py'
       - 'scripts/combine_coverage.py'
       - 'scripts/changelog.py'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
