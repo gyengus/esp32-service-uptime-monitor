@@ -110,41 +110,66 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
     # 4. Copy dist/*.bin and manifests if available
     dist_dir = project_dir / "dist"
     if dist_dir.exists():
-        for bin_file in dist_dir.glob("*.bin"):
+        bin_files = sorted(dist_dir.glob("*.bin"))
+        for bin_file in bin_files:
             shutil.copy2(bin_file, firmware_dir / bin_file.name)
-        manifest_file = dist_dir / "manifest.json"
-        if manifest_file.exists():
+
+        if bin_files:
             try:
                 import git_version
                 firmware_version = git_version.get_firmware_version()
             except Exception:
                 firmware_version = os.environ.get("CI_COMMIT_TAG") or "latest"
 
-            try:
-                data = json.loads(manifest_file.read_text(encoding="utf-8"))
-                data["version"] = firmware_version
-                (firmware_dir / "manifest.json").write_text(
-                    json.dumps(data, indent=2),
+            manifest_file = dist_dir / "manifest.json"
+            chip_family_map = {
+                "esp32-s3-cam": "ESP32-S3",
+                "esp32-s3": "ESP32-S3",
+                "esp32": "ESP32",
+                "esp32-c3": "ESP32-C3",
+                "esp32-c6": "ESP32-C6",
+                "esp32-c5": "ESP32-C5",
+            }
+
+            if manifest_file.exists():
+                try:
+                    data = json.loads(manifest_file.read_text(encoding="utf-8"))
+                except Exception:
+                    data = {"name": "ESP32 Service Uptime Monitor", "new_install_prompt_erase": True, "builds": []}
+            else:
+                data = {
+                    "name": "ESP32 Service Uptime Monitor",
+                    "new_install_prompt_erase": True,
+                    "builds": [
+                        {
+                            "chipFamily": chip_family_map.get(b.stem, "ESP32"),
+                            "parts": [{"path": b.name, "offset": 0}],
+                        }
+                        for b in bin_files
+                    ],
+                }
+
+            data["version"] = firmware_version
+            (firmware_dir / "manifest.json").write_text(
+                json.dumps(data, indent=2),
+                encoding="utf-8",
+            )
+            for build in data.get("builds", []):
+                parts = build.get("parts", [])
+                if not parts:
+                    continue
+                bin_path = parts[0].get("path", "")
+                env_name = bin_path.removesuffix(".bin")
+                board_manifest = {
+                    "name": f"ESP32 Service Uptime Monitor ({env_name})",
+                    "version": firmware_version,
+                    "new_install_prompt_erase": True,
+                    "builds": [build],
+                }
+                (firmware_dir / f"manifest-{env_name}.json").write_text(
+                    json.dumps(board_manifest, indent=2),
                     encoding="utf-8",
                 )
-                for build in data.get("builds", []):
-                    parts = build.get("parts", [])
-                    if not parts:
-                        continue
-                    bin_path = parts[0].get("path", "")
-                    env_name = bin_path.removesuffix(".bin")
-                    board_manifest = {
-                        "name": f"ESP32 Service Uptime Monitor ({env_name})",
-                        "version": firmware_version,
-                        "new_install_prompt_erase": True,
-                        "builds": [build],
-                    }
-                    (firmware_dir / f"manifest-{env_name}.json").write_text(
-                        json.dumps(board_manifest, indent=2),
-                        encoding="utf-8",
-                    )
-            except Exception:
-                shutil.copy2(manifest_file, firmware_dir / "manifest.json")
 
     # 5. Generate test and coverage badge endpoints
     try:
