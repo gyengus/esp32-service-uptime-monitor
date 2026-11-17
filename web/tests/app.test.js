@@ -899,7 +899,8 @@ describe('Uptime Monitor Web UI - app.js', () => {
 
     it('contains required menu links and syncs config badge and mobile version', () => {
       expect($('#menuApiDocsLink').attr('href')).toBe('/api/docs');
-      expect($('#menuLicenseLink').attr('href')).toBe('/license');
+      expect($('#menuLicenseButton').attr('data-bs-target')).toBe('#licenseModal');
+      expect($('#licenseRawLink').attr('href')).toBe('/license');
       expect($('#menuGithubRepoLink').attr('href')).toBe('https://github.com/gyengus/esp32-service-uptime-monitor');
       expect($('#menuGithubPagesLink').attr('href')).toBe('https://esp32-service-uptime-monitor.com/');
       expect($('#menuSysinfoButton').attr('data-bs-target')).toBe('#sysinfoModal');
@@ -1186,6 +1187,101 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect(window.formatRssiHtml(-55)).toContain('-55 dBm');
       expect(window.formatRssiHtml(-75)).toContain('-75 dBm');
       expect(window.formatRssiHtml(-90)).toContain('-90 dBm');
+    });
+  });
+
+  describe('License Modal', () => {
+    let origFetch;
+    let origClipboard;
+
+    beforeEach(() => {
+      vi.useRealTimers();
+      origFetch = globalThis.fetch;
+      origClipboard = navigator.clipboard;
+      window.set_licenseTextCache(null);
+      $('#licenseContent').text('');
+      $('#licenseLoadingSpinner').addClass('d-none');
+      $('#licenseError').addClass('d-none');
+      $('#licenseContentWrapper').addClass('d-none');
+    });
+
+    afterEach(() => {
+      globalThis.fetch = origFetch;
+      Object.defineProperty(navigator, 'clipboard', {
+        value: origClipboard,
+        configurable: true,
+        writable: true
+      });
+      vi.useFakeTimers();
+    });
+
+    it('fetches license text and displays it when modal opens', async () => {
+      const mockLicense = 'ESP32 Service Uptime Monitor - Dual License\nCopyright (c) 2026';
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(mockLicense)
+      });
+
+      $('#licenseModal').trigger('show.bs.modal');
+      await new Promise(r => setTimeout(r, 20));
+
+      expect(globalThis.fetch).toHaveBeenCalledWith('/license');
+      expect($('#licenseContent').text()).toBe(mockLicense);
+      expect($('#licenseLoadingSpinner').hasClass('d-none')).toBe(true);
+      expect($('#licenseError').hasClass('d-none')).toBe(true);
+      expect($('#licenseContentWrapper').hasClass('d-none')).toBe(false);
+      expect(window.get_licenseTextCache()).toBe(mockLicense);
+
+      // Subsequent show uses cache without refetching
+      globalThis.fetch.mockClear();
+      $('#licenseModal').trigger('show.bs.modal');
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+      expect($('#licenseContent').text()).toBe(mockLicense);
+    });
+
+    it('handles license fetch failure gracefully', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404
+      });
+
+      $('#licenseModal').trigger('show.bs.modal');
+      await new Promise(r => setTimeout(r, 20));
+
+      expect(globalThis.fetch).toHaveBeenCalledWith('/license');
+      expect($('#licenseLoadingSpinner').hasClass('d-none')).toBe(true);
+      expect($('#licenseError').hasClass('d-none')).toBe(false);
+      expect($('#licenseContentWrapper').hasClass('d-none')).toBe(true);
+    });
+
+    it('copies license text to clipboard and handles success / failure', async () => {
+      window.set_licenseTextCache('Sample License Text');
+      const writeTextMock = vi.fn().mockResolvedValue();
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: writeTextMock },
+        configurable: true,
+        writable: true
+      });
+
+      $('#btnCopyLicense').trigger('click');
+      await new Promise(r => setTimeout(r, 20));
+
+      expect(writeTextMock).toHaveBeenCalledWith('Sample License Text');
+      expect($('#successToast').hasClass('show')).toBe(true);
+      expect($('#successToast .toast-body').text()).toBe('License text copied to clipboard');
+
+      // Test clipboard error
+      writeTextMock.mockRejectedValueOnce(new Error('Permission denied'));
+      $('#btnCopyLicense').trigger('click');
+      await new Promise(r => setTimeout(r, 20));
+      expect($('#errorToast').hasClass('show')).toBe(true);
+      expect($('#errorToast .toast-body').text()).toBe('Failed to copy license text');
+
+      // Test clipboard unavailable
+      navigator.clipboard = undefined;
+      $('#btnCopyLicense').trigger('click');
+      expect($('#errorToast .toast-body').text()).toBe('Clipboard API unavailable');
     });
   });
 });

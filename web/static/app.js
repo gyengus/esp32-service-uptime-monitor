@@ -1537,7 +1537,62 @@ $('#btnCopySysinfo').on('click', function() {
     }
 });
 
+let licenseTextCache = null;
+
+function loadLicenseText() {
+    if (licenseTextCache !== null) {
+        $('#licenseContent').text(licenseTextCache);
+        $('#licenseLoadingSpinner').addClass('d-none');
+        $('#licenseError').addClass('d-none');
+        $('#licenseContentWrapper').removeClass('d-none');
+        return;
+    }
+
+    $('#licenseLoadingSpinner').removeClass('d-none');
+    $('#licenseContentWrapper').addClass('d-none');
+    $('#licenseError').addClass('d-none');
+
+    fetch('/license')
+        .then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.text();
+        })
+        .then((text) => {
+            licenseTextCache = text;
+            $('#licenseContent').text(text);
+            $('#licenseLoadingSpinner').addClass('d-none');
+            $('#licenseError').addClass('d-none');
+            $('#licenseContentWrapper').removeClass('d-none');
+        })
+        .catch((err) => {
+            console.error('Failed to load license:', err);
+            $('#licenseLoadingSpinner').addClass('d-none');
+            $('#licenseError').removeClass('d-none');
+        });
+}
+
+$('#licenseModal').on('show.bs.modal', function() {
+    loadLicenseText();
+});
+
+$('#btnCopyLicense').on('click', function() {
+    const text = licenseTextCache || $('#licenseContent').text();
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showSuccess('License text copied to clipboard');
+        }).catch(() => {
+            showError('Failed to copy license text');
+        });
+    } else {
+        showError('Clipboard API unavailable');
+    }
+});
+
 if (typeof window !== 'undefined') {
+    window.loadLicenseText = loadLicenseText;
+    window.get_licenseTextCache = () => licenseTextCache;
+    window.set_licenseTextCache = (v) => { licenseTextCache = v; };
     window.formatConfigCountdown = formatConfigCountdown;
     window.setConfigCountdown = setConfigCountdown;
     window.get_configTimeoutRemaining = () => configTimeoutRemaining;

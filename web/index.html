@@ -106,12 +106,12 @@
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <a href="/license" target="_blank" rel="noopener noreferrer" id="menuLicenseLink" class="dropdown-item">
+                            <button type="button" id="menuLicenseButton" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#licenseModal">
                                 <span class="d-inline-flex align-items-center gap-2">
                                     <svg class="ui-icon" aria-hidden="true"><use href="#ui-balance"></use></svg>
                                     <span>License</span>
                                 </span>
-                            </a>
+                            </button>
                         </li>
                         <li>
                             <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener noreferrer" id="menuGithubRepoLink" class="dropdown-item">
@@ -520,6 +520,76 @@
                         <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btnCopySysinfo">
                             <svg class="ui-icon" aria-hidden="true"><use href="#ui-copy"></use></svg>
                             <span>Copy JSON</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="licenseModal" tabindex="-1" aria-labelledby="licenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title d-flex align-items-center gap-2" id="licenseModalLabel">
+                        <svg class="ui-icon text-warning" aria-hidden="true"><use href="#ui-balance"></use></svg>
+                        <span>License Terms &amp; Conditions</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Quick Summary Cards -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="p-2 rounded border border-success border-opacity-25 bg-success bg-opacity-10 h-100">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-success">Personal &amp; Home</span>
+                                    <span class="small fw-semibold text-success">Free Forever</span>
+                                </div>
+                                <div class="small text-muted">
+                                    Free of charge for private homelabs, hobbyists, and non-commercial monitoring.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="p-2 rounded border border-warning border-opacity-25 bg-warning bg-opacity-10 h-100">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-warning text-dark">Commercial / Org</span>
+                                    <span class="small fw-semibold text-warning">30-Day Free Trial</span>
+                                </div>
+                                <div class="small text-muted">
+                                    Organizations may evaluate for up to 30 days. Continued commercial or MSP use requires a license.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="licenseLoadingSpinner" class="text-center py-4 d-none">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></div>
+                        <span class="text-muted">Loading license terms...</span>
+                    </div>
+                    <div id="licenseError" class="alert alert-danger py-2 small d-none" role="alert">
+                        Failed to load license text from device storage.
+                    </div>
+
+                    <div id="licenseContentWrapper" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="licenseContent" class="form-label small text-muted fw-semibold mb-0">Legal License Text</label>
+                            <a href="/license" target="_blank" rel="noopener noreferrer" class="small text-decoration-none text-info" id="licenseRawLink">Open Raw Text</a>
+                        </div>
+                        <pre id="licenseContent" class="p-3 rounded bg-dark border border-secondary border-opacity-25 text-light small mb-0 font-monospace" style="max-height: 42vh; overflow-y: auto; white-space: pre-wrap; word-break: break-word;"></pre>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <a href="https://esp32-service-uptime-monitor.com/#license" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-link text-decoration-none text-muted d-inline-flex align-items-center gap-1">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#ui-book"></use></svg>
+                        <span>Learn More on Website</span>
+                    </a>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btnCopyLicense">
+                            <svg class="ui-icon" aria-hidden="true"><use href="#ui-copy"></use></svg>
+                            <span>Copy Text</span>
                         </button>
                         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
