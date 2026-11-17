@@ -18,6 +18,7 @@ Usage:
 
 import argparse
 import http.server
+import importlib
 import json
 import os
 import queue
@@ -99,6 +100,7 @@ def assemble_site(project_dir: Path, out_dir: Path) -> Path:
             pass
 
     # 2. Pre-render documentation HTML directly into the site root
+    importlib.reload(render_docs)
     render_docs.render_all(project_dir, out_dir)
 
     # 3. Copy source markdown files to content/ for fallback readers

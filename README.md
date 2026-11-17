@@ -6,17 +6,21 @@ Turn any $4 ESP32 into a standalone, ultra-low-power (< 1 W) hardware uptime app
 
 [![Build](https://img.shields.io/github/actions/workflow/status/gyengus/esp32-service-uptime-monitor/pipeline.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=Build)](https://github.com/gyengus/esp32-service-uptime-monitor/actions/workflows/pipeline.yml)
 [![Tests](https://img.shields.io/endpoint?url=https://esp32-service-uptime-monitor.com/tests.json&style=for-the-badge&logo=vitest&logoColor=white)](https://github.com/gyengus/esp32-service-uptime-monitor/actions/workflows/pipeline.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://esp32-service-uptime-monitor.com/coverage.json&style=for-the-badge)](https://esp32-service-uptime-monitor.com/)
+[![Coverage](https://img.shields.io/endpoint?url=https://esp32-service-uptime-monitor.com/coverage.json&style=for-the-badge)](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=badge_coverage)
 [![Release](https://img.shields.io/github/v/release/gyengus/esp32-service-uptime-monitor?style=for-the-badge&logo=github&label=Release)](https://github.com/gyengus/esp32-service-uptime-monitor/releases)
-[![Web Flasher](https://img.shields.io/badge/Web_Flasher-Install_in_Browser-10b981?style=for-the-badge&logo=espressif&logoColor=white)](https://esp32-service-uptime-monitor.com/#flasher)
-[![Live Preview & Docs](https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge)](https://esp32-service-uptime-monitor.com/)
-[![OpenAPI 3.0](https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&logo=swagger&logoColor=black)](https://esp32-service-uptime-monitor.com/api/)
+[![Web Flasher](https://img.shields.io/badge/Web_Flasher-Install_in_Browser-10b981?style=for-the-badge&logo=espressif&logoColor=white)](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=badge_flasher#flasher)
+[![Live Preview & Docs](https://img.shields.io/badge/Live_UI_Preview-Documentation-3b82f6?style=for-the-badge)](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=badge_preview)
+[![OpenAPI 3.0](https://img.shields.io/badge/API-Swagger_UI-85ea2d?style=for-the-badge&logo=swagger&logoColor=black)](https://esp32-service-uptime-monitor.com/api/?utm_source=github&utm_medium=readme&utm_campaign=badge_swagger)
 [![License](https://img.shields.io/badge/License-Free_for_Personal_%7C_30--Day_Business_Trial-f59e0b?style=for-the-badge)](LICENSE)
+
+> [!TIP]
+> ### ⚡ Flash directly from your browser in 60 seconds
+> No PlatformIO, Python, or local compiler required! Connect your ESP32 board via USB, open our **[Browser Web Flasher & Live Demo](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_banner)** in Chrome or Edge, and configure Wi-Fi directly in your browser with Improv Wi-Fi. 100% local, privacy-first, with no cloud account or subscription required.
 
 ## Why a Dedicated Hardware Uptime Monitor?
 
 - **Out-of-Band Independence:** Containerized monitors (like Uptime Kuma or Prometheus) go down with your hypervisor, NAS, or Docker host. An independent ESP32 keeps watching and alerts you even when your primary server crashes.
-- **Flash in 60 Seconds from Your Browser:** No IDE or toolchain needed to get started. Connect via USB, click **Install** in the [Web Flasher](https://esp32-service-uptime-monitor.com/#flasher), and configure Wi-Fi directly in Chrome or Edge via **Improv Wi-Fi**.
+- **Flash in 60 Seconds from Your Browser:** No IDE or toolchain needed to get started. Connect via USB, click **Install** in the [Web Flasher](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=why_flasher#flasher), and configure Wi-Fi directly in Chrome or Edge via **Improv Wi-Fi**.
 - **Zero-Wear Steady State:** 3-retry hysteresis prevents false alarms and writes to flash/MicroSD **only when a service actually transitions** between `ONLINE` and `OFFLINE`.
 - **Built for Homelabs, Ready for Business:** Free forever for personal homelabs and hobbyists, with a **30-day free evaluation trial** for companies. Equipped with a full REST API (OpenAPI 3 / Swagger UI), JSON backup/restore for rapid multi-device provisioning, and hardened security (physical BOOT button lock, SSRF & DNS rebinding protection) for commercial and MSP deployments.
 
@@ -51,21 +55,30 @@ The project uses [`include/devices.h`](include/devices.h) to define board pins a
 
 ## Quick Start & Installation
 
-### Flash via USB (PlatformIO)
+### Option 1: Browser Web Flasher (Zero-Install — Recommended)
+
+The fastest way to install without installing local build tools, toolchains, or Python:
+
+1. Connect your ESP32 board to your computer via USB.
+2. Open the **[Web Flasher & Live Dashboard](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_option1)** in Google Chrome, Microsoft Edge, or any Web Serial-enabled browser.
+3. Select your board profile (`esp32-s3`, `esp32-c3`, `esp32-s3-cam`, `esp32`, `esp32-c6`, or `esp32-c5`) and click **Install**.
+4. Configure Wi-Fi credentials in the browser dialog via **Improv Wi-Fi** — the device reboots and immediately begins monitoring!
+
+### Option 2: Build & Flash from Source (PlatformIO CLI)
+
+For developers who want to modify source code, test locally, or build custom images:
 
 ```bash
 # Build and flash firmware for your board via USB
-pio run -e esp32-s3-cam --target upload
-# Or: esp32-s3 | esp32 | esp32-c3 | esp32-c6 | esp32-c5
+pio run -e esp32-s3 --target upload
+# Or choose: esp32-s3-cam | esp32 | esp32-c3 | esp32-c6 | esp32-c5
 
 # Production release build (disables File Manager & memory stats logging, sets log level to INFO):
-# RELEASE=1 pio run -e esp32-s3-cam --target upload
+RELEASE=1 pio run -e esp32-s3 --target upload
 
 # Monitor serial output (115200 8N1)
 pio device monitor
 ```
-
-> **Web Flasher & Improv Wi-Fi (ESP Web Tools):** Pre-merged `dist/<env>.bin` images and `dist/manifest.json` can also be generated via `pio run -t dist` for one-click browser flashing and serial Wi-Fi provisioning via [ESP Web Tools](https://esphome.github.io/esp-web-tools/) and [Improv Wi-Fi](https://www.improv-wifi.com/).
 
 ### Initial Setup
 
@@ -210,7 +223,7 @@ For multi-board builds, OTA targets, Web UI asset packing (`packweb` / `uploadwe
 This project uses a **Dual License (Personal & Commercial)** — see [`LICENSE`](LICENSE) for the full terms:
 
 - **Personal / Home Use (Free):** Individuals may use, compile, and modify the software free of charge for private, personal, non-commercial home/hobby monitoring, subject to keeping copyright notices intact.
-- **Companies, Public Institutions & Commercial Use (30-Day Free Trial, then Paid):** Organizations may internally evaluate and test the software **free of charge for up to 30 days**. Continued production use, MSP deployments, or commercial hardware bundles require a separate **Commercial License**. Please reach out via the [contact form](https://esp32-service-uptime-monitor.com/#contact) or the project repository (<https://github.com/gyengus/esp32-service-uptime-monitor>) for commercial licensing inquiries.
+- **Companies, Public Institutions & Commercial Use (30-Day Free Trial, then Paid):** Organizations may internally evaluate and test the software **free of charge for up to 30 days**. Continued production use, MSP deployments, or commercial hardware bundles require a separate **Commercial License**. Please reach out via the [contact form](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=license_contact#contact) or the project repository (<https://github.com/gyengus/esp32-service-uptime-monitor>) for commercial licensing inquiries.
 
 ## Donations
 

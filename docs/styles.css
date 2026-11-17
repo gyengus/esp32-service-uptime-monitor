@@ -160,6 +160,13 @@ a:hover {
   .nav-links {
     flex-wrap: wrap;
     width: 100%;
+    gap: 6px;
+  }
+  .nav-dropdown-menu {
+    top: calc(100% + 4px);
+    left: 0;
+    width: max-content;
+    max-width: calc(100vw - 32px);
   }
 }
 
@@ -189,6 +196,137 @@ a:hover {
 
 .nav-links a[aria-current="page"]:hover {
   background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* Navigation Dropdown */
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.nav-dropdown-trigger:hover,
+.nav-dropdown:hover .nav-dropdown-trigger,
+.nav-dropdown:focus-within .nav-dropdown-trigger,
+.nav-dropdown.is-open .nav-dropdown-trigger {
+  color: var(--text);
+  background: var(--surface-elevated);
+}
+
+.nav-dropdown:has([aria-current="page"]) .nav-dropdown-trigger,
+.nav-dropdown-trigger[data-active="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.dropdown-chevron {
+  width: 11px;
+  height: 11px;
+  color: currentColor;
+  opacity: 0.7;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-dropdown:hover .dropdown-chevron,
+.nav-dropdown:focus-within .dropdown-chevron,
+.nav-dropdown.is-open .dropdown-chevron {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.4), 0 4px 10px -2px rgba(0, 0, 0, 0.25);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  z-index: 100;
+}
+
+/* Invisible bridge preventing hover drop when moving cursor across the gap */
+.nav-dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
+}
+
+@media (min-width: 921px) {
+  .nav-dropdown:hover .nav-dropdown-menu,
+  .nav-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.nav-dropdown.is-open .nav-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-radius: calc(var(--radius-sm) - 2px);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.nav-dropdown-item:hover,
+.nav-dropdown-item:focus-visible {
+  color: var(--text);
+  background: var(--surface-elevated);
+  text-decoration: none;
+}
+
+.nav-dropdown-item[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .theme-toggle {
@@ -1552,4 +1690,47 @@ code {
   background: rgba(239, 68, 68, 0.15);
   color: var(--danger);
   border: 1px solid var(--danger);
+}
+
+.btn-sm {
+  padding: 7px 14px;
+  font-size: 0.86rem;
+  border-radius: var(--radius-sm);
+}
+
+.section-footer-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.section-footer-action span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.feature-link:hover {
+  color: var(--accent-hover);
 }

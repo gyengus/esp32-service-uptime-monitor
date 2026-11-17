@@ -75,12 +75,15 @@ def load_templates(project_dir: Path) -> dict:
 def get_header_html(tpl_header: str, active_nav: str = "", has_changelog: bool = False) -> str:
     if has_changelog:
         active_attr = ' aria-current="page"' if active_nav == "changelog" else ""
-        nav_changelog_item = f'<a href="./changelog.html"{active_attr}>Changelog</a>'
+        nav_changelog_item = f'<a href="./changelog.html" class="nav-dropdown-item" role="menuitem"{active_attr}>Changelog</a>'
     else:
         nav_changelog_item = ""
 
+    is_doc_active = active_nav in {"readme", "api", "contributing", "changelog", "license"}
+
     context = {
         "nav_overview_attr": ' aria-current="page"' if active_nav == "overview" else "",
+        "nav_docs_attr": ' data-active="true"' if is_doc_active else "",
         "nav_readme_attr": ' aria-current="page"' if active_nav == "readme" else "",
         "nav_api_attr": ' aria-current="page"' if active_nav == "api" else "",
         "nav_contributing_attr": ' aria-current="page"' if active_nav == "contributing" else "",

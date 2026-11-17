@@ -6,11 +6,19 @@
     </a>
     <nav class="nav-links" aria-label="Main navigation">
       <a href="./"{{nav_overview_attr}}>Overview &amp; Flasher</a>
-      <a href="./readme.html"{{nav_readme_attr}}>Documentation</a>
-      <a href="./api/"{{nav_api_attr}}>API (Swagger)</a>
-      <a href="./contributing.html"{{nav_contributing_attr}}>Contributing</a>
-      {{nav_changelog_item}}
-      <a href="./license.html"{{nav_license_attr}}>License</a>
+      <div class="nav-dropdown">
+        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
+          <span>Documentation</span>
+          <svg class="dropdown-chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5L6 8L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" role="menu">
+          <a href="./readme.html" class="nav-dropdown-item" role="menuitem"{{nav_readme_attr}}>Setup &amp; Features (README)</a>
+          <a href="./api/" class="nav-dropdown-item" role="menuitem"{{nav_api_attr}}>API Docs (Swagger UI)</a>
+          <a href="./contributing.html" class="nav-dropdown-item" role="menuitem"{{nav_contributing_attr}}>Contributing Guide</a>
+          {{nav_changelog_item}}
+          <a href="./license.html" class="nav-dropdown-item" role="menuitem"{{nav_license_attr}}>License Terms</a>
+        </div>
+      </div>
       <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
       <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
       <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
@@ -18,4 +26,36 @@
       </button>
     </nav>
   </div>
+  <script>
+    (function () {
+      const dropdown = document.querySelector(".nav-dropdown");
+      if (!dropdown) return;
+      const trigger = dropdown.querySelector(".nav-dropdown-trigger");
+      if (!trigger) return;
+
+      function setOpen(open) {
+        const isOpen = open !== undefined ? open : trigger.getAttribute("aria-expanded") !== "true";
+        trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        dropdown.classList.toggle("is-open", isOpen);
+      }
+
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setOpen();
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!dropdown.contains(e.target)) {
+          setOpen(false);
+        }
+      });
+
+      dropdown.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          setOpen(false);
+          trigger.focus();
+        }
+      });
+    })();
+  </script>
 </header>

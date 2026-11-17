@@ -77,11 +77,19 @@
     </a>
     <nav class="nav-links" aria-label="Main navigation">
       <a href="./" aria-current="page">Overview &amp; Flasher</a>
-      <a href="./readme.html">Documentation</a>
-      <a href="./api/">API (Swagger)</a>
-      <a href="./contributing.html">Contributing</a>
-      <a href="./changelog.html">Changelog</a>
-      <a href="./license.html">License</a>
+      <div class="nav-dropdown">
+        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
+          <span>Documentation</span>
+          <svg class="dropdown-chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5L6 8L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" role="menu">
+          <a href="./readme.html" class="nav-dropdown-item" role="menuitem">Setup &amp; Features (README)</a>
+          <a href="./api/" class="nav-dropdown-item" role="menuitem">API Docs (Swagger UI)</a>
+          <a href="./contributing.html" class="nav-dropdown-item" role="menuitem">Contributing Guide</a>
+          <a href="./changelog.html" class="nav-dropdown-item" role="menuitem">Changelog</a>
+          <a href="./license.html" class="nav-dropdown-item" role="menuitem">License Terms</a>
+        </div>
+      </div>
       <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
       <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
       <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
@@ -89,6 +97,38 @@
       </button>
     </nav>
   </div>
+  <script>
+    (function () {
+      const dropdown = document.querySelector(".nav-dropdown");
+      if (!dropdown) return;
+      const trigger = dropdown.querySelector(".nav-dropdown-trigger");
+      if (!trigger) return;
+
+      function setOpen(open) {
+        const isOpen = open !== undefined ? open : trigger.getAttribute("aria-expanded") !== "true";
+        trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        dropdown.classList.toggle("is-open", isOpen);
+      }
+
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setOpen();
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!dropdown.contains(e.target)) {
+          setOpen(false);
+        }
+      });
+
+      dropdown.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          setOpen(false);
+          trigger.focus();
+        }
+      });
+    })();
+  </script>
 </header>
   <!-- /COMPONENT: HEADER -->
 
@@ -529,7 +569,7 @@
               <span class="step-num">3</span>
               <h3>Unlock Settings via BOOT</h3>
             </div>
-            <p>Short-press the physical <strong>BOOT</strong> button to unlock configuration for 10 minutes. Hold &ge; 10s for a full Factory Reset.</p>
+            <p>Short-press the physical <strong>BOOT</strong> button to unlock configuration for 10 minutes. Hold &ge; 10s for a full Factory Reset. For captive portal setup and reset details, see the <a href="./readme.html#initial-setup" style="color:var(--accent); text-decoration:underline;">Setup Guide</a>.</p>
           </article>
         </div>
       </div>
@@ -579,6 +619,7 @@
               <h3>Interactive Swagger API</h3>
             </div>
             <p>Full OpenAPI 3 specification served both on-device at <code>/api/docs</code> and statically right here on GitHub Pages.</p>
+            <a href="./api/" class="feature-link">Explore Swagger API Docs &rarr;</a>
           </article>
           <article class="card feature-card">
             <div class="feature-header">
@@ -598,6 +639,10 @@
             </div>
             <p>Update firmware or web assets over HTTP/PlatformIO, and export or restore full JSON configuration snapshots anytime.</p>
           </article>
+        </div>
+        <div class="section-footer-action">
+          <span>Need details on configuration parameters, backup schemas, or security architecture?</span>
+          <a class="btn btn-secondary btn-sm" href="./readme.html">Read Technical Documentation &rarr;</a>
         </div>
       </div>
     </section>
@@ -680,6 +725,10 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="section-footer-action">
+          <span>Looking for GPIO pinouts, partition schemes, or custom board definitions?</span>
+          <a class="btn btn-secondary btn-sm" href="./readme.html#hardware--board-profiles">Explore Full Hardware Specs &rarr;</a>
         </div>
       </div>
     </section>
