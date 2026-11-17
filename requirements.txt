@@ -1,0 +1,4 @@
+platformio
+pyyaml
+markdown
+beautifulsoup4
