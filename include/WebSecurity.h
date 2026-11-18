@@ -31,6 +31,22 @@ public:
         return h;
     }
 
+    static bool isLocalDomainSuffix(const String& suffix) {
+        return suffix == "local" || suffix == "lan" || suffix == "home" ||
+               suffix == "home.arpa" || suffix == "localdomain" ||
+               suffix == "internal" || suffix == "intra" || suffix == "fritz.box";
+    }
+
+    static bool isHostnameWithAllowedSuffix(const String& hostOnly, const String& baseName) {
+        if (baseName.length() == 0) return false;
+        if (hostOnly == baseName) return true;
+        if (hostOnly.startsWith(baseName + ".")) {
+            String suffix = hostOnly.substring(baseName.length() + 1);
+            return isLocalDomainSuffix(suffix);
+        }
+        return false;
+    }
+
     static bool isHostAllowed(const String& rawHost) {
         String host = normalizeHost(rawHost);
         int colonIdx = host.indexOf(':');
@@ -42,18 +58,14 @@ public:
 
         String myHostname = config.getConfig().hostname;
         myHostname.toLowerCase();
-        if (myHostname.length() > 0) {
-            if (hostOnly == myHostname || hostOnly == (myHostname + ".local")) {
-                return true;
-            }
+        if (isHostnameWithAllowedSuffix(hostOnly, myHostname)) {
+            return true;
         }
 
         String defaultHost = String(DEFAULT_HOSTNAME);
         defaultHost.toLowerCase();
-        if (defaultHost.length() > 0) {
-            if (hostOnly == defaultHost || hostOnly == (defaultHost + ".local")) {
-                return true;
-            }
+        if (isHostnameWithAllowedSuffix(hostOnly, defaultHost)) {
+            return true;
         }
 
         if (isAPMode) {

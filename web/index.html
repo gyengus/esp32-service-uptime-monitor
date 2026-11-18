@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ESP32 Service Uptime Monitor</title>
+    <link rel="api-description" type="application/yaml" href="/api/openapi.yaml" />
     <link href="static/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" crossorigin="anonymous">
     <link href="static/style.css" rel="stylesheet" />
@@ -143,7 +144,7 @@
         </div>
     </nav>
 
-    <div class="container-fluid" id="mainContainer">
+    <main class="container-fluid" id="mainContainer">
         <div id="toastContainer" class="toast-container position-fixed top-0 end-0">
             <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
@@ -199,17 +200,17 @@
 -->
 
         <div id="entityGrid" class="row g-4"></div>
-    </div>
+    </main>
 
     <button type="button" class="btn btn-primary shadow-lg fab" id="addButton" title="Add entity" aria-label="Add entity">
         <svg class="ui-icon ui-icon-xl" aria-hidden="true"><use href="#ui-plus"></use></svg>
     </button>
 
-    <div class="modal fade" id="entityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="entityModal" tabindex="-1" aria-labelledby="entityModalTitle" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Entity</h5>
+                    <h5 class="modal-title" id="entityModalTitle">Entity</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -229,7 +230,7 @@
                         </div>
 
                         <div class="mb-3 row">
-                            <div class="col-sm-4 col-form-label">Notifications</div>
+                            <label class="col-sm-4 col-form-label" for="notificationsEnabled">Notifications</label>
                             <div class="col-sm-8 col-form-label">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" id="notificationsEnabled">
@@ -238,7 +239,7 @@
                         </div>
 
                         <div class="mb-3 row">
-                            <div class="col-sm-4 col-form-label">Disabled</div>
+                            <label class="col-sm-4 col-form-label" for="disabledEnabled">Disabled</label>
                             <div class="col-sm-8 col-form-label">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" id="disabledEnabled">
@@ -275,11 +276,11 @@
         </div>
     </div>
 
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Confirm delete</h5>
+                    <h5 class="modal-title" id="deleteConfirmModalTitle">Confirm delete</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

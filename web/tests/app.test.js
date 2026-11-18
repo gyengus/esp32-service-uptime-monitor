@@ -1104,9 +1104,10 @@ describe('Uptime Monitor Web UI - app.js', () => {
       vi.useRealTimers();
       window.set_lastDetailedSysinfo({ system: { freeHeap: 50000 } });
 
-      // 1. Success path
+      // 1. Success path via navigator.clipboard
       const writeTextMock = vi.fn().mockResolvedValue();
       const origClipboard = navigator.clipboard;
+      const origExecCommand = document.execCommand;
       Object.defineProperty(navigator, 'clipboard', {
         value: { writeText: writeTextMock },
         configurable: true,
@@ -1118,22 +1119,56 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('50000'));
       expect($('#successToast .toast-body').text()).toContain('copied to clipboard');
 
-      // 2. Clipboard writeText rejection
+      // 2. Clipboard writeText rejection -> falls back to document.execCommand
       writeTextMock.mockRejectedValueOnce(new Error('Permission denied'));
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      document.execCommand = execCommandMock;
+      $('#btnCopySysinfo').trigger('click');
+      await new Promise(r => setTimeout(r, 30));
+      expect(execCommandMock).toHaveBeenCalledWith('copy');
+      expect($('#successToast .toast-body').text()).toContain('copied to clipboard');
+
+      // 3. Both modern and fallback fail
+      writeTextMock.mockRejectedValueOnce(new Error('Permission denied'));
+      document.execCommand = vi.fn().mockReturnValue(false);
       $('#btnCopySysinfo').trigger('click');
       await new Promise(r => setTimeout(r, 30));
       expect($('#errorToast .toast-body').text()).toBe('Failed to copy diagnostics');
 
-      // 3. Clipboard API unavailable
+      // 4. Insecure HTTP context: navigator.clipboard is undefined, fallback succeeds and appends to modal
       navigator.clipboard = undefined;
+      let appendedParentTag = null;
+      const origAppendChild = Element.prototype.appendChild;
+      const appendSpy = vi.spyOn(Element.prototype, 'appendChild').mockImplementation(function(child) {
+        if (child && child.tagName === 'TEXTAREA') {
+          appendedParentTag = this.id || this.className || this.tagName;
+        }
+        return origAppendChild.call(this, child);
+      });
+      document.execCommand = vi.fn().mockReturnValue(true);
       $('#btnCopySysinfo').trigger('click');
-      expect($('#errorToast .toast-body').text()).toBe('Clipboard API unavailable');
+      await new Promise(r => setTimeout(r, 30));
+      expect($('#successToast .toast-body').text()).toContain('copied to clipboard');
+      // Verify textarea was appended inside modal, preventing Bootstrap focustrap interference
+      expect(appendedParentTag).not.toBe('BODY');
+      appendSpy.mockRestore();
+
+      // 5. Insecure HTTP context: fallback also fails
+      document.execCommand = vi.fn().mockReturnValue(false);
+      $('#btnCopySysinfo').trigger('click');
+      await new Promise(r => setTimeout(r, 30));
+      expect($('#errorToast .toast-body').text()).toBe('Failed to copy diagnostics');
 
       Object.defineProperty(navigator, 'clipboard', {
         value: origClipboard,
         configurable: true,
         writable: true
       });
+      if (origExecCommand !== undefined) {
+        document.execCommand = origExecCommand;
+      } else {
+        delete document.execCommand;
+      }
       vi.useFakeTimers();
     });
 
@@ -1258,6 +1293,7 @@ describe('Uptime Monitor Web UI - app.js', () => {
     it('copies license text to clipboard and handles success / failure', async () => {
       window.set_licenseTextCache('Sample License Text');
       const writeTextMock = vi.fn().mockResolvedValue();
+      const origExecCommand = document.execCommand;
       Object.defineProperty(navigator, 'clipboard', {
         value: { writeText: writeTextMock },
         configurable: true,
@@ -1271,17 +1307,34 @@ describe('Uptime Monitor Web UI - app.js', () => {
       expect($('#successToast').hasClass('show')).toBe(true);
       expect($('#successToast .toast-body').text()).toBe('License text copied to clipboard');
 
-      // Test clipboard error
+      // Test clipboard error with fallback rejection
       writeTextMock.mockRejectedValueOnce(new Error('Permission denied'));
+      document.execCommand = vi.fn().mockReturnValue(false);
       $('#btnCopyLicense').trigger('click');
       await new Promise(r => setTimeout(r, 20));
       expect($('#errorToast').hasClass('show')).toBe(true);
       expect($('#errorToast .toast-body').text()).toBe('Failed to copy license text');
 
-      // Test clipboard unavailable
+      // Test insecure HTTP context: navigator.clipboard unavailable, fallback succeeds
       navigator.clipboard = undefined;
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      document.execCommand = execCommandMock;
       $('#btnCopyLicense').trigger('click');
-      expect($('#errorToast .toast-body').text()).toBe('Clipboard API unavailable');
+      await new Promise(r => setTimeout(r, 20));
+      expect(execCommandMock).toHaveBeenCalledWith('copy');
+      expect($('#successToast .toast-body').text()).toBe('License text copied to clipboard');
+
+      // Test insecure HTTP context: fallback also fails
+      document.execCommand = vi.fn().mockReturnValue(false);
+      $('#btnCopyLicense').trigger('click');
+      await new Promise(r => setTimeout(r, 20));
+      expect($('#errorToast .toast-body').text()).toBe('Failed to copy license text');
+
+      if (origExecCommand !== undefined) {
+        document.execCommand = origExecCommand;
+      } else {
+        delete document.execCommand;
+      }
     });
   });
 });

@@ -57,6 +57,9 @@ static bool isUploadAuthorized(AsyncWebServerRequest *request) {
     if (isAPMode) {
         return false;
     }
+    if (isConfigAuthorized(request)) {
+        return true;
+    }
     if (request && request->hasHeader("X-PlatformIO-Upload")) {
         uint32_t now = millis();
         if (failedOtaAttempts >= 5) {
@@ -84,7 +87,7 @@ static bool isUploadAuthorized(AsyncWebServerRequest *request) {
         }
         return false;
     }
-    return isConfigAuthorized(request);
+    return false;
 }
 
 static String urlDecode(const String &input) {

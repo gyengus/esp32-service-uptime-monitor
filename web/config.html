@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ESP32 Service Uptime Monitor</title>
+    <link rel="api-description" type="application/yaml" href="/api/openapi.yaml" />
     <link href="static/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
     <link href="static/style.css" rel="stylesheet" />
@@ -41,7 +42,7 @@
         </div>
     </nav>
 
-    <div class="container" id="mainContainer">
+    <main class="container" id="mainContainer">
         <div id="toastContainer" class="toast-container position-fixed top-0 end-0">
             <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
@@ -229,13 +230,13 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <div class="modal fade" id="factoryResetConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="factoryResetConfirmModal" tabindex="-1" aria-labelledby="factoryResetConfirmModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Confirm factory reset</h5>
+                    <h5 class="modal-title" id="factoryResetConfirmModalTitle">Confirm factory reset</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

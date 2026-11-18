@@ -501,18 +501,23 @@ function renderEntities() {
         const actionBtnClass = isLightCard ? 'btn-outline-dark text-dark' : 'btn-outline-light text-white';
 
         let statusBadge = '';
+        let statusKey = 'pending';
         if (entity.disabled) {
+            statusKey = 'disabled';
             statusBadge = `<span class="badge text-bg-dark border border-secondary-subtle d-inline-flex align-items-center gap-1">${renderUiSvg('ui-pause-circle')}<span>Disabled</span></span>`;
         } else if (!entity.lastChanged) {
+            statusKey = 'pending';
             statusBadge = `<span class="badge text-bg-secondary d-inline-flex align-items-center gap-1">${renderUiSvg('ui-clock')}<span>Pending</span></span>`;
         } else if (entity.isOnline) {
+            statusKey = 'online';
             statusBadge = `<span class="badge bg-dark bg-opacity-25 text-white border border-white border-opacity-25 d-inline-flex align-items-center gap-1">${renderUiSvg('ui-check-circle')}<span>Online</span></span>`;
         } else {
+            statusKey = 'offline';
             statusBadge = `<span class="badge bg-dark bg-opacity-25 text-white border border-white border-opacity-25 d-inline-flex align-items-center gap-1">${renderUiSvg('ui-alert-circle')}<span>Offline</span></span>`;
         }
 
         let iconHtml = renderIconHtml(entity.icon || "mdi-server");
-        let notifyIcon = entity.notification ? `<span class="ms-2 d-inline-flex align-items-center" title="Notifications ON">${renderUiSvg('ui-bell')}</span>` : '';
+        let notifyIcon = entity.notification ? `<span class="ms-2 d-inline-flex align-items-center" title="Notifications ON" aria-label="Notifications enabled">${renderUiSvg('ui-bell')}</span>` : '';
         let addressUrl = (entity.address.startsWith("http://") || entity.address.startsWith("https://")) 
             ? entity.address 
             : "http://" + entity.address;
@@ -526,7 +531,7 @@ function renderEntities() {
 
         let cardHtml = `
             <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 shadow monitoredEntity ${cardBgClass}" data-entity-name="${safeName}">
+                <div class="card h-100 shadow monitoredEntity ${cardBgClass}" data-entity-name="${safeName}" data-status="${statusKey}">
                     <div class="card-body position-relative">
                         <div class="position-absolute top-0 end-0 p-2 buttons d-flex gap-1">
                             <button type="button" class="btn btn-sm ${actionBtnClass} opacity-75 btn-edit" data-name="${safeName}" title="Edit" aria-label="Edit ${safeName}">
@@ -1523,18 +1528,72 @@ $('#btnRefreshSysinfo').on('click', function() {
     loadDetailedSysinfo();
 });
 
+function fallbackCopyTextToClipboard(text, container) {
+    return new Promise((resolve, reject) => {
+        let textarea;
+        const previouslyFocused = document.activeElement;
+        try {
+            const contextEl = (container && container.nodeType) ? container : previouslyFocused;
+            const targetContainer = (contextEl && contextEl.closest && contextEl.closest('.modal'))
+                || document.querySelector('.modal.show .modal-content')
+                || document.querySelector('.modal.show')
+                || document.body;
+
+            textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            textarea.style.top = `${window.pageYOffset || (document.documentElement && document.documentElement.scrollTop) || 0}px`;
+            textarea.style.fontSize = '12pt';
+            textarea.style.border = 'none';
+            textarea.style.outline = 'none';
+            textarea.style.boxShadow = 'none';
+            textarea.style.padding = '0';
+            textarea.style.margin = '0';
+            textarea.style.background = 'transparent';
+            targetContainer.appendChild(textarea);
+
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+
+            const successful = document.execCommand && document.execCommand('copy');
+            if (successful) {
+                resolve();
+            } else {
+                reject(new Error('execCommand copy failed'));
+            }
+        } catch (err) {
+            reject(err);
+        } finally {
+            if (textarea && textarea.parentNode) {
+                textarea.parentNode.removeChild(textarea);
+            }
+            if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                previouslyFocused.focus();
+            }
+        }
+    });
+}
+
+function copyTextToClipboard(text, container) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        return navigator.clipboard.writeText(text).catch(() => {
+            return fallbackCopyTextToClipboard(text, container);
+        });
+    }
+    return fallbackCopyTextToClipboard(text, container);
+}
+
 $('#btnCopySysinfo').on('click', function() {
     if (!lastDetailedSysinfo) return;
     const payload = JSON.stringify(lastDetailedSysinfo, null, 2);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(payload).then(() => {
-            showSuccess('System diagnostics copied to clipboard');
-        }).catch(() => {
-            showError('Failed to copy diagnostics');
-        });
-    } else {
-        showError('Clipboard API unavailable');
-    }
+    copyTextToClipboard(payload, this).then(() => {
+        showSuccess('System diagnostics copied to clipboard');
+    }).catch(() => {
+        showError('Failed to copy diagnostics');
+    });
 });
 
 let licenseTextCache = null;
@@ -1578,18 +1637,16 @@ $('#licenseModal').on('show.bs.modal', function() {
 $('#btnCopyLicense').on('click', function() {
     const text = licenseTextCache || $('#licenseContent').text();
     if (!text) return;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showSuccess('License text copied to clipboard');
-        }).catch(() => {
-            showError('Failed to copy license text');
-        });
-    } else {
-        showError('Clipboard API unavailable');
-    }
+    copyTextToClipboard(text, this).then(() => {
+        showSuccess('License text copied to clipboard');
+    }).catch(() => {
+        showError('Failed to copy license text');
+    });
 });
 
 if (typeof window !== 'undefined') {
+    window.copyTextToClipboard = copyTextToClipboard;
+    window.fallbackCopyTextToClipboard = fallbackCopyTextToClipboard;
     window.loadLicenseText = loadLicenseText;
     window.get_licenseTextCache = () => licenseTextCache;
     window.set_licenseTextCache = (v) => { licenseTextCache = v; };

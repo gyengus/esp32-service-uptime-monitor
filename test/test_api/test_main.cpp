@@ -380,6 +380,13 @@ void test_api_web_upload_archive_success(void) {
     TEST_ASSERT_TRUE(handled);
     TEST_ASSERT_EQUAL_INT(200, req.lastCode);
 
+    // Also test that active configuration mode takes precedence even if X-PlatformIO-Upload has mismatched token
+    AsyncWebServerRequest reqWithMismatchedToken;
+    reqWithMismatchedToken.setHeader("X-PlatformIO-Upload", "completely_wrong_token");
+    handled = testServer->dispatchUpload("/api/web/upload-archive", HTTP_POST, &reqWithMismatchedToken, "web.zip", "ZIPDATA");
+    TEST_ASSERT_TRUE(handled);
+    TEST_ASSERT_EQUAL_INT(200, reqWithMismatchedToken.lastCode);
+
     MonitoringTaskHandle = nullptr;
 }
 
@@ -542,6 +549,23 @@ void test_api_csrf_and_dns_rebinding_protection(void) {
     validReq.setHeader("Origin", "http://localhost");
     TEST_ASSERT_TRUE(testServer->dispatch("/api/config/factoryReset", HTTP_POST, &validReq));
     TEST_ASSERT_EQUAL_INT(200, validReq.lastCode);
+
+    // 4. Local network router domain (e.g. .lan, .home) with configured hostname succeeds
+    config_t cfg = config.getConfig();
+    cfg.hostname = "esp32-service-uptime-monitor";
+    config.saveConfig(cfg);
+
+    AsyncWebServerRequest lanReq;
+    lanReq.setHeader("Host", "esp32-service-uptime-monitor.lan");
+    lanReq.setHeader("Origin", "http://esp32-service-uptime-monitor.lan");
+    TEST_ASSERT_TRUE(testServer->dispatch("/api/config/factoryReset", HTTP_POST, &lanReq));
+    TEST_ASSERT_EQUAL_INT(200, lanReq.lastCode);
+
+    AsyncWebServerRequest homeReq;
+    homeReq.setHeader("Host", "esp32-service-uptime-monitor.home");
+    homeReq.setHeader("Origin", "http://esp32-service-uptime-monitor.home");
+    TEST_ASSERT_TRUE(testServer->dispatch("/api/config/factoryReset", HTTP_POST, &homeReq));
+    TEST_ASSERT_EQUAL_INT(200, homeReq.lastCode);
 }
 
 void test_api_content_type_enforcement(void) {
