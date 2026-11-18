@@ -4,7 +4,19 @@
       <span class="status-dot" aria-hidden="true"></span>
       <span>ESP32 Service Uptime Monitor</span>
     </a>
-    <nav class="nav-links" aria-label="Main navigation">
+    <div class="nav-controls">
+      <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+      </button>
+      <button type="button" id="navMenuToggle" class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mainNavLinks">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <nav id="mainNavLinks" class="nav-links" aria-label="Main navigation">
       <a href="./"{{nav_overview_attr}}>Overview &amp; Flasher</a>
       <div class="nav-dropdown">
         <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
@@ -21,39 +33,56 @@
       </div>
       <a href="https://github.com/gyengus/esp32-service-uptime-monitor/releases" target="_blank" rel="noopener">Releases</a>
       <a href="https://github.com/gyengus/esp32-service-uptime-monitor" target="_blank" rel="noopener">GitHub</a>
-      <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
-        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
-      </button>
     </nav>
   </div>
   <script>
     (function () {
+      const navLinks = document.getElementById("mainNavLinks");
+      const menuToggle = document.getElementById("navMenuToggle");
       const dropdown = document.querySelector(".nav-dropdown");
-      if (!dropdown) return;
-      const trigger = dropdown.querySelector(".nav-dropdown-trigger");
-      if (!trigger) return;
+      const trigger = dropdown ? dropdown.querySelector(".nav-dropdown-trigger") : null;
 
-      function setOpen(open) {
+      function setMobileNav(open) {
+        if (!navLinks || !menuToggle) return;
+        const isOpen = open !== undefined ? open : menuToggle.getAttribute("aria-expanded") !== "true";
+        menuToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        navLinks.classList.toggle("is-mobile-open", isOpen);
+      }
+
+      if (menuToggle && navLinks) {
+        menuToggle.addEventListener("click", function (e) {
+          e.stopPropagation();
+          setMobileNav();
+        });
+      }
+
+      function setDropdownOpen(open) {
+        if (!dropdown || !trigger) return;
         const isOpen = open !== undefined ? open : trigger.getAttribute("aria-expanded") !== "true";
         trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
         dropdown.classList.toggle("is-open", isOpen);
       }
 
-      trigger.addEventListener("click", function (e) {
-        e.stopPropagation();
-        setOpen();
-      });
+      if (dropdown && trigger) {
+        trigger.addEventListener("click", function (e) {
+          e.stopPropagation();
+          setDropdownOpen();
+        });
+
+        dropdown.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") {
+            setDropdownOpen(false);
+            trigger.focus();
+          }
+        });
+      }
 
       document.addEventListener("click", function (e) {
-        if (!dropdown.contains(e.target)) {
-          setOpen(false);
+        if (dropdown && !dropdown.contains(e.target)) {
+          setDropdownOpen(false);
         }
-      });
-
-      dropdown.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") {
-          setOpen(false);
-          trigger.focus();
+        if (navLinks && menuToggle && !navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
+          setMobileNav(false);
         }
       });
     })();
