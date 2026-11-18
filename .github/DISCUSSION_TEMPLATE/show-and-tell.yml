@@ -1,0 +1,37 @@
+title: "[Show & Tell]: "
+labels: ["show-and-tell"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Show off your hardware builds, 3D printed cases, wall mounts, homelab racks, and monitoring dashboards!
+
+  - type: input
+    id: project_title
+    attributes:
+      label: Build Title
+      description: A catchy title for your setup or project.
+      placeholder: "e.g., DIN-Rail Mounted ESP32-S3 Monitor with PoE & Status LED"
+    validations:
+      required: true
+
+  - type: textarea
+    id: build_description
+    attributes:
+      label: Setup Description & Hardware
+      description: Tell us about the hardware, custom enclosures, sensors, or deployment location.
+      placeholder: |
+        - **Board & Hardware:** ESP32-S3 CAM, 32GB SanDisk MicroSD...
+        - **Enclosure:** Custom 3D printed case (PETG)...
+        - **Monitored Services:** Pi-hole, Home Assistant, NAS...
+    validations:
+      required: true
+
+  - type: textarea
+    id: photos_and_links
+    attributes:
+      label: Photos, Videos & 3D Model Links
+      description: Paste image links, STL files (Printables/Thingiverse), or project URLs here.
+      placeholder: "Upload images directly by dragging and dropping them into this box, or paste links."
+    validations:
+      required: false

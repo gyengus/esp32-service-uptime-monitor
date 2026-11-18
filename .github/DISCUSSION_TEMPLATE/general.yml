@@ -1,0 +1,24 @@
+title: "[General]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Welcome to General Discussions! Use this space for broad topics, community updates, or general feedback about ESP32 Service Uptime Monitor.
+
+  - type: input
+    id: topic
+    attributes:
+      label: Discussion Topic
+      description: Brief topic description.
+      placeholder: "e.g., Experiences using ESP32-C6 in dense Wi-Fi environments"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What would you like to discuss?
+      placeholder: "Share your thoughts or observations..."
+    validations:
+      required: true

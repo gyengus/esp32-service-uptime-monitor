@@ -1,0 +1,41 @@
+title: "[Q&A]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Welcome to Q&A! Have a question about configuring your ESP32, wiring peripherals, or deploying firmware? Ask away below.
+
+  - type: input
+    id: question_summary
+    attributes:
+      label: Question Summary
+      description: What would you like help with?
+      placeholder: "e.g., How do I configure static IP addresses on ESP32-S3?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Target Environment
+      description: Which board, storage, or deployment mode are you using?
+      options:
+        - "ESP32-S3 (MicroSD / SD_MMC)"
+        - "ESP32-S3 (Internal LittleFS)"
+        - "ESP32 Classic (ESP32-WROOM-32)"
+        - "ESP32-C3 / C6 / C5"
+        - "Web Flasher (ESP Web Tools)"
+        - "PlatformIO CLI / VSCode"
+        - "General / Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question_details
+    attributes:
+      label: Context & What You've Tried
+      description: Provide details, configuration snippets, or error messages you are encountering.
+      placeholder: "Explain what you are trying to achieve and what steps you've already attempted."
+    validations:
+      required: true

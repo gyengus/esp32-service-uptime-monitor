@@ -1,0 +1,34 @@
+title: "[Idea]: "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an early idea or suggestion? Start an open discussion here to brainstorm with maintainers and other users before opening a formal Feature Request.
+
+  - type: input
+    id: idea_summary
+    attributes:
+      label: Summary
+      description: What is your idea in one sentence?
+      placeholder: "e.g., Support Prometheus metric exporter endpoint"
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea_details
+    attributes:
+      label: Background & Details
+      description: Explain the problem or use case this idea solves and how it could work.
+      placeholder: "Describe the concept and why it would be beneficial for the project."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Are there any workarounds or alternative approaches you have considered?
+      placeholder: "e.g., Using WebSockets to stream to an external collector..."
+    validations:
+      required: false
