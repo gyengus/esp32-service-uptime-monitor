@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a Security Vulnerability
+    url: https://esp32-service-uptime-monitor.com/#contact
+    about: Please report security vulnerabilities privately and responsibly rather than opening a public issue.
+  - name: 💼 Commercial Licensing & Business Inquiries
+    url: https://esp32-service-uptime-monitor.com/#contact
+    about: Commercial evaluation, multi-device provisioning, custom board integration, or MSP deployment inquiries.
+  - name: 💬 General Questions & Community Q&A
+    url: https://github.com/gyengus/esp32-service-uptime-monitor/discussions
+    about: Ask setup questions, discuss homelab monitoring architectures, or get community help.

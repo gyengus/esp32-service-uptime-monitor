@@ -1,0 +1,121 @@
+name: Bug Report
+description: Report an issue, bug, or unexpected behavior in the firmware or Web UI
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report an issue! Please fill out the sections below to help us diagnose and resolve the bug quickly.
+
+  - type: dropdown
+    id: board
+    attributes:
+      label: Target Board / Environment
+      description: Which ESP32 board or PlatformIO build environment are you using?
+      options:
+        - "esp32-s3-cam (ESP32-S3 CAM with MicroSD)"
+        - "esp32-s3 (ESP32-S3 DevKitC-1 with LittleFS)"
+        - "esp32 (ESP32-WROOM-32 / NodeMCU-32S)"
+        - "esp32-c3 (ESP32-C3 SuperMini / DevKitM-1)"
+        - "esp32-c6 (ESP32-C6 DevKitM-1 Wi-Fi 6)"
+        - "esp32-c5 (ESP32-C5 Dual-Band Wi-Fi 6)"
+        - "Custom / Other ESP32 board"
+    validations:
+      required: true
+
+  - type: input
+    id: firmware_version
+    attributes:
+      label: Firmware Version
+      description: What firmware version is installed? (Visible in the Web UI footer or via GET /api/system/info)
+      placeholder: "e.g., 1.0.0 or 0.0.1-SNAPSHOT (commit a1b2c3d)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation_method
+    attributes:
+      label: Installation Method
+      description: How was the firmware flashed to the device?
+      options:
+        - "Web Flasher in Browser (ESP Web Tools via USB)"
+        - "PlatformIO CLI / VSCode (pio run -t upload)"
+        - "OTA update via Web UI (/api/system/update)"
+        - "Pre-compiled binary via esptool.py"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Web Browser & OS (if Web UI bug)
+      description: If the bug relates to the browser interface, which browser and operating system are you using?
+      placeholder: "e.g., Chrome 132 on Linux, Safari 18 on macOS, Mobile Chrome on Android"
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "Describe what went wrong and under what circumstances."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this behavior?
+      value: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen instead?
+      placeholder: "e.g., The service status should transition to OFFLINE and trigger a Discord alert."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Serial Console / Device Logs / Browser Console
+      description: |
+        Paste serial logs from USB (`pio device monitor` or Web Serial console) or browser DevTools console output here.
+      render: shell
+      placeholder: |
+        [D][WsLogStream.cpp:24] broadcastLog(): ...
+        [I][MonitoringService.cpp:92] Service transitioned to OFFLINE: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: system_metrics
+    attributes:
+      label: System Metrics JSON (Optional but Recommended)
+      description: |
+        If the Web UI is accessible, open the System Metrics modal (Dashboard -> System modal -> Copy) and paste the JSON here.
+        This provides instant details about hardware revision, heap memory, PSRAM, reset reason, and firmware version.
+      render: json
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate.
+          required: true
+        - label: I am using an official release or the latest master branch.
+          required: true

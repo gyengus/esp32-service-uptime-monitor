@@ -1,0 +1,75 @@
+name: Hardware Peripheral Request
+description: Propose support for a display, buzzer, relay, button, or sensor
+title: "[Hardware]: Peripheral support - "
+labels: ["hardware", "peripheral"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hardware uptime monitors become even more powerful with physical status indicators! Please specify the peripheral hardware details below.
+
+  - type: dropdown
+    id: peripheral_type
+    attributes:
+      label: Peripheral Category
+      description: What kind of hardware peripheral are you proposing?
+      options:
+        - "Display (I2C OLED SSD1306 / SH1106)"
+        - "Display (SPI TFT ST7789 / ILI9341)"
+        - "Audio Indicator (Piezo Buzzer / Audible Alarm)"
+        - "Actuator / Output (Relay Module / MOSFET / Status Beacon)"
+        - "Physical Control (Silence / Mute Alarm Button, Mode Switch)"
+        - "Sensor (Ambient Temperature / Humidity / Voltage Monitor)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: model_chipset
+    attributes:
+      label: Exact Hardware Model & Driver Chipset
+      description: What is the specific controller or component part number?
+      placeholder: "e.g., SSD1306 128x64 I2C OLED, Active 5V Piezo Buzzer, Songle 5V Relay"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: interface_bus
+    attributes:
+      label: Communication Interface / Protocol
+      description: How does the peripheral connect to the ESP32?
+      options:
+        - "I2C (SDA, SCL)"
+        - "SPI (MOSI, MISO, SCK, CS, DC)"
+        - "Single Digital GPIO (High/Low)"
+        - "PWM GPIO (Frequency / Duty cycle)"
+        - "Analog ADC Pin"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected Appliance Behavior
+      description: How should the monitor interact with this peripheral during normal operation and during outages?
+      placeholder: "e.g., When an entity goes OFFLINE, pulse the buzzer for 3 seconds and display the service name on the OLED screen..."
+    validations:
+      required: true
+
+  - type: input
+    id: hardware_link
+    attributes:
+      label: Datasheet / Product Page Link
+      description: Provide a link to the component datasheet, Arduino library, or documentation.
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: testing
+    attributes:
+      label: Hardware Availability & Testing
+      options:
+        - label: I own this hardware module and can test prototypes and test builds.
+          required: true

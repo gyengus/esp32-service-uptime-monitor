@@ -1,0 +1,71 @@
+name: Feature Request
+description: Suggest an idea, enhancement, or new monitoring capability
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new feature! Please provide as much detail as possible to help us understand your use case and evaluate the proposal.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Area / Component
+      description: Which part of the project would this feature primarily affect?
+      options:
+        - "Monitoring Engine (protocols, ping, DNS, hysteresis, timers)"
+        - "Notification / Alert Channels (Discord, Telegram, Webhooks, etc.)"
+        - "Hardware & Peripherals (LEDs, buttons, sensors, power saving)"
+        - "Web UI & Dashboard (mobile, themes, controls, statistics)"
+        - "REST API & OpenAPI / Integrations"
+        - "Network & Connectivity (Wi-Fi, Ethernet, Improv, mDNS)"
+        - "Storage & Configuration (Backup/Restore, LittleFS, MicroSD)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem or limitation? Please describe.
+      placeholder: "e.g., I'm always frustrated when... / I need to monitor services that require..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution or functionality you would like to see added.
+      placeholder: "A clear and concise description of how you envision this feature working."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions, workarounds, or features you've considered.
+      placeholder: "e.g., Currently I'm working around this by..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, API documentation links, screenshots, or mockups.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: willingness_to_contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to help test this feature once a beta or PR is available.
+          required: false
+        - label: I am interested in submitting a pull request to implement this feature.
+          required: false

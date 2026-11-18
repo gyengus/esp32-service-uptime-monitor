@@ -1,0 +1,91 @@
+name: New Board Support
+description: Request support for a new ESP32 board, module, or pinout configuration
+title: "[Board]: Support for "
+labels: ["board-support", "hardware"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We are eager to expand hardware compatibility! Please fill out the board specifications below so we can create a clean board profile in `include/devices.h` and `platformio.ini`.
+
+  - type: input
+    id: board_name
+    attributes:
+      label: Board Name & Manufacturer
+      description: The exact commercial name and manufacturer of the board.
+      placeholder: "e.g., LilyGO T-Display-S3, Seeed Studio XIAO ESP32-C3, NodeMCU-32S v1.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: chip_family
+    attributes:
+      label: ESP32 SoC Family
+      description: Which microcontroller variant powers this board?
+      options:
+        - "ESP32 (Classic dual-core Xtensa LX6)"
+        - "ESP32-S3 (Dual-core Xtensa LX7)"
+        - "ESP32-C3 (Single-core RISC-V)"
+        - "ESP32-C6 (Single-core RISC-V with Wi-Fi 6 & 802.15.4)"
+        - "ESP32-C5 (Single-core RISC-V with 2.4/5GHz Dual-Band Wi-Fi 6)"
+        - "ESP32-S2 (Single-core Xtensa LX7)"
+        - "ESP32-P4 (High-performance dual-core RISC-V)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: memory_specs
+    attributes:
+      label: Flash Size & PSRAM
+      description: How much SPI flash and PSRAM does the board have?
+      placeholder: "e.g., 4MB Flash / No PSRAM, or 16MB QIO Flash / 8MB OPI PSRAM"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: storage_type
+    attributes:
+      label: Storage Backend
+      description: What storage medium should be used on this board?
+      options:
+        - "Internal Flash (LittleFS)"
+        - "MicroSD Card Slot (SD_MMC 1-bit mode)"
+        - "MicroSD Card Slot (SPI mode)"
+        - "External SPI Flash chip"
+    validations:
+      required: true
+
+  - type: textarea
+    id: pinout
+    attributes:
+      label: Hardware Pinout Details
+      description: |
+        Please specify the GPIO numbers for available onboard peripherals:
+      value: |
+        - **Status LED Pin:** GPIO ... (or None)
+        - **RGB LED (WS2812B/NeoPixel) Pin:** GPIO ... (or None)
+        - **Boot Button Pin:** GPIO ... (usually 0, or 9 on C3/C6, 28 on C5)
+        - **SD Card Pins (if applicable):** CMD: ..., CLK: ..., DATA0: ...
+        - **Other Onboard Peripherals (Display, Power management, etc.):** ...
+    validations:
+      required: true
+
+  - type: input
+    id: documentation_url
+    attributes:
+      label: Documentation / Schematic / Store Link
+      description: Provide a link to the board's official pinout diagram, schematic, or product page.
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: willingness_to_test
+    attributes:
+      label: Hardware Availability & Testing
+      options:
+        - label: I own this physical board and can test builds via USB and Web Flasher.
+          required: true
+        - label: I can provide serial console logs if debugging is needed.
+          required: true

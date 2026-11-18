@@ -1,0 +1,73 @@
+name: New Notification Channel
+description: Propose support for a new alert destination (e.g. Telegram, Pushover, MQTT, Ntfy, Gotify)
+title: "[Integration]: Alert channel - "
+labels: ["integration", "notification"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Currently, the appliance supports Discord Webhooks. We want to support the notification tools homelabbers and system administrators rely on most! Please provide technical details about the service below.
+
+  - type: dropdown
+    id: service_name
+    attributes:
+      label: Target Notification Platform
+      description: Which alerting platform or service would you like to see supported?
+      options:
+        - "Telegram Bot API"
+        - "Pushover"
+        - "Home Assistant / MQTT"
+        - "Ntfy (self-hosted / public)"
+        - "Gotify"
+        - "Generic Custom Webhook (custom headers/JSON payload)"
+        - "Slack / Mattermost"
+        - "Matrix"
+        - "Email (SMTP / Sendgrid / Mailgun)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: api_docs_url
+    attributes:
+      label: Official API Documentation Link
+      description: Link to the service's official webhook or message-sending API documentation.
+      placeholder: "e.g., https://core.telegram.org/bots/api#sendmessage"
+    validations:
+      required: true
+
+  - type: textarea
+    id: payload_details
+    attributes:
+      label: Authentication & Payload Specifications
+      description: How does the service authenticate and accept messages?
+      value: |
+        - **HTTP Method:** POST
+        - **Authentication Method:** (e.g., Bearer Token in Authorization header, URL query token, Basic Auth)
+        - **Content-Type:** application/json
+        - **Sample Payload:**
+        ```json
+        {
+          "title": "Service Alert",
+          "message": "{entity_name} transitioned to {status}"
+        }
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case & Homelab Integration
+      description: Why is this integration beneficial to your setup and the broader community?
+      placeholder: "Describe how you route alerts in your environment."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: testing
+    attributes:
+      label: Testing Support
+      options:
+        - label: I actively use this service and can test test-builds or pull requests.
+          required: true

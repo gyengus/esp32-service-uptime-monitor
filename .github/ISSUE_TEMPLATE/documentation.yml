@@ -1,0 +1,61 @@
+name: Documentation Improvement
+description: Report an inaccuracy, suggest clearer wording, or request a new guide or wiring diagram
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Accurate and clear documentation is vital for a smooth hardware and software experience. Thank you for helping us improve it!
+
+  - type: dropdown
+    id: doc_section
+    attributes:
+      label: Documentation Area
+      description: Where is the improvement needed?
+      options:
+        - "Hardware Wiring & Pinout Guide"
+        - "Web Flasher & Browser Installation"
+        - "REST API / OpenAPI / Swagger UI Reference"
+        - "Web UI Dashboard & Configuration"
+        - "PlatformIO Build & Development Guide (CONTRIBUTING.md)"
+        - "Security Architecture & Best Practices"
+        - "License & Evaluation Terms"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: doc_url
+    attributes:
+      label: Page URL or File Path
+      description: Which file or web page needs changes?
+      placeholder: "e.g., https://esp32-service-uptime-monitor.com/readme.html or docs/api/index.html"
+    validations:
+      required: false
+
+  - type: textarea
+    id: issue_description
+    attributes:
+      label: What is unclear, missing, or inaccurate?
+      description: Describe what needs improvement or what caused confusion.
+      placeholder: "e.g., The GPIO pin for the status LED on ESP32-C3 is not mentioned in the wiring table..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_change
+    attributes:
+      label: Proposed Content or Correction
+      description: Provide the corrected text, diagram description, or additional explanation.
+      placeholder: "Suggested replacement text or additions..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: pr_interest
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to submit a pull request with this documentation update.
+          required: false
