@@ -11,6 +11,7 @@ Benefits:
 - Seamless link resolution between GitHub repository and static website.
 """
 
+import json
 import os
 import re
 import sys
@@ -234,11 +235,57 @@ def render_all(project_dir: Path, output_dir: Path):
 
         canonical_url = f"{SITE_BASE_URL}{spec['output']}"
         doc_header = get_header_html(templates["header"], active_nav=key, has_changelog=has_changelog)
+        source_name = spec["source"]
+        alternate_md_link = (
+            f'<link rel="alternate" type="text/markdown" href="./content/{source_name}" title="Raw {source_name}" />\n'
+            '  <link rel="alternate" type="text/markdown" href="./llms.txt" title="LLM documentation index" />'
+        )
+        ld_graph = {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "TechArticle",
+                    "headline": spec["title"],
+                    "description": spec["description"],
+                    "url": canonical_url,
+                    "author": {
+                        "@type": "Person",
+                        "name": "Gyengus",
+                        "url": "https://gyengus.hu/",
+                    },
+                    "isPartOf": {
+                        "@type": "WebSite",
+                        "name": "ESP32 Service Uptime Monitor",
+                        "url": SITE_BASE_URL,
+                    },
+                },
+                {
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Overview",
+                            "item": SITE_BASE_URL,
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": spec["title"].split(" — ")[0],
+                            "item": canonical_url,
+                        },
+                    ],
+                },
+            ],
+        }
+        structured_data = f'<script type="application/ld+json">\n  {json.dumps(ld_graph, indent=2)}\n  </script>'
 
         page_context = {
             "title": spec["title"],
             "description": spec["description"],
             "canonical_url": canonical_url,
+            "alternate_md_link": alternate_md_link,
+            "structured_data": structured_data,
             "analytics": analytics_html,
             "header": doc_header,
             "content": inner_content,

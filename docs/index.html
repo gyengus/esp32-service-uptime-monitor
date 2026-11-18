@@ -37,8 +37,58 @@
     }
   }
   </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Why monitor services from an ESP32 instead of a Docker container?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "If your monitoring container runs on the same Proxmox host, NAS, or server that locks up or loses power, your monitor goes down with it. A dedicated sub-1W ESP32 operates completely out-of-band and immediately sends a Discord alert when your primary server drops."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it work on a local LAN without cloud accounts?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. All HTTP/HTTPS health checks, the Bootstrap 5 WebSocket dashboard, mDNS discovery (esp32-service-uptime-monitor.local), and REST API run 100% locally on your ESP32. External internet access is only needed if you configure Discord webhook notifications."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I configure Wi-Fi after flashing via the Web Flasher?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can provision Wi-Fi credentials directly in your browser over USB Serial using Improv Wi-Fi right after flashing, or connect to the open setup access point (ESP32-Monitor-XXXXXX) and open http://192.168.4.1/."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How are settings and OTA updates protected on the local network?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Configuration edits, entity changes, backups, and firmware updates require pressing the physical BOOT button on the ESP32, which unlocks configuration mode for 10 minutes of inactivity. Wireless PlatformIO OTA updates can also use a dedicated OTA token."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which ESP32 boards are supported?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Pre-built firmware images are provided for ESP32-S3-CAM (MicroSD), ESP32-S3 DevKitC-1 (16MB LittleFS), ESP32-WROOM-32, ESP32-C3 SuperMini, ESP32-C6 (Wi-Fi 6), and ESP32-C5 (Dual-Band 2.4/5GHz Wi-Fi 6)."
+        }
+      }
+    ]
+  }
+  </script>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <link rel="alternate icon" href="./favicon.ico" />
+  <link rel="alternate" type="text/markdown" href="./llms.txt" title="LLM-friendly documentation index" />
+  <link rel="alternate" type="application/yaml" href="./api/openapi.yaml" title="OpenAPI 3.0 Specification" />
   <link rel="stylesheet" href="./styles.css" />
   <!-- COMPONENT: ANALYTICS -->
   <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PGXR4C43"></script>
@@ -231,7 +281,11 @@
           </div>
         </div>
 
-        <div class="preview-window">
+        <p class="sr-only">
+          Interactive visual mockup showing the ESP32 Service Uptime Monitor dark dashboard with online and offline service cards, a live WebSocket Device Logs drawer, system telemetry (uptime, Wi-Fi RSSI, free heap, CPU temperature), and sample Discord status change webhook embeds.
+        </p>
+
+        <div class="preview-window" aria-hidden="true">
           <div id="preview-webui">
             <div class="mock-navbar">
               <div class="mock-brand">
@@ -460,7 +514,7 @@
             </div>
           </div>
 
-          <div id="preview-discord" class="hidden">
+          <div id="preview-discord" class="hidden" aria-hidden="true">
             <div class="mock-discord-bg">
               <div class="mock-discord-msg">
                 <div>
@@ -766,11 +820,50 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="faq">
       <div class="container">
         <div class="section-header">
           <div>
-            <h2>Licensing &amp; Support</h2>
+            <h2>Frequently Asked Questions</h2>
+            <p>Quick answers about hardware independence, local privacy, security, and licensing.</p>
+          </div>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item" open>
+            <summary>Why monitor services from an ESP32 instead of a Docker container?</summary>
+            <div class="faq-answer">
+              <p>If your monitoring container runs on the same Proxmox host, NAS, or server that locks up or loses power, your monitor goes down with it. A dedicated sub-1W ESP32 operates completely out-of-band and immediately sends a Discord alert when your primary server drops.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Does it work on a local LAN without cloud accounts?</summary>
+            <div class="faq-answer">
+              <p>Yes. All HTTP/HTTPS health checks, the Bootstrap 5 WebSocket dashboard, mDNS discovery (<code>http://esp32-service-uptime-monitor.local/</code>), and REST API run 100% locally on your ESP32. External internet access is only needed if you configure Discord webhook notifications.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>How do I configure Wi-Fi after flashing via the Web Flasher?</summary>
+            <div class="faq-answer">
+              <p>You can provision Wi-Fi credentials directly in your browser over USB Serial using <strong>Improv Wi-Fi</strong> right after flashing, or connect to the open setup access point (<code>ESP32-Monitor-XXXXXX</code>) and open <code>http://192.168.4.1/</code>.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>How are settings and OTA updates protected on the local network?</summary>
+            <div class="faq-answer">
+              <p>Configuration edits, entity changes, backups, and firmware updates require pressing the physical <strong>BOOT</strong> button on the ESP32, which unlocks configuration mode for 10 minutes of inactivity. Wireless PlatformIO OTA updates can also use a dedicated OTA token.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Which ESP32 boards are supported?</summary>
+            <div class="faq-answer">
+              <p>Pre-built firmware images are provided for <code>esp32-s3-cam</code> (MicroSD), <code>esp32-s3</code> (16MB LittleFS), <code>esp32</code> (WROOM-32), <code>esp32-c3</code> (SuperMini), <code>esp32-c6</code> (Wi-Fi 6), and <code>esp32-c5</code> (Dual-Band 2.4/5GHz Wi-Fi 6).</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="license">
             <p>Free for personal homelabs, with a 30-day free evaluation trial and commercial licensing for organizations.</p>
           </div>
         </div>

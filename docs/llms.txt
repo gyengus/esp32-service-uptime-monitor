@@ -1,0 +1,43 @@
+# ESP32 Service Uptime Monitor
+
+> Standalone, sub-1W ESP32 hardware appliance that monitors HTTP/HTTPS services on your LAN or homelab, sends Discord webhook alerts on status changes, serves a real-time Bootstrap 5 WebSocket dashboard, exposes an OpenAPI 3 REST API, and supports 1-click browser flashing with Improv Wi-Fi serial provisioning.
+
+## Key Capabilities
+
+- **Independent Out-of-Band Monitoring**: Runs on dedicated ESP32 hardware (not inside a Docker container on the host being monitored). Executes periodic HTTP/HTTPS HEAD checks on Core 0 with 3-retry hysteresis before marking a service `OFFLINE`.
+- **Instant Alerting**: Sends rich Discord embed notifications only when a monitored entity transitions between `ONLINE` and `OFFLINE`.
+- **Real-Time Web UI**: Responsive Bootstrap 5 dashboard with dark mode, `ALL` / `ONLINE` / `OFFLINE` filtering, live telemetry (heap, PSRAM, RSSI, CPU temperature, uptime), and a WebSocket log drawer.
+- **OpenAPI 3 / Swagger REST API**: Interactive API documentation served on-device at `/api/docs` (alias `/swagger`) and `/api/openapi.yaml`, plus statically hosted on GitHub Pages.
+- **Zero-Manual-Upload First Boot**: Embedded `web.zip` automatically extracts to SD card or LittleFS on first boot.
+- **1-Click Browser Flashing & Improv Wi-Fi**: Flash directly via Web Serial (ESP Web Tools) and provision Wi-Fi over USB Serial using Improv Wi-Fi Serial v1, or via the built-in open captive portal AP (`192.168.4.1`).
+- **Hardware Security**: Settings, entity edits, and firmware/web OTA endpoints require physical **BOOT** button authorization (with a 10-minute inactivity auto-lock) or a configured `otaToken` (`X-PlatformIO-Upload` header). Includes SSRF address blocking and DNS rebinding protection.
+
+## Supported Boards
+
+| Environment | Board | Architecture | Storage | Status LED | RGB LED | BOOT Pin |
+|---|---|---|---|---|---|---|
+| `esp32-s3-cam` | ESP32-S3 CAM | Dual-core Xtensa LX7 | MicroSD (`SD_MMC`) | GPIO 2 | GPIO 48 | GPIO 0 |
+| `esp32-s3` | ESP32-S3 DevKitC-1 | Dual-core Xtensa LX7 | LittleFS (16 MB) | — | GPIO 48 | GPIO 0 |
+| `esp32` | ESP32-WROOM-32 | Dual-core Xtensa LX6 | LittleFS (4 MB) | GPIO 2 | — | GPIO 0 |
+| `esp32-c3` | ESP32-C3 SuperMini | Single-core RISC-V | LittleFS (4 MB) | GPIO 8 | — | GPIO 9 |
+| `esp32-c6` | ESP32-C6 DevKit | Single-core RISC-V (Wi-Fi 6) | LittleFS (4 MB) | — | GPIO 8 | GPIO 9 |
+| `esp32-c5` | ESP32-C5 DevKit | Single-core RISC-V (Dual-Band Wi-Fi 6) | LittleFS (4 MB) | — | GPIO 27 | GPIO 28 |
+
+## Default Device Endpoints & Setup
+
+- **Default mDNS URL**: `http://esp32-service-uptime-monitor.local/`
+- **Captive Portal AP IP**: `http://192.168.4.1/` (SSID prefix `ESP32-Monitor-XXXXXX`)
+- **On-device Swagger UI**: `/api/docs` (OpenAPI spec at `/api/openapi.yaml`)
+- **WebSocket Stream**: `/ws`
+- **Factory Reset**: Hold the physical **BOOT** button for >= 10 seconds.
+
+## Documentation & Specifications
+
+- [Overview & Web Flasher](https://esp32-service-uptime-monitor.com/): Project overview, board selector, ESP Web Tools flasher, and hardware comparison.
+- [Full Documentation (HTML)](https://esp32-service-uptime-monitor.com/readme.html): Complete setup, usage, API summary, LED indicators, and configuration JSON schemas.
+- [Full Documentation (Raw Markdown)](https://esp32-service-uptime-monitor.com/content/README.md): Token-efficient raw Markdown source of README.md.
+- [OpenAPI 3 Specification (YAML)](https://esp32-service-uptime-monitor.com/api/openapi.yaml): Complete machine-readable REST API schema.
+- [Interactive API Docs (Swagger UI)](https://esp32-service-uptime-monitor.com/api/): Browser-based OpenAPI explorer.
+- [Contributing & Build Guide (HTML)](https://esp32-service-uptime-monitor.com/contributing.html) | [Raw Markdown](https://esp32-service-uptime-monitor.com/content/CONTRIBUTING.md): PlatformIO build flags, release mode (`RELEASE=1`), OTA targets, and test suites.
+- [License (HTML)](https://esp32-service-uptime-monitor.com/license.html) | [Raw Text](https://esp32-service-uptime-monitor.com/content/LICENSE): Dual License — free forever for personal/homelab use; 30-day free trial and paid commercial license for organizations/MSPs.
+- [GitHub Repository](https://github.com/gyengus/esp32-service-uptime-monitor): Source code, issue tracker, and binary releases.
