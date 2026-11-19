@@ -4,10 +4,14 @@ import re
 
 project_dir = env.get("PROJECT_DIR", ".")
 
-def check_is_release():
+def check_is_release(env=None):
     val = os.environ.get("RELEASE")
     if val is not None and val.strip() != "":
         return val.strip().lower() in ("1", "true", "yes", "on")
+
+    # Never auto-enable release flags for the native unit-testing environment
+    if env is not None and env.get("PIOENV") == "native":
+        return False
 
     # If RELEASE is not explicitly set, auto-detect CI tag release builds
     if os.environ.get("CI_COMMIT_TAG"):
@@ -17,7 +21,7 @@ def check_is_release():
 
     return False
 
-is_release = check_is_release()
+is_release = check_is_release(env)
 
 def check_flag(flag_name, env_vars, config_h_macro):
     # 1. Release mode enables all disable flags

@@ -218,10 +218,21 @@ void test_ws_set_log_level(void) {
     isAPMode = true;
     String setMsg = "{\"type\":\"set_log_level\",\"level\":\"WARNING\"}";
     wsService.getWebSocket().mockData(client, setMsg);
-    TEST_ASSERT_EQUAL_UINT8(8, config.getConfig().logLevel);
+    TEST_ASSERT_EQUAL_UINT8(DEFAULT_LOG_LEVEL, config.getConfig().logLevel);
     TEST_ASSERT_EQUAL_size_t(0, client->sentMessages.size());
     isAPMode = false;
 
+#if defined(RELEASE) || defined(DISABLE_DEBUG_LOGGING)
+    // In release mode: set_log_level is rejected and returns INFO (7)
+    wsService.getWebSocket().mockData(client, setMsg);
+    TEST_ASSERT_EQUAL_UINT8(ELOG_LEVEL_INFO, config.getConfig().logLevel);
+    TEST_ASSERT_TRUE(client->sentMessages.size() > 0);
+    JsonDocument doc;
+    deserializeJson(doc, client->sentMessages.back());
+    TEST_ASSERT_EQUAL_STRING("log_level", doc["type"]);
+    TEST_ASSERT_EQUAL_UINT8(ELOG_LEVEL_INFO, doc["level"].as<uint8_t>());
+    TEST_ASSERT_EQUAL_STRING("INFO", doc["name"]);
+#else
     // 2. In normal STA mode (dev build): set_log_level is accepted
     wsService.getWebSocket().mockData(client, setMsg);
     TEST_ASSERT_EQUAL_UINT8(5, config.getConfig().logLevel);
@@ -242,6 +253,7 @@ void test_ws_set_log_level(void) {
     TEST_ASSERT_EQUAL_STRING("log_level", doc["type"]);
     TEST_ASSERT_EQUAL_UINT8(8, doc["level"].as<uint8_t>());
     TEST_ASSERT_EQUAL_STRING("DEBUG", doc["name"]);
+#endif
 }
 
 void test_ws_log_subscriber_limit(void) {
@@ -284,20 +296,27 @@ void test_ws_debug_log_filtered_without_config_mode(void) {
     String subMsg = "{\"type\":\"subscribe_logs\",\"enabled\":true}";
     wsService.getWebSocket().mockData(client, subMsg);
 
-    // In dev mode (RELEASE not defined): DEBUG and INFO logs are broadcast even outside config mode
     isConfigFunctionsEnabled = false;
     isAPMode = false;
 
     const char* debugMsg = "2026-11-14 [DEBUG] Internal detail message\n";
     wsLogStream.write((const uint8_t*)debugMsg, strlen(debugMsg));
     wsService.processEvents();
+#if defined(RELEASE) || defined(DISABLE_DEBUG_LOGGING)
+    TEST_ASSERT_EQUAL_size_t(0, client->sentMessages.size());
+#else
     TEST_ASSERT_EQUAL_size_t(1, client->sentMessages.size());
+#endif
 
     // INFO log should also pass
     const char* infoMsg = "2026-11-14 [INFO] Normal status message\n";
     wsLogStream.write((const uint8_t*)infoMsg, strlen(infoMsg));
     wsService.processEvents();
+#if defined(RELEASE) || defined(DISABLE_DEBUG_LOGGING)
+    TEST_ASSERT_EQUAL_size_t(1, client->sentMessages.size());
+#else
     TEST_ASSERT_EQUAL_size_t(2, client->sentMessages.size());
+#endif
 }
 
 void test_ws_handshake_origin_validation(void) {
