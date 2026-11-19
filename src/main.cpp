@@ -455,7 +455,8 @@ void commonWebServerSettings() {
         }
         request->send(storage.getFS(), path, "text/plain; charset=utf-8");
     });
-    server.serveStatic("/static", storage.getFS(), (String(WEB_UI_PATH) + "/static").c_str());
+    server.serveStatic("/static", storage.getFS(), (String(WEB_UI_PATH) + "/static").c_str())
+          .setCacheControl("no-cache, must-revalidate");
     api.registerEndpoints();
     server.onNotFound([](AsyncWebServerRequest *request){
         if (request->method() == HTTP_OPTIONS) {

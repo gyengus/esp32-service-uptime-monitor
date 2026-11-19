@@ -246,9 +246,23 @@ def create_web_zip_bytes(web_dir, project_dir, verbose=False, disable_file_manag
     total_orig = 0
     total_mini = 0
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        version = get_firmware_version(project_dir)
+        commit = get_git_commit_hash(project_dir)
+
         for full_path, rel_path in sorted(get_web_files(web_dir, disable_file_manager=disable_file_manager), key=lambda x: x[1]):
             orig_size = os.path.getsize(full_path)
             content = process_file_content(full_path, rel_path, project_dir)
+            if rel_path.lower().endswith(".html"):
+                try:
+                    html_str = content.decode("utf-8")
+                    html_str = re.sub(
+                        r'((?:href|src)=["\']static/[^"\']+?)(["\'])',
+                        rf'\1?v={commit}\2',
+                        html_str,
+                    )
+                    content = html_str.encode("utf-8")
+                except Exception:
+                    pass
             zinfo = zipfile.ZipInfo(filename=rel_path, date_time=(2026, 1, 1, 0, 0, 0))
             zinfo.compress_type = zipfile.ZIP_DEFLATED
             zinfo.external_attr = 0o644 << 16
@@ -287,8 +301,6 @@ def create_web_zip_bytes(web_dir, project_dir, verbose=False, disable_file_manag
                     print(f"  [ASSET]  {archive_name}: {orig_size} bytes")
 
         # Inject .version file into root of archive
-        version = get_firmware_version(project_dir)
-        commit = get_git_commit_hash(project_dir)
         version_str = f"{version}-{commit}\n"
         version_bytes = version_str.encode("utf-8")
         zinfo_ver = zipfile.ZipInfo(filename=".version", date_time=(2026, 1, 1, 0, 0, 0))
