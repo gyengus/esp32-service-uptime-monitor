@@ -92,7 +92,7 @@ function getGithubReleaseUrl(version) {
     if (!cleanVer || cleanVer === '--') {
         return `${GITHUB_REPO_URL}/releases`;
     }
-    const tag = cleanVer.startsWith('v') ? cleanVer : `v${cleanVer}`;
+    const tag = cleanVer.replace(/^v/i, '');
     return `${GITHUB_REPO_URL}/releases/tag/${encodeURIComponent(tag)}`;
 }
 
