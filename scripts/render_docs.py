@@ -157,7 +157,15 @@ def fix_html_links_and_alerts(html_content: str) -> str:
                         break
                 bq["class"] = bq.get("class", []) + ["markdown-alert", f"markdown-alert-{alert_type}"]
 
-    # 2. Fix links
+    # 2. Fix image paths (e.g. docs/dashboard-preview.png -> ./dashboard-preview.png on rendered site)
+    for img in soup.find_all("img", src=True):
+        src = img["src"]
+        if src.startswith("docs/"):
+            img["src"] = "./" + src[len("docs/"):]
+        elif src.startswith("./docs/"):
+            img["src"] = "./" + src[len("./docs/"):]
+
+    # 3. Fix links
     for a in soup.find_all("a", href=True):
         href = a["href"]
 

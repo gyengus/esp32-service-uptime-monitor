@@ -92,9 +92,24 @@ def generate_release_notes(target_tag=None):
     lines = [
         f"## Release {clean_name}",
         "",
+    ]
+
+    if not prev_tag:
+        lines.extend([
+            "### Highlights",
+            "",
+            "* **Multi-Board ESP32 Support:** Ready-to-flash images for `esp32-s3-cam` (MicroSD), `esp32-s3`, `esp32` (WROOM-32), `esp32-c3`, `esp32-c6` (Wi-Fi 6), and `esp32-c5` (Dual-Band 2.4/5GHz Wi-Fi 6).",
+            "* **1-Click Browser Web Flasher & Improv Wi-Fi:** Install directly via Web Serial at [esp32-service-uptime-monitor.com](https://esp32-service-uptime-monitor.com/#flasher) and configure Wi-Fi over USB or Captive Portal AP.",
+            "* **Out-of-Band Monitoring & Discord Alerts:** Non-blocking Core 0 HTTP/HTTPS health checks with 3-retry hysteresis (zero steady-state flash wear) and rich Discord webhook notifications.",
+            "* **Real-Time WebSocket Dashboard & Swagger API:** Bootstrap 5 dark-mode Web UI with live telemetry, device log drawer, JSON backup/restore, wireless OTA updates, and embedded OpenAPI 3 / Swagger UI (`/api/docs`).",
+            "* **Security Hardened:** Physical BOOT button authorization (10-minute inactivity auto-lock), SSRF protection, DNS rebinding defense, and constant-time OTA token rate-limiting.",
+            "",
+        ])
+
+    lines.extend([
         "### What's Changed",
         "",
-    ]
+    ])
     lines.extend(format_entries(entries))
     return "\n".join(lines)
 

@@ -97,12 +97,30 @@ def deep_merge(target: dict, source: dict) -> dict:
 
 
 def read_firmware_version(project_dir: Path) -> str:
-    """Read FIRMWARE_VERSION from include/version.h if present."""
+    """Resolve firmware version from git tags/CI env via git_version.py, falling back to include/version.h."""
     version_file = project_dir / "include" / "version.h"
-    if not version_file.is_file():
-        return "1.0.0"
-    match = VERSION_DEFINE_RE.search(version_file.read_text(encoding="utf-8"))
-    return match.group(1) if match else "1.0.0"
+    file_version = None
+    if version_file.is_file():
+        match = VERSION_DEFINE_RE.search(version_file.read_text(encoding="utf-8"))
+        if match:
+            file_version = match.group(1)
+
+    # If a custom version was explicitly defined in version.h (other than default 0.0.1-SNAPSHOT), respect it
+    if file_version and file_version != "0.0.1-SNAPSHOT":
+        return file_version
+
+    try:
+        scripts_dir = str(project_dir / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        import git_version
+        git_ver = git_version.get_firmware_version(str(project_dir))
+        if git_ver:
+            return git_ver
+    except Exception:
+        pass
+
+    return file_version or "1.0.0"
 
 
 def find_unannotated_routes(project_dir: Path, spec: dict) -> list[tuple[str, str, str]]:

@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - '*'
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
     inputs:
       release:
@@ -18,8 +21,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "ci-cd-pipeline"
-  cancel-in-progress: false
+  group: "ci-cd-pipeline-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -79,7 +82,10 @@ jobs:
       - name: Install PlatformIO
         run: |
           python -m pip install --upgrade pip
-          pip install platformio
+          pip install platformio pyyaml
+
+      - name: Verify OpenAPI specification coverage
+        run: python3 scripts/openapi_generator.py --strict
 
       - name: Run PlatformIO native unit tests
         run: pio test -e native
@@ -100,6 +106,7 @@ jobs:
     needs:
       - test-ui
       - test-firmware
+    if: github.event_name != 'pull_request'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -194,6 +201,7 @@ jobs:
       - test-ui
       - test-firmware
       - build-firmware
+    if: github.event_name != 'pull_request'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -245,6 +253,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-site
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -4,14 +4,14 @@ import subprocess
 import datetime
 
 
-def run_git(args):
+def run_git(args, cwd=None):
     try:
-        return subprocess.check_output(['git'] + args, stderr=subprocess.DEVNULL).decode('utf-8').strip()
+        return subprocess.check_output(['git'] + args, cwd=cwd, stderr=subprocess.DEVNULL).decode('utf-8').strip()
     except Exception:
         return ""
 
 
-def get_firmware_version():
+def get_firmware_version(project_dir=None):
     # 1. Explicit CI tag environment variables
     ci_tag = os.environ.get("CI_COMMIT_TAG") or (
         os.environ.get("GITHUB_REF_NAME") if os.environ.get("GITHUB_REF_TYPE") == "tag" else None
@@ -20,12 +20,12 @@ def get_firmware_version():
         return ci_tag.lstrip("v")
 
     # 2. Check if git HEAD is on an exact tag
-    exact_tag = run_git(['describe', '--tags', '--exact-match'])
+    exact_tag = run_git(['describe', '--tags', '--exact-match'], cwd=project_dir)
     if exact_tag:
         return exact_tag.lstrip("v")
 
     # 3. Check for most recent tag to calculate next SNAPSHOT
-    latest_tag = run_git(['describe', '--tags', '--abbrev=0'])
+    latest_tag = run_git(['describe', '--tags', '--abbrev=0'], cwd=project_dir)
     if latest_tag:
         clean_tag = latest_tag.lstrip("v")
         m = re.match(r"^(\d+)\.(\d+)\.(\d+)", clean_tag)

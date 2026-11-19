@@ -6,6 +6,18 @@ import zipfile
 import hashlib
 
 def get_firmware_version(project_dir):
+    try:
+        import sys
+        scripts_dir = os.path.join(project_dir, "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        import git_version
+        ver = git_version.get_firmware_version(project_dir)
+        if ver:
+            return ver
+    except Exception:
+        pass
+
     version_file = os.path.join(project_dir, "include", "version.h")
     if os.path.isfile(version_file):
         try:

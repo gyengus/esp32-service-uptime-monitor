@@ -26,7 +26,7 @@
 ## Default Device Endpoints & Setup
 
 - **Default mDNS URL**: `http://esp32-service-uptime-monitor.local/`
-- **Captive Portal AP IP**: `http://192.168.4.1/` (SSID prefix `ESP32-Monitor-XXXXXX`)
+- **Captive Portal AP IP**: `http://192.168.4.1/` (SSID: `ESP32-Service-Uptime-Monitor`)
 - **On-device Swagger UI**: `/api/docs` (OpenAPI spec at `/api/openapi.yaml`)
 - **WebSocket Stream**: `/ws`
 - **Factory Reset**: Hold the physical **BOOT** button for >= 10 seconds.
@@ -39,5 +39,6 @@
 - [OpenAPI 3 Specification (YAML)](https://esp32-service-uptime-monitor.com/api/openapi.yaml): Complete machine-readable REST API schema.
 - [Interactive API Docs (Swagger UI)](https://esp32-service-uptime-monitor.com/api/): Browser-based OpenAPI explorer.
 - [Contributing & Build Guide (HTML)](https://esp32-service-uptime-monitor.com/contributing.html) | [Raw Markdown](https://esp32-service-uptime-monitor.com/content/CONTRIBUTING.md): PlatformIO build flags, release mode (`RELEASE=1`), OTA targets, and test suites.
+- [Changelog (HTML)](https://esp32-service-uptime-monitor.com/changelog.html) | [Raw Markdown](https://esp32-service-uptime-monitor.com/content/CHANGELOG.md): Version release notes and commit history.
 - [License (HTML)](https://esp32-service-uptime-monitor.com/license.html) | [Raw Text](https://esp32-service-uptime-monitor.com/content/LICENSE): Dual License — free forever for personal/homelab use; 30-day free trial and paid commercial license for organizations/MSPs.
 - [GitHub Repository](https://github.com/gyengus/esp32-service-uptime-monitor): Source code, issue tracker, and binary releases.

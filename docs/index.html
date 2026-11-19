@@ -11,9 +11,15 @@
   <meta property="og:title" content="ESP32 Service Uptime Monitor — Standalone Hardware Watchdog" />
   <meta property="og:description" content="Who watches your monitoring server when the server goes down? Monitor HTTP/HTTPS services from an independent sub-1W ESP32 with instant Discord alerts, WebSocket UI, and 1-click browser flashing." />
   <meta property="og:url" content="https://esp32-service-uptime-monitor.com/" />
+  <meta property="og:image" content="https://esp32-service-uptime-monitor.com/social-preview.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="ESP32 Service Uptime Monitor v1.0.0 — Standalone Hardware Watchdog Dashboard and Discord Alerts" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="ESP32 Service Uptime Monitor — Standalone Hardware Watchdog" />
   <meta name="twitter:description" content="Turn any ESP32 into an independent HTTP/HTTPS uptime appliance with Discord webhook alerts, real-time WebSocket UI, Swagger REST API, and 1-click Web Flasher." />
+  <meta name="twitter:image" content="https://esp32-service-uptime-monitor.com/social-preview.png" />
+  <meta name="twitter:image:alt" content="ESP32 Service Uptime Monitor v1.0.0 — Standalone Hardware Watchdog Dashboard and Discord Alerts" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -21,8 +27,11 @@
     "name": "ESP32 Service Uptime Monitor",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "ESP32, FreeRTOS",
+    "softwareVersion": "1.0.0",
     "description": "Standalone ESP32-based HTTP/HTTPS service uptime monitor with Discord webhook notifications, real-time WebSocket dashboard, OpenAPI/Swagger documentation, and browser-based Web Flasher.",
     "url": "https://esp32-service-uptime-monitor.com/",
+    "image": "https://esp32-service-uptime-monitor.com/social-preview.png",
+    "screenshot": "https://esp32-service-uptime-monitor.com/dashboard-preview.png",
     "downloadUrl": "https://github.com/gyengus/esp32-service-uptime-monitor/releases/latest",
     "author": {
       "@type": "Person",
@@ -63,7 +72,7 @@
         "name": "How do I configure Wi-Fi after flashing via the Web Flasher?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "You can provision Wi-Fi credentials directly in your browser over USB Serial using Improv Wi-Fi right after flashing, or connect to the open setup access point (ESP32-Monitor-XXXXXX) and open http://192.168.4.1/."
+          "text": "You can provision Wi-Fi credentials directly in your browser over USB Serial using Improv Wi-Fi right after flashing, or connect to the open setup access point (ESP32-Service-Uptime-Monitor) and open http://192.168.4.1/."
         }
       },
       {
@@ -527,18 +536,18 @@
 
             <div class="mock-footer">
               <div class="mock-footer-left">
-                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 22h 18m</span>
-                <span class="mock-footer-item" style="color: #198754;"><svg class="mock-ui-icon"><use href="#ui-wifi"></use></svg> -54 dBm</span>
-                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-memory"></use></svg> 172 KB</span>
-                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-thermometer"></use></svg> 56.6 &deg;C</span>
+                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-clock"></use></svg> 1d 4h 34m</span>
+                <span class="mock-footer-item" style="color: #198754;"><svg class="mock-ui-icon"><use href="#ui-wifi"></use></svg> -37 dBm</span>
+                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-memory"></use></svg> 170 KB</span>
+                <span class="mock-footer-item"><svg class="mock-ui-icon"><use href="#ui-thermometer"></use></svg> 61.6 &deg;C</span>
               </div>
               <button type="button" id="mockConsoleBtn" class="mock-console-btn" title="Toggle Device Logs">
                 <svg class="mock-ui-icon"><use href="#ui-console"></use></svg>
               </button>
               <div class="mock-footer-right">
-                <span>v<strong style="color: #f8f9fa;">0.0.1-SNAPSHOT</strong></span>
-                <span>Hash: <span style="color: #0dcaf0; font-family: var(--font-mono);">#38870dc</span></span>
-                <span>Build: 2026-11-14 12:14:56</span>
+                <span>v<strong style="color: #f8f9fa;">1.0.0</strong></span>
+                <span>Hash: <span style="color: #0dcaf0; font-family: var(--font-mono);">#190e2e6</span></span>
+                <span>Build: 2026-11-18 08:56:31</span>
               </div>
             </div>
           </div>
@@ -873,7 +882,7 @@
           <details class="faq-item">
             <summary>How do I configure Wi-Fi after flashing via the Web Flasher?</summary>
             <div class="faq-answer">
-              <p>You can provision Wi-Fi credentials directly in your browser over USB Serial using <strong>Improv Wi-Fi</strong> right after flashing, or connect to the open setup access point (<code>ESP32-Monitor-XXXXXX</code>) and open <code>http://192.168.4.1/</code>.</p>
+              <p>You can provision Wi-Fi credentials directly in your browser over USB Serial using <strong>Improv Wi-Fi</strong> right after flashing, or connect to the open setup access point (<code>ESP32-Service-Uptime-Monitor</code>) and open <code>http://192.168.4.1/</code>.</p>
             </div>
           </details>
           <details class="faq-item">

@@ -82,11 +82,31 @@ def parse_ui_coverage(coverage_json_path: Path):
 
 
 def count_tests(project_dir: Path):
-    """Estimates test count from test files or default passing counts."""
-    # Firmware tests: 146 native tests in test/test_*/test_main.cpp
-    fw_count = 146
-    # Web UI tests: 114 tests in web/tests/*.test.js
-    ui_count = 114
+    """Counts firmware (Unity RUN_TEST) and Web UI (Vitest it/test) test cases dynamically."""
+    fw_count = 0
+    test_dir = project_dir / "test"
+    if test_dir.exists():
+        for cpp_file in test_dir.rglob("test_*.cpp"):
+            try:
+                content = cpp_file.read_text(encoding="utf-8")
+                fw_count += len(re.findall(r"^\s*RUN_TEST\s*\(", content, flags=re.MULTILINE))
+            except Exception:
+                pass
+    if fw_count == 0:
+        fw_count = 146
+
+    ui_count = 0
+    ui_test_dir = project_dir / "web" / "tests"
+    if ui_test_dir.exists():
+        for js_file in ui_test_dir.rglob("*.test.js"):
+            try:
+                content = js_file.read_text(encoding="utf-8")
+                ui_count += len(re.findall(r"^\s*(?:it|test)\s*\(", content, flags=re.MULTILINE))
+            except Exception:
+                pass
+    if ui_count == 0:
+        ui_count = 117
+
     return fw_count, ui_count, fw_count + ui_count
 
 

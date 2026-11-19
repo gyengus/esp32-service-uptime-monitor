@@ -17,6 +17,8 @@ Turn any $4 ESP32 into a standalone, ultra-low-power (< 1 W) hardware uptime app
 > ### ⚡ Flash directly from your browser in 60 seconds
 > No PlatformIO, Python, or local compiler required! Connect your ESP32 board via USB, open our **[Browser Web Flasher & Live Demo](https://esp32-service-uptime-monitor.com/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_banner)** in Chrome or Edge, and configure Wi-Fi directly in your browser with Improv Wi-Fi. 100% local, privacy-first, with no cloud account or subscription required.
 
+![ESP32 Service Uptime Monitor Web Dashboard](docs/dashboard-preview.png)
+
 ## Why a Dedicated Hardware Uptime Monitor?
 
 - **Out-of-Band Independence:** Containerized monitors (like Uptime Kuma or Prometheus) go down with your hypervisor, NAS, or Docker host. An independent ESP32 keeps watching and alerts you even when your primary server crashes.

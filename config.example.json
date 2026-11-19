@@ -1,8 +1,13 @@
 {
-    "wifiSSID": "YourSSID",
-    "wifiPassword": "YourPassword",
-    "sntpServer": "pool.ntp.org",
-    "offsetHours": 2,
-    "checkInterval": 60,
-    "discordWebhookURL": "https://discord.com/api/webhooks/your/webhook/url"
+  "wifiSSID": "YourNetworkSSID",
+  "wifiPassword": "YourPassword",
+  "sntpServer": "pool.ntp.org",
+  "offsetHours": 1,
+  "checkInterval": 60,
+  "discordWebhookURL": "https://discord.com/api/webhooks/your/webhook/url",
+  "hostname": "esp32-service-uptime-monitor",
+  "logLevel": 8,
+  "logLevelName": "DEBUG",
+  "ledBrightness": 50,
+  "otaToken": "your-ota-token"
 }
